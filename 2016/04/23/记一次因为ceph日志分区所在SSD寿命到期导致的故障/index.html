@@ -11,34 +11,16 @@
     
 
     
-    <meta name="description" content="1.环境
-openstack加ceph，计算存储放在一起，管理节点独立。
-4个存储节点，每个节点12块3T的SATA硬盘，都做OSD
-sda是120G的Intel S3500既做操作系统分区又分出6个10G做日志
-sdb是120G的Intel S3500分6个10G分区只做日志
-虚拟机大多是UbuntuKylinDesktop1404，作为开发测试虚拟机
-ceph集群分public和cluster">
+    <meta name="description" content="一次因为Ceph日志分区所在SSD故障，导致一个节点IO挂起卡住直至重启。本文记录整个分析过程。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="记一次因为ceph日志分区所在SSD寿命到期导致的故障">
 <meta property="og:url" content="http://blog.itzhoulin.com/2016/04/23/记一次因为ceph日志分区所在SSD寿命到期导致的故障/index.html">
 <meta property="og:site_name" content="我的IT江湖之旅">
-<meta property="og:description" content="1.环境
-openstack加ceph，计算存储放在一起，管理节点独立。
-4个存储节点，每个节点12块3T的SATA硬盘，都做OSD
-sda是120G的Intel S3500既做操作系统分区又分出6个10G做日志
-sdb是120G的Intel S3500分6个10G分区只做日志
-虚拟机大多是UbuntuKylinDesktop1404，作为开发测试虚拟机
-ceph集群分public和cluster">
-<meta property="og:updated_time" content="2016-04-23T07:54:40.000Z">
+<meta property="og:description" content="一次因为Ceph日志分区所在SSD故障，导致一个节点IO挂起卡住直至重启。本文记录整个分析过程。">
+<meta property="og:updated_time" content="2016-04-23T13:29:01.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="记一次因为ceph日志分区所在SSD寿命到期导致的故障">
-<meta name="twitter:description" content="1.环境
-openstack加ceph，计算存储放在一起，管理节点独立。
-4个存储节点，每个节点12块3T的SATA硬盘，都做OSD
-sda是120G的Intel S3500既做操作系统分区又分出6个10G做日志
-sdb是120G的Intel S3500分6个10G分区只做日志
-虚拟机大多是UbuntuKylinDesktop1404，作为开发测试虚拟机
-ceph集群分public和cluster">
+<meta name="twitter:description" content="一次因为Ceph日志分区所在SSD故障，导致一个节点IO挂起卡住直至重启。本文记录整个分析过程。">
 
     
     <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
@@ -169,10 +151,15 @@ ceph集群分public和cluster">
 		<footer class="article-footer clearfix">
 <div class="article-catetags">
 
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/ceph/">ceph</a>
+</div>
+
 
   <div class="article-tags">
   
-  <span></span> <a href="/tags/ceph-故障处理-SSD/">ceph 故障处理 SSD</a>
+  <span></span> <a href="/tags/ceph/">ceph</a><a href="/tags/故障处理/">故障处理</a><a href="/tags/SSD/">SSD</a>
   </div>
 
 </div>
@@ -238,6 +225,10 @@ ceph集群分public和cluster">
 		<ul>
 		
 		  
+			<li><a href="/categories/ceph/" title="ceph">ceph<sup>1</sup></a></li>
+		  
+		
+		  
 			<li><a href="/categories/hexo/" title="hexo">hexo<sup>1</sup></a></li>
 		  
 		
@@ -263,7 +254,19 @@ ceph集群分public和cluster">
 			
 		
 			
-				<li><a href="/tags/ceph-故障处理-SSD/" title="ceph 故障处理 SSD">ceph 故障处理 SSD<sup>1</sup></a></li>
+				<li><a href="/tags/ceph/" title="ceph">ceph<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/故障处理/" title="故障处理">故障处理<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/SSD/" title="SSD">SSD<sup>1</sup></a></li>
+			
+		
+			
+		
 			
 		
 		</ul>
