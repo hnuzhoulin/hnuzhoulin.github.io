@@ -92,8 +92,6 @@ Plugins:
 - hexo-generator-sitemap
 #theme: landscape
 
-#duoshuo_shortname: itzhoulin
-
 #sitemap
 sitemap:
   path: sitemap.xml
