@@ -70,4 +70,3 @@ theme: landscape
 deploy:
       type: git
       repository: git@github.com:hnuzhoulin/hnuzhoulin.github.io.git
-      branch: gh-pages
