@@ -85,7 +85,7 @@ pagination_dir: page
 ## Themes: https://hexo.io/themes/
 ## Plugins: https://github.com/tommy351/hexo/wiki/Plugins
 ## Themes: https://github.com/tommy351/hexo/wiki/Themes
-theme: jacman
+theme: yelee
 exclude_generator:
 Plugins:
 - hexo-generator-feed
