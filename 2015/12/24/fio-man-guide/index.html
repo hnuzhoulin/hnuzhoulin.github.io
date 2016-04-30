@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  
+  <title>fio使用指南 | 我的IT江湖之旅</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="fio用户使用指南，帮助手册汉化版">
+<meta property="og:type" content="article">
+<meta property="og:title" content="fio使用指南">
+<meta property="og:url" content="http://blog.itzhoulin.com/2015/12/24/fio-man-guide/index.html">
+<meta property="og:site_name" content="我的IT江湖之旅">
+<meta property="og:description" content="fio用户使用指南，帮助手册汉化版">
+<meta property="og:updated_time" content="2015-12-24T07:59:05.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="fio使用指南">
+<meta name="twitter:description" content="fio用户使用指南，帮助手册汉化版">
+  
+    <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+      <link href="//cdn.bootcss.com/animate.css/3.5.0/animate.min.css" rel="stylesheet">
+  
+  
+  
+      <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+      <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <link href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  
+  
+      <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+  
+  <script src="//cdn.bootcss.com/jquery/1.9.1/jquery.min.js"></script>
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.9/clipboard.min.js"></script>
+  <script>
+      var yiliaConfig = {
+          fancybox: true,
+          animate: true,
+          isHome: false,
+          isPost: true,
+          isArchive: false,
+          isTag: false,
+          isCategory: false,
+          open_in_new: false,
+          fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+          scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.0.9/scrollreveal.min.js"
+      }
+  </script>
+
+  
+      <script>
+          yiliaConfig.rootUrl = "/";
+      </script>
+  
+
+  
+  
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">半天河(hnuzhoulin)</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">python ceph openstack 运维</p>
+        
+                
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>Menu</li>
+                        <li>Tags</li>
+                        
+                        <li>Friends</li>
+                        
+                        
+                        <li>About Me</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/blog-updates/">博客更新</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/calamari/">calamari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cetune/">cetune</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/dns/">dns</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/fio/">fio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/full/">full</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infenalis/">infenalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infernalis/">infernalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jewel/">jewel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/journal/">journal</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kernel/">kernel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/osd/">osd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/pg/">pg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rbd/">rbd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/release/">release</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rgw/">rgw</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shell/">shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shortcut/">shortcut</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sqlalchemy/">sqlalchemy</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ssd/">ssd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tool/">tool</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wsgi/">wsgi</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/排错/">排错</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/翻译/">翻译</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">IT爱好者，慢慢学习</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">python ceph openstack 运维</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/blog-updates/">博客更新</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+</nav>
+      <div class="body-wrap"><article id="post-fio-man-guide" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2015/12/24/fio-man-guide/" class="article-date">
+      <time datetime="2015-12-24T07:52:48.000Z" itemprop="datePublished">2015-12-24</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      fio使用指南
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/tool/">tool</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/">linux</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>这个文档是对fio-2.0.9 HOWTO文档的翻译，fio的参数太多了，翻译这个文档时并没有测试每一个参数的功能和使用方法，只有少量参数做了试验，大部分的参数采用的是根据字面翻译或是个人理解的翻译，必然有些出入，先发出来，以后有使用的时候再被充和修改。在另一个文档中会对fio自带的实例进行分析，可能会更为清晰一些。</p>
+<p>fio这个工具实在太强大了，列举一下他的NB之处吧</p>
+<ul>
+<li>支持十几种存储引擎，可以自定义</li>
+<li>自带做图工具，调用gnuplot做图</li>
+<li>支持几乎所有的存储描述参数</li>
+<li>大量对CPU，内存，进程/线程，文件，IO特性的配置</li>
+<li>压缩，trace回放，。。。这些都包含，灵活的配置</li>
+</ul>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>fio最初是用来节省为特定负载写专门测试程序，或是进行性能测试，或是找到和重现bug的时间。写这么一个测试应用是非常浪费时间的。因此需要一个工具来模拟给定的io负载，而不用重复的写一个又一个的特定的测试程序。但是test负载很难定义。因为可能会产生很多进程或线程，他们每一个都用他们自己的方式产生io。fio需要足够灵活得来模拟这些case。</p>
+<p>典型的fio的工作过程:</p>
+<ul>
+<li>写一个job文件来描述要访真的io负载。一个job文件可以控制产生任意数目的线程和文件。典型的job文件有一个global段（定义共享参数），一个或多少job段（描述具体要产生的job）。</li>
+<li>运行时，fio从文件读这些参数，做处理，并根据这些参数描述，启动这些访真线程/进程</li>
+</ul>
+<h2 id="运行fio"><a href="#运行fio" class="headerlink" title="运行fio"></a>运行fio</h2><h3 id="运行方式："><a href="#运行方式：" class="headerlink" title="运行方式："></a>运行方式：</h3><pre><code>$fio job_file
+</code></pre><p>它会根据job_file的内容来运行。你可以在命令行中指定多个job file，fio进串行化运行这些文件。相当于在同一个job file不同的section之间使用了stonewall参数。</p>
+<p>如果某个job file只包含一个job,可以在命令行中给出参数，来直接运行，不再需要读取job file。命令行参数同job file参数的格式是一样的。比如，在job file中的参数iodepth=2，在命令行中可以写为 <code>-iodepth 2 或是 --iodepth=2</code></p>
+<p>fio不需要使用root来支行，除非使用到的文件或是设备需要root权限。一些选项可能会被限制，比如内存锁，io调度器切换，或是nice value降级。</p>
+<h3 id="job文件格式"><a href="#job文件格式" class="headerlink" title="job文件格式"></a>job文件格式</h3><p>job file格式采用经典的ini文件，[]中的值表示job name，可以采用任意的ASCII字符，‘global’除外，global有特殊的意义。Global section描述了job file中各个job的默认配置值。一个job section可以覆盖global section中的参数，一个job file可以包含几个global section.一个job只会受到它上面的global section的影响。<code>;</code>和<code>#</code>可以用作注释.</p>
+<p>两个进程，分别从一个从128MB文件中，随机读的job file.</p>
+<pre><code>;–start job file–
+[global]
+rw=randread
+size=128m
+[job1]
+[job2]
+;–end job file–
+</code></pre><p>job1和job2 section是空的，因为所有的描述参数是共享的。没有给出filename=选项，fio会为每一个job创建一个文件名，如果用命令写，则是：</p>
+<pre><code>$fio –name=global –rw=randread –size=128m –name=job1 –name=job2
+</code></pre><p>多个进程随机写文件的实例</p>
+<pre><code>;–start job file –
+[random-writers]
+ioengine=libaio
+iodepth=4
+rw=randwrite
+bs=32k
+direct=0
+size=64m
+numjobs=4
+;–end job file–
+</code></pre><p>没有global section,只有一个job section.</p>
+<p>上一个实例的说明：采用async,每一个文件的队列长度为4，采用随机写，采用32k的块，采用非direct io，共有4个进程，每个进程随机写64M的文件。也可以采用下面的命令</p>
+<pre><code>$fio –name=random-writers –ioengine=libaio –iodepth=4 –rw=randwrite –bs=32k –direct=0 –size=64m –numjobs=4
+</code></pre><h3 id="环境变量"><a href="#环境变量" class="headerlink" title="环境变量"></a>环境变量</h3><p>在job file中支持环境变量扩展。类似于${VARNAME}可以作为选项的值（在=号右边）。<br>实例：</p>
+<pre><code>$SIZE=64m NUMJOBS=4 fio jobfile,fio
+;–start job files–
+[random-writers]
+rw=randwrite
+size=${SIZE}
+numjobs=${NUMJOBS}
+;–end job file–
+</code></pre><p>将被扩展为</p>
+<pre><code>；–start job file–
+[random-writers]
+rw=randwrite
+size=64m
+numjobs=4
+;–end job file–
+</code></pre><h3 id="保留keywords"><a href="#保留keywords" class="headerlink" title="保留keywords"></a>保留keywords</h3><p>fio有一些保留keywords，在内部将其替换成合适的值，这些keywords是：</p>
+<ul>
+<li>$pagesize 当前系统的页大小</li>
+<li>$mb_memory 系统的总内存的大小，以MB为单位</li>
+<li>$ncpus 在线有效的cpu数</li>
+</ul>
+<p>在命令行中和job file中都可以用，当job运行的时候，会自动的用当前系统的徝进行替换。支持简单的数学计算，如：<code>size=8*$mb_memory</code></p>
+<p>###类型</p>
+<ul>
+<li>str 字符串</li>
+<li>time时间（int)</li>
+<li>int 整数</li>
+<li>bool</li>
+<li>irange 整数范围</li>
+<li>float_list 符点数列</li>
+</ul>
+<h3 id="一个job包含的基本的参数"><a href="#一个job包含的基本的参数" class="headerlink" title="一个job包含的基本的参数"></a>一个job包含的基本的参数</h3><h4 id="IO类型"><a href="#IO类型" class="headerlink" title="IO类型"></a>IO类型</h4><p>向文件发起的IO类型。</p>
+<h5 id="readwrite-str-rw-str"><a href="#readwrite-str-rw-str" class="headerlink" title="readwrite=str,rw=str"></a>readwrite=str,rw=str</h5><ul>
+<li>read 顺序读</li>
+<li>write 顺序写</li>
+<li>randwrite 随机写</li>
+<li>randread 随机读</li>
+<li>rw,readwrite 顺序混合读写</li>
+<li>randrw 随机混合读写</li>
+</ul>
+<p>[参数备注]<br>对于混合io类型，混认是50%的读，50%的写，对于特定的io类型，因为速度可能不同，结果可能会有稍有偏差.<br>通过在在str之后加“:”可以配置在执行一下获取offset操作之前要执行的IO次数。For a random read, it would lik ’rw=randread:8′ for passing in an offset modifier with a value of 8.如果后缀用于顺序IO类型的话，，那么将在每次IO之后，将这个值加到产生的offset之后。e.g. rw=write:4k每次写之后将会跳过4K。它将顺序的IO转化为带有洞的顺序IO。参考‘rw_sequencer’选项。</p>
+<h5 id="rw-sequencer-str"><a href="#rw-sequencer-str" class="headerlink" title="rw_sequencer=str"></a>rw_sequencer=str</h5><p>如果rw=后有offset修饰的话，这个选项可以控制这个数字如何修饰产生的IO offset.可以接收的值是：</p>
+<ul>
+<li>sequential 产生顺序的offset</li>
+<li>identical 产生相同的offset</li>
+</ul>
+<p>[参数备注]<br>‘sequential’仅用于随机IO。通常情况下，fio在每次IO之后，将会生成一个新的随机IO。e.g.rw=randread:8，将会在每8次IO之后执行seek，而不是每次IO之后。顺序IO已经是顺序的，再设置为‘sequential’将不会产生任何不同。‘identical’会产生同‘sequential’相似的行为，只是它会连续产生8次相同的offset，然后生成一个新的offset.</p>
+<h4 id="block-size"><a href="#block-size" class="headerlink" title="block size"></a>block size</h4><p>产生的IO单元的大小，可以是一个孤立的值，也可以是一个范围。</p>
+<h5 id="blocksize-int-bs-int"><a href="#blocksize-int-bs-int" class="headerlink" title="blocksize=int,bs=int"></a>blocksize=int,bs=int</h5><p>单次IO的block size,默认为4k。如果是单个值的话，将会对读写都生效。如果是一个逗号，再跟一个int值的话，则是仅对于写有效。也就是说，格式可以是bs=read_end_write或是bs=read,write。e.g. bs=4k,8k读使用4k的块，写使用8k的块。e.g.bs=,8k将使得写采用8k的块，读采用默认的值。</p>
+<h4 id="IO-size"><a href="#IO-size" class="headerlink" title="IO size"></a>IO size</h4><p>将会读/写多少数据</p>
+<h5 id="size-int"><a href="#size-int" class="headerlink" title="size=int"></a>size=int</h5><p>这个job IO总共要传输的数据的大小。FIO将会执行到所有的数据传输完成，除非设定了运行时间（‘runtime’选项）。除非有特定的‘nrfiles’选项和‘filesize’选项被设置，fio将会在job定义的文件中平分这个大小。如果这个值不设置的话，fio将会使用这个文件或设备的总大小。如果这些文件不存在的话，size选项一定要给出。也可以给出一个1到100的百分比。e.g. size=20%，fio将会使用给定的文件或设备的20%的空间。</p>
+<h4 id="IO引擎"><a href="#IO引擎" class="headerlink" title="IO引擎"></a>IO引擎</h4><p>发起IO的方式。</p>
+<h5 id="ioengine-str"><a href="#ioengine-str" class="headerlink" title="ioengine=str"></a>ioengine=str</h5><p>定义job向文件发起IO的方式</p>
+<ul>
+<li>sync 基本的read,write.lseek用来作定位</li>
+<li>psync 基本的pread,pwrite</li>
+<li>vsync 基本的readv,writev</li>
+<li>libaio Linux专有的异步IO。Linux仅支持非buffered IO的队列行为。</li>
+<li>posixaio glibc posix异步IO</li>
+<li>solarisaio solaris独有的异步IO<br>w- indowsaio windows独有的异步IO</li>
+<li>mmap 文件通过内存映射到用户空间，使用memcpy写入和读出数据</li>
+<li>splice 使用splice和vmsplice在用户空间和内核之间传输数据</li>
+<li>syslet-rw 使用syslet 系统调用来构造普通的read/write异步IO</li>
+<li>sg SCSI generic sg v3 io.可以是使用SG_IO ioctl来同步，或是目标是一个sg字符设备，我们使用read和write执行异步IO</li>
+<li>null 不传输任何数据，只是伪装成这样。主要用于训练使用fio，或是基本debug/test的目的。</li>
+<li>net 根据给定的host:port通过网络传输数据。根据具体的协议，hostname,port,listen,filename这些选项将被用来说明建立哪种连接，协议选项将决定哪种协议被使用。</li>
+<li>netsplice 像net，但是使用splic/vmsplice来映射数据和发送/接收数据。</li>
+<li>cpuio 不传输任何的数据，但是要根据cpuload=和cpucycle=选项占用CPU周期.e.g. - - cpuload=85将使用job不做任何的实际IO，但要占用85%的CPU周期。在SMP机器上，使用numjobs=来获取需要的CPU，因为cpuload仅会载入单个CPU，然后占用需要的比例。</li>
+<li>guasi GUASI IO引擎是一般的用于异步IO的用户空间异步系统调用接口</li>
+<li>rdma RDMA I/O引擎支持RDMA内存语义（RDMA_WRITE/RDMA_READ）和通道主义(Send/Recv）用于InfiniBand,RoCE和iWARP协议</li>
+<li>external 指明要调用一个外部的IO引擎（二进制文件）。e.g. ioengine=external:/tmp/foo.o将载入/tmp下的foo.o这个IO引擎</li>
+</ul>
+<h4 id="IO-depth"><a href="#IO-depth" class="headerlink" title="IO depth"></a>IO depth</h4><p>如果IO引擎是异步的，这个指定我们需要保持的队列深度</p>
+<h5 id="iodepth-int"><a href="#iodepth-int" class="headerlink" title="iodepth=int"></a>iodepth=int</h5><p>加于文件之上的保持的IO单元。默认对于每个文件来说是1，可以设置一个更大的值来提供并发度。iodepth大于1不会影响同步IO引擎（除非verify_async这个选项被设置）。even async engines may impose OS restrictions causing the desired depth not to be achieved.这会在Linux使用libaio并且设置direct=1的时候发生，因为buffered io在OS中不是异步的。在外部通过类似于iostat这些工具来观察队列深度来保证这个IO队列深度是我们想要的。这个可以参考褚霸的博客<a href="http://blog.yufeng.info/archives/2104" target="_blank" rel="external">http://blog.yufeng.info/archives/2104</a></p>
+<h4 id="IO-type"><a href="#IO-type" class="headerlink" title="IO type"></a>IO type</h4><h5 id="direct-bool"><a href="#direct-bool" class="headerlink" title="direct=bool"></a>direct=bool</h5><p>true,则标明采用non-buffered io.同O_DIRECT效果一样。ZFS和Solaris不支持direct io，在windows同步IO引擎不支持direct io</p>
+<h6 id="buffered-bool"><a href="#buffered-bool" class="headerlink" title="buffered=bool"></a>buffered=bool</h6><p>true,则标明采用buffered io。是direct的反义词，默认是true</p>
+<h4 id="Num-files"><a href="#Num-files" class="headerlink" title="Num files"></a>Num files</h4><p>负载将分发到几个文件之中</p>
+<h5 id="nrfiles-int"><a href="#nrfiles-int" class="headerlink" title="nrfiles=int"></a>nrfiles=int</h5><p>用于这个job的文件数目,默认为1</p>
+<h5 id="openfiles-int"><a href="#openfiles-int" class="headerlink" title="openfiles=int"></a>openfiles=int</h5><p>在同一时间可以同时打开的文件数目，默认同nrfiles相等，可以设置小一些，来限制同时打开的文件数目。</p>
+<h4 id="Num-threads"><a href="#Num-threads" class="headerlink" title="Num threads"></a>Num threads</h4><p>numjobs=int<br>创建特定数目的job副本。可能是创建大量的线程/进程来执行同一件事。我们将这样一系列的job，看作一个特定的group</p>
+<h2 id="详细参数："><a href="#详细参数：" class="headerlink" title="详细参数："></a>详细参数：</h2><h3 id="1-name-str"><a href="#1-name-str" class="headerlink" title="1.name=str"></a>1.name=str</h3><p>job名，用于输出信息用的名字。如果不设置的话，fio输出信息时将采用job name，如果设置的话，将用设置的名字。在命令行中，这个参数有特殊的作用，标明一个新job的开始。</p>
+<h3 id="2-description-str"><a href="#2-description-str" class="headerlink" title="2.description=str"></a>2.description=str</h3><p>job的说明信息,在job运行的时候不起作用，只是在输出文件描述信息的时候才起作用。</p>
+<h3 id="3-directory-str"><a href="#3-directory-str" class="headerlink" title="3.directory=str"></a>3.directory=str</h3><p>使用的文件的路径前缀，默认是./</p>
+<h3 id="4-filename-str"><a href="#4-filename-str" class="headerlink" title="4.filename=str"></a>4.filename=str</h3><p>一般情况下，fio会根据job名，线程号，文件名来产生一个文件名。如果，想在多个job之间共享同一个文件的话，可以设定一个名字来代替默认的名字.如果ioengine是‘net’的话，文件名则是以这种格式=host,port,protocol.如果ioengine是基于文件的话，可以通过‘:’分割来设定一系列的文件。e.g. filename=/dev/sda:/dev/sdb 希望job打开/dev/sda和/dev/sdb作为两个工作文件。</p>
+<h3 id="5-opendir-str"><a href="#5-opendir-str" class="headerlink" title="5.opendir=str"></a>5.opendir=str</h3><p>让fio递归的添加目录下和子目录下的所有文件。</p>
+<h3 id="6-lockfile-str"><a href="#6-lockfile-str" class="headerlink" title="6.lockfile=str"></a>6.lockfile=str</h3><p>fio在文件上执行IO之前默认是不锁文件的，这样的话，当有多个线程在此文件上执行IO的话，会造成结果的不一致。这个选项可以用来共享文件的负载，支持的锁类型：<br>none 默认不使用锁<br>exclusive 排它锁<br>readwrite 读写锁<br>在后面可以加一个数字后缀，如果设置的话，每一个线程将会执行这个数字指定的IO后才会放弃锁，因为锁的开销是比较大的，所以这种方式可以加速IO。</p>
+<h3 id="7-kb-base-int"><a href="#7-kb-base-int" class="headerlink" title="7.kb_base=int"></a>7.kb_base=int</h3><p>size换算单位，1000/1024,默认为1024</p>
+<h3 id="8-randrepeat-bool"><a href="#8-randrepeat-bool" class="headerlink" title="8.randrepeat=bool"></a>8.randrepeat=bool</h3><p>对于随机IO负载，配置生成器的种子，使得路径是可以预估的，使得每次重复执行生成的序列是一样的。</p>
+<h3 id="9-use-os-rand-bool"><a href="#9-use-os-rand-bool" class="headerlink" title="9.use_os_rand=bool"></a>9.use_os_rand=bool</h3><p>fio可以使用操作系统的随机数产生器，也可以使用fio内部的随机数产生器（基于tausworthe），默认是采用fio内部的产生器,质量更数，速度更快。</p>
+<h3 id="7-fallocate-str"><a href="#7-fallocate-str" class="headerlink" title="7.fallocate=str"></a>7.fallocate=str</h3><p>如何准备测试文件</p>
+<ul>
+<li>none 不执行预分配空间</li>
+<li>posix 通过posix_fallocate()预分配空间</li>
+<li>keep 通过fallocate()（设置FALLOC_FL_KEEP_SIZE）预分配空间</li>
+<li>0 none的别名,出于兼容性</li>
+<li>1 posix的别名，出于兼容性</li>
+</ul>
+<p>并不是在所有的平台上都有效，<code>keep</code>在linux上有效，ZFS不支持。默认为 <code>posix</code></p>
+<h3 id="8-fadvise-hint-bool"><a href="#8-fadvise-hint-bool" class="headerlink" title="8.fadvise_hint=bool"></a>8.fadvise_hint=bool</h3><p>默认fio将使用fadvise()来告知内核fio要产生的IO类型，如果不想告诉kernel来执行一些特定的IO类型的话，可行关闭这个选项。如果设置的话，fio将使用POSIX_FADV_SEWUENTIAL来作顺序IO，使用POSIX_FADV_RANDOM来做随机IO</p>
+<h3 id="9-filesize-int"><a href="#9-filesize-int" class="headerlink" title="9.filesize=int"></a>9.filesize=int</h3><p>单个文件的大小，可以是一个范围，在这种情况下，fio将会在一个范围内选择一个大小来决定单个文件大小，如果没有设置的话，所有的文件将会是同样的大小。</p>
+<h3 id="10-fill-device-bool-fill-fs-bool"><a href="#10-fill-device-bool-fill-fs-bool" class="headerlink" title="10.fill_device=bool,fill_fs=bool"></a>10.fill_device=bool,fill_fs=bool</h3><p>填满空间直到达到终止条件ENOSPC，只对顺序写有意义。对于读负载，首行要填满挂载点，然后再启动IO，对于裸设备结点，这个设置则没有什么意义，因为，它的大小已被被文件系统知道了，此外写的超出文件将不会返回ENOSPC.</p>
+<h3 id="11-blockalign-int-ba-int"><a href="#11-blockalign-int-ba-int" class="headerlink" title="11.blockalign=int,ba=int"></a>11.blockalign=int,ba=int</h3><p>配置随机io的对齐边界。默认是与blocksize的配置一致，对于direct_io，最小为512b,因为它与依赖的硬件块大小，对于使用文件的随机map来说，这个选项不起作用。</p>
+<h3 id="14-blocksize-range-irange-bsrange-irange"><a href="#14-blocksize-range-irange-bsrange-irange" class="headerlink" title="14.blocksize_range=irange,bsrange=irange"></a>14.blocksize_range=irange,bsrange=irange</h3><p>不再采用单一的块大小，而是定义一个范围，fio将采用混合io块大小.IO单元大小一般是给定最小值的备数。同时应用于读写，当然也可以通过‘,’来隔开分别配置读写。</p>
+<h3 id="15-bssplit-str"><a href="#15-bssplit-str" class="headerlink" title="15.bssplit=str"></a>15.bssplit=str</h3><p>可以更为精确的控制产生的block size.这个选项可以用来定义各个块大小所占的权重.格式是:</p>
+<pre><code>bssplit=blocksize/percentage;blocksize/percentage
+bssplit=4k/10:64k/50;32k/40
+产生的这样的负载：50% 64k的块，10% 4k的块, 40% 32k的块
+</code></pre><p>可以分别为读和写来设置</p>
+<pre><code>e.g. bssplit=2k/50:4k/50,4k/90:8k/10
+产生这样的负载：读（50% 64k的块，50% 4k的块），写（90% 4k的块, 10% 8k的块）
+</code></pre><h3 id="16-blocksize-unaligned-bs-unaligned"><a href="#16-blocksize-unaligned-bs-unaligned" class="headerlink" title="16.blocksize_unaligned,bs_unaligned"></a>16.blocksize_unaligned,bs_unaligned</h3><p>如果这个选项被设置的，在bsrange范围内的大小都可以产生，这个选项对于direct io没有作用，因为对于direct io至少需要扇区对齐</p>
+<h3 id="17-zero-buffers"><a href="#17-zero-buffers" class="headerlink" title="17.zero_buffers"></a>17.zero_buffers</h3><p>如果这个选项设置的话，IO buffer全部位将被初始为0,如果没有置位的话，将会是随机数.</p>
+<h3 id="18-refill-buffers"><a href="#18-refill-buffers" class="headerlink" title="18.refill_buffers"></a>18.refill_buffers</h3><p>如果这个选项设置的话，fio将在每次submit之后都会将重新填满IO buffer,默认都会在初始是填满，以后重复利用。这个选项只有在zero_buffers没有设置的话，这个选项才有作用。</p>
+<h3 id="19-scramble-buffer-bool"><a href="#19-scramble-buffer-bool" class="headerlink" title="19.scramble_buffer=bool"></a>19.scramble_buffer=bool</h3><p>如果refilee_buffers成本太高的话，但是负载要求不使用重复数据块，设置这个选项的话，可以轻微的改动IO buffer内容，这种方法骗不过聪明的块压缩算法，但是可以骗过一些简单的算法。</p>
+<h3 id="20-buffer-compress-percentage-int"><a href="#20-buffer-compress-percentage-int" class="headerlink" title="20.buffer_compress_percentage=int"></a>20.buffer_compress_percentage=int</h3><p>如果这个设置的话，fio将会尝试提供可以压缩到特定级别的Buffer内容。FIO是能完提供混合的0和随机数来实现的。Note that this is per block size unit, for file/disk wide compression level that matches this setting, you’ll also want to set refill_buffers.</p>
+<h3 id="21-buffer-compress-chunk-int"><a href="#21-buffer-compress-chunk-int" class="headerlink" title="21.buffer_compress_chunk=int"></a>21.buffer_compress_chunk=int</h3><p>See buffer_compress_percentage. This setting allows fio to manage how big the ranges of random data and zeroed data is. Without this set, fio will provide buffer_compress_percentage of blocksize random data, followed by the remaining zeroed. With this set to some chunk size smaller than the block size, fio can alternate random and zeroed data throughout the IO buffer.</p>
+<h3 id="22-file-service-type-str"><a href="#22-file-service-type-str" class="headerlink" title="22.file_service_type=str"></a>22.file_service_type=str</h3><p>fio切换job时，如何选择文件，支持下面的选项:</p>
+<ul>
+<li>random 随机选择一个文件</li>
+<li>roundrobin 循环使用打开的文件，默认</li>
+<li>sequential 完成一个文件后，再移动到下一个文件</li>
+</ul>
+<p>这个选项可以加后缀数字，标明切换到下一个新的频繁程度。</p>
+<p>e.g. random:4 每4次IO后，将会切换到一下随机的文件</p>
+<h3 id="23-iodepth-batch-submit-int-iodepth-batch-int"><a href="#23-iodepth-batch-submit-int-iodepth-batch-int" class="headerlink" title="23.iodepth_batch_submit=int,iodepth_batch=int"></a>23.iodepth_batch_submit=int,iodepth_batch=int</h3><p>这个定义了一次性提交几个IO，默认是1，意味着一旦准备好就提交IO，这个选项可以用来一次性批量提交IO</p>
+<h3 id="24-iodepth-batch-complete-int"><a href="#24-iodepth-batch-complete-int" class="headerlink" title="24.iodepth_batch_complete=int"></a>24.iodepth_batch_complete=int</h3><p>这个选项定义了一次取回多少个IO，如果定义为1的话，意味着我们将向内核请求最小为1个IO.The IO retrieval will go on until we hit the limit set by iodetph_low.If this variable is set to 0, then fi will always check for completed events before quuing more IO.This helps reduce IO latency, at the cost of more retrieval sysstem calls.</p>
+<h3 id="25-iodepth-low-int"><a href="#25-iodepth-low-int" class="headerlink" title="25.iodepth_low=int"></a>25.iodepth_low=int</h3><p>这个水位标志标明什么时候开始重新填充这个队列，默认是同iodepth是一样的，意味着，每时每刻都在尝试填满这个队列。如果iodepth设置为16，而iodepth设置为4的话，那么fio将等到depth下降到4才开始重新填充</p>
+<h3 id="26-offset-int"><a href="#26-offset-int" class="headerlink" title="26.offset=int"></a>26.offset=int</h3><p>在文件特定的偏移开始读数据,在这个offset之前的数据将不会被使用，有效的文件大小=real_size-offset</p>
+<h3 id="27-offset-increment-int"><a href="#27-offset-increment-int" class="headerlink" title="27.offset_increment=int"></a>27.offset_increment=int</h3><p>如果这个选项被设置的话，实际的offset=offset+offset_increment * thread_number,线程号是从0开始的一个计数器，对于每一个job来说是递增的。这个选项对于几个job同时并行在不交界的地方操作一个文件是有用的。</p>
+<h3 id="28-fsync-int"><a href="#28-fsync-int" class="headerlink" title="28.fsync=int"></a>28.fsync=int</h3><p>如果写一个文件的话，每n次IO传输完block后，都会进行一次同步脏数据的操作。<br>e.g. fsync=int<br>fio每32次写之后，同步一次文件。如果采用non-buffered io，不需要使用sync同步文件<br>对于sg io引擎的话，可以在任何情况下同步磁盘cache.</p>
+<h3 id="29-fdatasync-int"><a href="#29-fdatasync-int" class="headerlink" title="29.fdatasync=int"></a>29.fdatasync=int</h3><p>同fsync，但是采用fdatasync()来同步数据，但不同步元数据</p>
+<h3 id="30-sync-file-range-str-val"><a href="#30-sync-file-range-str-val" class="headerlink" title="30.sync_file_range=str:val"></a>30.sync_file_range=str:val</h3><p>对于每<code>val</code>个写操作，将执行sync_file_range()。FIO将跟踪从上次sync_file_range()调用之扣的写范围，<code>str</code>可以是以下的选择:</p>
+<ul>
+<li>wait_before SYNC_FILE_RANGE_WAIT_BEFORE</li>
+<li>write SYNC_FILE_RANGE_WRITE</li>
+<li>wait_after SYNC_FILE_RANGE_WAIT_AFTER</li>
+</ul>
+<p>e.g.sync_file_range=wait_before,write:8,fio将在每8次写后使用SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE</p>
+<h3 id="31-overwrite-bool"><a href="#31-overwrite-bool" class="headerlink" title="31.overwrite=bool"></a>31.overwrite=bool</h3><p>如果是true的话，写一个文件的话，将会覆盖已经存在的数据。如果文件不存在的话，它将会在写阶段开始的时候创建这个文件。</p>
+<h3 id="32-end-fsync-bool"><a href="#32-end-fsync-bool" class="headerlink" title="32.end_fsync=bool"></a>32.end_fsync=bool</h3><p>如果是true的话，当job退出的话，fsync将会同步文件内容</p>
+<h3 id="33-fsync-on-close-bool"><a href="#33-fsync-on-close-bool" class="headerlink" title="33.fsync_on_close=bool"></a>33.fsync_on_close=bool</h3><p>如果是true的话，关闭时，fio将会同步脏文件，不同于end_fsync的时，它将会在每个文件关闭时都会发生，而不是只在job结束时。</p>
+<h3 id="34-rwmixread-int"><a href="#34-rwmixread-int" class="headerlink" title="34.rwmixread=int"></a>34.rwmixread=int</h3><p>混合读写中，读占的百分比</p>
+<h3 id="35-rwmixwrite-int"><a href="#35-rwmixwrite-int" class="headerlink" title="35.rwmixwrite=int"></a>35.rwmixwrite=int</h3><p>混合读写中，写占的百分比；如果rwmixread=int和rwmixwrite=int同时使用的话并且相加不等于100%的话，第二个值将会覆盖第一个值。这可能要干扰比例的设定,如果要求fio来限制读和写到一定的比率。在果在这种情况下，那么分布会的有点的不同。</p>
+<h3 id="36-norandommap"><a href="#36-norandommap" class="headerlink" title="36.norandommap"></a>36.norandommap</h3><p>一般情况下，fio在做随机IO时，将会覆盖文件的每一个block.如果这个选项设置的话，fio将只是获取一个新的随机offset,而不会查询过去的历史。这意味着一些块可能没有读或写，一些块可能要读/写很多次。在个选项与verify=互斥，并只有多个块大小（bsrange=）正在使用，因为fio只会记录完整的块的重写。</p>
+<h3 id="37-softrandommap-bool"><a href="#37-softrandommap-bool" class="headerlink" title="37.softrandommap=bool"></a>37.softrandommap=bool</h3><p>See norandommap. If fio runs with the random block map enabled and it fails to allocate the map, if this option is set it will continue without a random block map. As coverage will not be as complete as with random maps, this option is disabled by default.</p>
+<h3 id="38-nice-int"><a href="#38-nice-int" class="headerlink" title="38.nice=int"></a>38.nice=int</h3><p>根据给定的nice值来运行这个job</p>
+<h3 id="39-prio-int"><a href="#39-prio-int" class="headerlink" title="39.prio=int"></a>39.prio=int</h3><p>设置job的优先级，linux将这个值限制在0-7之间，0是最高的。</p>
+<h3 id="40-prioclass-int"><a href="#40-prioclass-int" class="headerlink" title="40.prioclass=int"></a>40.prioclass=int</h3><p>设置优先级等级。</p>
+<h3 id="41-thinktime-int"><a href="#41-thinktime-int" class="headerlink" title="41.thinktime=int"></a>41.thinktime=int</h3><p>上一个IO完成之后，拖延x毫秒，然后跳到下一个。可以用来访真应用进行的处理。</p>
+<h3 id="42-thinktime-spin-int"><a href="#42-thinktime-spin-int" class="headerlink" title="42.thinktime_spin=int"></a>42.thinktime_spin=int</h3><p>只有在thinktime设置时才有效，在为了sleep完thinktime规定的时间之前，假装花费CPU时间来做一些与数据接收有关的事情。</p>
+<h3 id="43-thinktime-blocks"><a href="#43-thinktime-blocks" class="headerlink" title="43.thinktime_blocks"></a>43.thinktime_blocks</h3><p>只有在thinktime设置时才有效，控制在等等‘thinktime’的时间内产生多少个block，如果没有设置的话，这个值将是1，每次block后，都会将等待‘thinktime’us。</p>
+<h3 id="44-rate-int"><a href="#44-rate-int" class="headerlink" title="44.rate=int"></a>44.rate=int</h3><p>限制job的带宽。</p>
+<pre><code>e.g.rate=500k,限制读和写到500k/s
+e.g.rate=1m,500k,限制读到1MB/s，限制写到500KB/s
+e.g.rate=,500k , 限制写到500kb/s
+e.g.rate=500k, 限制读到500KB/s
+</code></pre><h3 id="45-ratemin-int"><a href="#45-ratemin-int" class="headerlink" title="45.ratemin=int"></a>45.ratemin=int</h3><p>告诉fio尽最在能力来保证这个最小的带宽，如果不能满足这个需要，将会导致程序退出。</p>
+<h3 id="46-rate-iops-int"><a href="#46-rate-iops-int" class="headerlink" title="46.rate_iops=int"></a>46.rate_iops=int</h3><p>将带宽限制到固定数目的IOPS，基本上同rate一样，只是独立于带宽，如果job是指定了一个block size范围，而不是一个固定的值的话，最小blocksize将会作为标准。</p>
+<h3 id="47-rate-iops-min-int"><a href="#47-rate-iops-min-int" class="headerlink" title="47.rate_iops_min=int"></a>47.rate_iops_min=int</h3><p>如果fio达不到这个IOPS的话，将会导致job退出。</p>
+<h3 id="48-ratecycle-int"><a href="#48-ratecycle-int" class="headerlink" title="48.ratecycle=int"></a>48.ratecycle=int</h3><p>几个毫秒内的平均带宽。用于‘rate’和‘ratemin’</p>
+<h3 id="49-cpumask-int"><a href="#49-cpumask-int" class="headerlink" title="49.cpumask=int"></a>49.cpumask=int</h3><p>设置job使用的CPU.给出的参数是一个掩码来设置job可以运行的CPU。所以，如果要允许CPU在1和5上的话，可以通过10进制数来设置（1&lt;&lt;1 | 1&lt;&lt;5），或是34。查看sched_setaffinity的man page。它可能并不是支持所有的操作系统和kernel版本。This option doesn’t work well for a higher CPU count than what you can store in an integer mask, so it can only control cpus 1-32. For boxes with larger CPU counts, use cpus_allowed.</p>
+<h3 id="50-cpus-allowed-str"><a href="#50-cpus-allowed-str" class="headerlink" title="50.cpus_allowed=str"></a>50.cpus_allowed=str</h3><p>功能同cpumask一样，但是允许通过一段文本来设置允许的CPU。e.g.上面的例子可是这样写cpus_allowed=1,5。这个选项允许设置一个CPU范围，如cpus_allowed=1,5,8-15</p>
+<h3 id="51-startdelay-time"><a href="#51-startdelay-time" class="headerlink" title="51.startdelay=time"></a>51.startdelay=time</h3><p>fio启动几秒后再启动job。只有在job文件包含几个jobs时才有效，是为了将某个job延时几秒后执行。</p>
+<h3 id="52-runtime-time"><a href="#52-runtime-time" class="headerlink" title="52.runtime=time"></a>52.runtime=time</h3><p>控制fio在执行设定的时间后退出执行。很难来控制单个job的运行时间，所以这个参数是用来控制总的运行时间。</p>
+<h3 id="53-time-based"><a href="#53-time-based" class="headerlink" title="53.time_based"></a>53.time_based</h3><p>如果设置的话，即使file已被完全读写或写完，也要执行完runtime规定的时间。它是通过循环执行相同的负载来实现的。</p>
+<h3 id="54-ramp-tim-time"><a href="#54-ramp-tim-time" class="headerlink" title="54.ramp_tim=time"></a>54.ramp_tim=time</h3><p>设定在记录任何性能信息之前要运行特定负载的时间。这个用来等性能稳定后，再记录日志结果，因此可以减少生成稳定的结果需要的运行时间。Note that the ramp_time is considered lead in time for a job, thus it will increase the total runtime if a special timeout or runtime is specified.</p>
+<h3 id="55-invalidate-bool"><a href="#55-invalidate-bool" class="headerlink" title="55.invalidate=bool"></a>55.invalidate=bool</h3><p>Invalidate the buffer/page cache parts for this file prior to starting io. Defaults to true.</p>
+<h3 id="56-sync-bool"><a href="#56-sync-bool" class="headerlink" title="56.sync=bool"></a>56.sync=bool</h3><p>使用sync来进行buffered写。对于多数引擎，这意味着使用O_SYNC</p>
+<h3 id="57-iomem-str-mem-str"><a href="#57-iomem-str-mem-str" class="headerlink" title="57.iomem=str,mem=str"></a>57.iomem=str,mem=str</h3><p>fio可以使用各种各样的类型的内存用来io单元buffer:</p>
+<ul>
+<li>malloc 使用malloc()<br>-shm 使用共享内存.通过shmget()分配<br>-shmhuge 同shm一样，可以使用huge pages<br>-mmap 使用mmap。可以是匿名内存，或是支持的文件，如果一个文件名在选项后面设置的话，格式是mem=mmap:/path/to/file<br>-mmaphuge 使用mmapped huge file.在mmaphuge扣面添加文件名，alamem=mmaphuge:/hugetlbfs/file</li>
+</ul>
+<p>分配的区域是由job允许的最大block size * io 队列的长度。对于shmhuge和mmaphuge，系统应该有空闲的页来分配。这个可以通过检测和设置reading/writing /proc/sys/vm/nr_hugepages来实现（linux）。FIO假设一个huge page是4MB。所以要计算对于一个JOB文件需要的Huge page数量，加上所有jobs的队列长度再乘以最大块大小，然后除以每个huge page的大小。可以通过查看/proc/meminfo来看huge pages的大小。如果通过设置nr_hugepages=0来使得不允许分配huge pages，使用mmaphug或是shmhuge将会失败。</p>
+<p>mmaphuge需要挂载hugelbfs而且要指定文件的位置，所以如果要挂载在/huge下的话，可以使用mem=mmaphuge:/huge/somefile</p>
+<h3 id="58-iomem-align-int"><a href="#58-iomem-align-int" class="headerlink" title="58.iomem_align=int"></a>58.iomem_align=int</h3><p>标明IO内存缓冲的内存对齐方式。Note that the given alignment is applied to the first IO unit buffer, if using iodepth the alignment of the following buffers are given by the bs used. In other words, if using a bs that is a multiple of the page sized in the system, all buffers will be aligned to this value. If using a bs that is not page aligned, the alignment of subsequent IO memory buffers is the sum of the iomem_align and bs used.</p>
+<h3 id="59-hugepage-size-int"><a href="#59-hugepage-size-int" class="headerlink" title="59.hugepage-size=int"></a>59.hugepage-size=int</h3><p>设置huge page的大小。至少要与系统的设定相等。默认是4MB，必然是MB的倍数，所以用hugepage-size=Xm是用来避免出现不是2的整数次方的情况。</p>
+<h3 id="60-exitall"><a href="#60-exitall" class="headerlink" title="60.exitall"></a>60.exitall</h3><p>当一个job退出时，会终止运行其它的job，默认是等待所有的job都完成，FIO才退出，但有时候这并不是我们想要的。</p>
+<h3 id="61-bwavgtime-int"><a href="#61-bwavgtime-int" class="headerlink" title="61.bwavgtime=int"></a>61.bwavgtime=int</h3><p>在给定时间内的平均带宽。值是以毫秒为单位的</p>
+<h3 id="62-iopsavgtime-int"><a href="#62-iopsavgtime-int" class="headerlink" title="62.iopsavgtime=int"></a>62.iopsavgtime=int</h3><p>在给定时间内的平均IOPS，值是以毫秒为单位的</p>
+<h3 id="63-create-serialize-bool"><a href="#63-create-serialize-bool" class="headerlink" title="63.create_serialize=bool"></a>63.create_serialize=bool</h3><p>job将会串行化创建job,这将会用来避免数据文件的交叉，这依赖于文件系统和系统的CPU数</p>
+<h3 id="64-create-fsync-bool"><a href="#64-create-fsync-bool" class="headerlink" title="64.create_fsync=bool"></a>64.create_fsync=bool</h3><p>创建后同步数据文件，这是默认的值</p>
+<h3 id="65-create-on-open-bool"><a href="#65-create-on-open-bool" class="headerlink" title="65.create_on_open=bool"></a>65.create_on_open=bool</h3><p>不会为IO预先创建文件，只是在要向文件发起IO的时候，才创建open()</p>
+<h3 id="66-create-only-bool"><a href="#66-create-only-bool" class="headerlink" title="66.create_only=bool"></a>66.create_only=bool</h3><p>如果设置为true的话，fio将只运行到job的配置阶段。如果文件需要部署或是更新的磁盘的话，只有上面的事才会做，实际的文件内容并没有执行。</p>
+<h3 id="67-pre-read-bool"><a href="#67-pre-read-bool" class="headerlink" title="67.pre_read=bool"></a>67.pre_read=bool</h3><p>如果这个选项被设置的话，在执行IO操作之前，文件将会被预读到内存.这会删除‘invalidate’标志，因为预读数据，然后丢弃cache中的数据的话，是没有意义的。这只是对可以seek的IO引擎有效，因为这允许读相同的数据多次。因此对于network和splice不起作用。</p>
+<h3 id="68-unlink-bool"><a href="#68-unlink-bool" class="headerlink" title="68.unlink=bool"></a>68.unlink=bool</h3><p>完成后将删除job产生的文件。默认是not,如果设置为true的话，将会花很多时间重复创建这些文件。</p>
+<h3 id="69-loops-int"><a href="#69-loops-int" class="headerlink" title="69.loops=int"></a>69.loops=int</h3><p>重复运行某个job多次，默认是1</p>
+<h3 id="70-do-verify-bool"><a href="#70-do-verify-bool" class="headerlink" title="70.do_verify=bool"></a>70.do_verify=bool</h3><p>写完成后，执行一个校验的阶段，只有当verify设置的时候才有效。默认是true</p>
+<h3 id="80-verify-str"><a href="#80-verify-str" class="headerlink" title="80.verify=str"></a>80.verify=str</h3><p>写一个文件时，每次执行完一个job扣，fio可以检验文件内容.允许的校验算法是：<br>md5,crc64,crc32c,crc32c-intel,crc32,crc16,crc7,sha512,sha256,sha1,meta,null.<br>这个选项可以用来执行重复的burn-in测试，来保证写数据已经正确的读回。如果是read或随机读，fio将假设它将会检验先前写的文件。如果是各种格式的写，verify将会是对新写入的数据进行校验。</p>
+<h3 id="81-verifysort-bool"><a href="#81-verifysort-bool" class="headerlink" title="81.verifysort=bool"></a>81.verifysort=bool</h3><p>如果设置的话，fio will sort written verify blocks when it deems it faster to read them back in a sorted manner. This is often the case when overwriting an existing file, since the blocks are already laid out in the file system. You can ignore this option unless doing huge amounts of really fast IO where the red-black tree sorting CPU time becomes significant.</p>
+<h3 id="82-verify-offset-int"><a href="#82-verify-offset-int" class="headerlink" title="82.verify_offset=int"></a>82.verify_offset=int</h3><p>Swap the verification header with data somewhere else in the block before writing. Its swapped back before verifying.</p>
+<h3 id="83-verify-interval-int"><a href="#83-verify-interval-int" class="headerlink" title="83.verify_interval=int"></a>83.verify_interval=int</h3><p>Write the verification header at a finer granularity than the blocksize. It will be written for chunks the size of header_interval. blocksize should divide this evenly</p>
+<h3 id="84-verify-pattern-str"><a href="#84-verify-pattern-str" class="headerlink" title="84.verify_pattern=str"></a>84.verify_pattern=str</h3><h3 id="85-verify-fatal-bool"><a href="#85-verify-fatal-bool" class="headerlink" title="85.verify_fatal=bool"></a>85.verify_fatal=bool</h3><h3 id="86-verify-dump-bool"><a href="#86-verify-dump-bool" class="headerlink" title="86.verify_dump=bool"></a>86.verify_dump=bool</h3><h3 id="87-verify-async-int"><a href="#87-verify-async-int" class="headerlink" title="87.verify_async=int"></a>87.verify_async=int</h3><h3 id="88-verify-async-cpus-str"><a href="#88-verify-async-cpus-str" class="headerlink" title="88.verify_async_cpus=str"></a>88.verify_async_cpus=str</h3><h3 id="89-verify-backlog-int"><a href="#89-verify-backlog-int" class="headerlink" title="89.verify_backlog=int"></a>89.verify_backlog=int</h3><h3 id="90-verify-backlog-batch-int"><a href="#90-verify-backlog-batch-int" class="headerlink" title="90.verify_backlog_batch=int"></a>90.verify_backlog_batch=int</h3><h3 id="91-stonewall-wait-for-previous"><a href="#91-stonewall-wait-for-previous" class="headerlink" title="91.stonewall,wait_for_previous"></a>91.stonewall,wait_for_previous</h3><p>等待先前的job执行完成后，再启动一个新的job。可以用来在job文件中加入串行化的点。stone wall也用来启动一个新reporting group</p>
+<h3 id="92-new-group"><a href="#92-new-group" class="headerlink" title="92.new_group"></a>92.new_group</h3><p>启动一个新的reporting group。如果这个选项没有设置的话，在job文件中的job将属于相同的reporting group，除非通过stonewall隔开</p>
+<h3 id="93-group-reporting"><a href="#93-group-reporting" class="headerlink" title="93.group_reporting"></a>93.group_reporting</h3><p>如果‘numjobs’设置的话，我们感兴趣的可能是打印group的统计值，而不是一个单独的job。这在‘numjobs’的值很大时，一般是设置为true的，可以减少输出的信息量。如果‘group_reporting’设置的话，fio将会显示最终的per-groupreport而不是每一个job都会显示</p>
+<h3 id="94-thread"><a href="#94-thread" class="headerlink" title="94.thread"></a>94.thread</h3><p>fio默认会使用fork()创建job，如果这个选项设置的话，fio将使用pthread_create来创建线程</p>
+<h3 id="95-zonesize-int"><a href="#95-zonesize-int" class="headerlink" title="95.zonesize=int"></a>95.zonesize=int</h3><p>将一个文件分为设定的大小的zone</p>
+<h3 id="96-zoneskip-int"><a href="#96-zoneskip-int" class="headerlink" title="96.zoneskip=int"></a>96.zoneskip=int</h3><p>跳过这个zone的数据都被读完后，会跳过设定数目的zone.</p>
+<h3 id="97-write-iolog-str"><a href="#97-write-iolog-str" class="headerlink" title="97.write_iolog=str"></a>97.write_iolog=str</h3><p>将IO模式写到一个指定的文件中。为每一个job指定一个单独的文件，否则iolog将会分散的的，文件将会冲突。</p>
+<h3 id="98-read-iolog-str"><a href="#98-read-iolog-str" class="headerlink" title="98.read_iolog=str"></a>98.read_iolog=str</h3><p>将开一个指定的文件，回复里面的日志。这可以用来存储一个负载，并进行重放。给出的iolog也可以是一个二进制文件，允许fio来重放通过blktrace获取的负载。</p>
+<h3 id="99-replay-no-stall"><a href="#99-replay-no-stall" class="headerlink" title="99.replay_no_stall"></a>99.replay_no_stall</h3><p>当使用read_iolog重放I/O时，默认是尝试遵守这个时间戳，在每个IOPS之前会有适当的延迟。通过设置这个属性，将不会遵守这个时间戳，会根据期望的顺序，尝试回复，越快越好。结果就是相同类型的IO，但是不同的时间</p>
+<h3 id="101-replay-redirect"><a href="#101-replay-redirect" class="headerlink" title="101.replay_redirect"></a>101.replay_redirect</h3><p>当使用read_iolog回放IO时，默认的行为是在每一个IOP来源的major/minor设备上回放IOPS。这在有些情况是不是期望的，比如在另一台机器上回放，或是更换了硬件，使是major/minor映射关系发生了改变。Replay_redirect将会导致所有的IOPS回放到单个设备上，不管这些IO来源于哪里。e.g.replay_redirect=/dev/sdc将会使得所有的IO都会重定向到/dev/sdc.这就意味着多个设备的数据都会重放到一个设置，如果想来自己多个设备的数据重放到多个设置的话，需要处理我们的trace，生成独立的trace，再使用fio进行重放，不过这会破坏多个设备访问的严格次序。</p>
+<h3 id="102-write-bw-log-str"><a href="#102-write-bw-log-str" class="headerlink" title="102.write_bw_log=str"></a>102.write_bw_log=str</h3><p>在job file写这个job的带宽日志。可以在他们的生命周期内存储job的带宽数据。内部的fio_generate_plots脚本可以使用gnuplot将这些文本转化成图。</p>
+<h3 id="103-write-lat-log-str"><a href="#103-write-lat-log-str" class="headerlink" title="103.write_lat_log=str"></a>103.write_lat_log=str</h3><p>同write_bw_log类似，只是这个选项可以存储io提交，完成和总的响应时间。如果没有指定文件名，默认的文件名是jobname_type.log。即使给出了文件名，fio也会添加两种类型的log。<br>e.g.如果我们指定write_lat_log=foo<br>实际的log名将是foo_slat.log,foo_slat.log和foo_lat.log.这会帮助fio_generate_plot来自动处理log</p>
+<h3 id="104-write-iops-log-str"><a href="#104-write-iops-log-str" class="headerlink" title="104.write_iops_log=str"></a>104.write_iops_log=str</h3><p>类似于write_bw_log,但是写的是IOPS.如果没有给定文件名的话，默认的文件名是jobname_type.log。</p>
+<h3 id="105-log-avg-msec-int"><a href="#105-log-avg-msec-int" class="headerlink" title="105.log_avg_msec=int"></a>105.log_avg_msec=int</h3><p>默认，fio每完成一个IO将会记录一个日志（iops,latency,bw log）。当向磁盘写日志的时候，将会很快变的很大。设置这个选项的话，fio将会在一定的时期内平均这些值，指少日志的数量，默认是0</p>
+<h3 id="106-lockmem-int"><a href="#106-lockmem-int" class="headerlink" title="106.lockmem=int"></a>106.lockmem=int</h3><p>使用mlock可以指定特定的内存大小，用来访真少量内存</p>
+<h3 id="107-exec-preren-str"><a href="#107-exec-preren-str" class="headerlink" title="107.exec_preren=str"></a>107.exec_preren=str</h3><p>运行job之前，通过过system执行指定的命令</p>
+<h3 id="108-exec-postrun-str"><a href="#108-exec-postrun-str" class="headerlink" title="108.exec_postrun=str"></a>108.exec_postrun=str</h3><p>job执行完成后，通过system执行指定的命令</p>
+<h3 id="109-ioscheduler-str"><a href="#109-ioscheduler-str" class="headerlink" title="109.ioscheduler=str"></a>109.ioscheduler=str</h3><p>在运行之前，尝试将文件所在的设备切换到指定的调度器。</p>
+<h3 id="110-cpuload-int"><a href="#110-cpuload-int" class="headerlink" title="110.cpuload=int"></a>110.cpuload=int</h3><p>如果job是非常占用CPU周期的，可以指定战胜CPU周期的百分比。</p>
+<h3 id="120-cpuchunks-int"><a href="#120-cpuchunks-int" class="headerlink" title="120.cpuchunks=int"></a>120.cpuchunks=int</h3><p>如果job是非常战胜CPU周期的，将load分拆为时间的cycles，以毫秒为单位</p>
+<h3 id="121-disk-util-bool"><a href="#121-disk-util-bool" class="headerlink" title="121.disk_util=bool"></a>121.disk_util=bool</h3><p>产生磁盘利用率统计信息。默认是打开的</p>
+<h3 id="122-disable-lat-bool"><a href="#122-disable-lat-bool" class="headerlink" title="122.disable_lat=bool"></a>122.disable_lat=bool</h3><p>延迟的有效数字。Disable measurements of total latency numbers. Useful only for cutting back the number of calls to gettimeofday,as that does impact performance at really high IOPS rates.Note that to really get rid of a large amount of these calls, this option must be used with disable_slat and disable_bw as well.</p>
+<h3 id="123-disable-clat-bool"><a href="#123-disable-clat-bool" class="headerlink" title="123.disable_clat=bool"></a>123.disable_clat=bool</h3><h3 id="124-disable-slat-bool"><a href="#124-disable-slat-bool" class="headerlink" title="124.disable_slat_bool"></a>124.disable_slat_bool</h3><h3 id="125-disable-bw-bool"><a href="#125-disable-bw-bool" class="headerlink" title="125.disable_bw=bool"></a>125.disable_bw=bool</h3><h3 id="126-clat-percentiles-bool"><a href="#126-clat-percentiles-bool" class="headerlink" title="126.clat_percentiles=bool"></a>126.clat_percentiles=bool</h3><p>允许报告完成完成响应时间的百分比</p>
+<h3 id="127-percentile-list-float-list"><a href="#127-percentile-list-float-list" class="headerlink" title="127.percentile_list=float_list"></a>127.percentile_list=float_list</h3><h3 id="128-gtod-reduce-bool"><a href="#128-gtod-reduce-bool" class="headerlink" title="128.gtod_reduce=bool"></a>128.gtod_reduce=bool</h3><h3 id="129-gtod-cpu-int"><a href="#129-gtod-cpu-int" class="headerlink" title="129.gtod_cpu=int"></a>129.gtod_cpu=int</h3><h3 id="130-continue-on-error-str"><a href="#130-continue-on-error-str" class="headerlink" title="130.continue_on_error=str"></a>130.continue_on_error=str</h3><p>一般情况下，一旦检测到错误，fio将会退出这个job.如果这个选项设置的话，fio将会一直执行到有‘non-fatal错误‘（EIO或EILSEQ）或是执行时间耗完，或是指定的I/Osize完成。如果这个选项设置的话，将会添加两个状态，总的错误计数和第一个error。允许的值是:</p>
+<ul>
+<li>none 全部IO或检验错误后，都会退出</li>
+<li>read 读错误时会继续执行，其它的错误会退出</li>
+<li>write 写错误时会继续执行，其它的错误会退出</li>
+<li>io 任何IO error时会继续执行，其它的错误会退出</li>
+<li>verify 校验错误时会继续执行，其它的错误会退出</li>
+<li>all 遇到所有的错误都会继续执行</li>
+</ul>
+<h3 id="131-cgroup-str"><a href="#131-cgroup-str" class="headerlink" title="131.cgroup=str"></a>131.cgroup=str</h3><h3 id="132-cgroup-weitht-int"><a href="#132-cgroup-weitht-int" class="headerlink" title="132.cgroup_weitht=int"></a>132.cgroup_weitht=int</h3><h3 id="133-cgroup-weight-int"><a href="#133-cgroup-weight-int" class="headerlink" title="133.cgroup_weight=int"></a>133.cgroup_weight=int</h3><h3 id="134-cgroup-nodelete-bool"><a href="#134-cgroup-nodelete-bool" class="headerlink" title="134.cgroup_nodelete=bool"></a>134.cgroup_nodelete=bool</h3><h3 id="135-uid-int"><a href="#135-uid-int" class="headerlink" title="135.uid=int"></a>135.uid=int</h3><p>不是使用调用者的用户来执行，而是指定用户ID</p>
+<h3 id="136-gid-int"><a href="#136-gid-int" class="headerlink" title="136.gid=int"></a>136.gid=int</h3><p>设置group id</p>
+<h3 id="137-flow-id-int"><a href="#137-flow-id-int" class="headerlink" title="137.flow_id=int"></a>137.flow_id=int</h3><h3 id="138-flow-int"><a href="#138-flow-int" class="headerlink" title="138.flow=int"></a>138.flow=int</h3><h3 id="139-flow-watermark-int"><a href="#139-flow-watermark-int" class="headerlink" title="139.flow_watermark=int"></a>139.flow_watermark=int</h3><h3 id="140-flow-sleep-int"><a href="#140-flow-sleep-int" class="headerlink" title="140.flow_sleep=int"></a>140.flow_sleep=int</h3><h2 id="下面的参数只对指定的IO引擎有效："><a href="#下面的参数只对指定的IO引擎有效：" class="headerlink" title="下面的参数只对指定的IO引擎有效："></a>下面的参数只对指定的IO引擎有效：</h2><pre><code>[libaio] userspace_reap
+[netsplice]hostname=str
+[net]hostname=str
+[netsplice]port=int
+[netsplice]proto=str
+[net]protocol=str
+[net]proto=str
+[net]listen
+</code></pre><h2 id="输出"><a href="#输出" class="headerlink" title="输出"></a>输出</h2><p>在运行时，fio将打印当前job创建的状态:</p>
+<pre><code>Threads: 1: [_r] [24.8% done] [ 13509/ 8334 kb/s] [eta 00h:01m:31s]
+</code></pre><ul>
+<li>生命周期</li>
+<li>P 线程已经启动，还没有启动</li>
+<li>C 线程启动</li>
+<li>I 纯种已经初始化，等待中</li>
+<li>p 线程运行中，预读文件</li>
+<li>R 顺序读</li>
+<li>r 随机读</li>
+<li>W 顺序写</li>
+<li>w 随机写</li>
+<li>M 混合顺序读写</li>
+<li>m 混合随机读写</li>
+<li>F 等待执行fsync()</li>
+<li>V 运行，检验写的数据</li>
+<li>E 线程退出,还没有被主线程获取状态</li>
+<li>_ Thread reaped, or</li>
+<li>X Thread reaped, exited with an error.</li>
+<li>K Thread reaped, exited due to signal.</li>
+<li>其它的值都是可以自解释的：</li>
+<li>当前正在运行的IO线程数。</li>
+<li>从上次检查之后的IO速度（读速度/写速度）</li>
+<li>估计的完成百分比</li>
+<li>整个group的估计完成时间</li>
+<li>当fio完成的时候（或是通过ctrl-c终止的时候），将会打印每一个线程的数据，每个group的数据，和磁盘数据。</li>
+<li>io= 执行了多少M的IO</li>
+<li>bw= 平均IO带宽</li>
+<li>iops= IOPS</li>
+<li>runt= 线程运行时间</li>
+<li>slat 提交延迟</li>
+<li>clat 完成延迟</li>
+<li>lat响应时间</li>
+<li>bw 带宽</li>
+<li>cpu利用率</li>
+<li>IO depths=io队列</li>
+<li>IO submit=单个IO提交要提交的IO数</li>
+<li>IO complete= Like the above submit number, but for completions instead.</li>
+<li>IO issued= The number of read/write requests issued, and how many of them were short.</li>
+<li>IO latencies=IO完延迟的分布</li>
+<li>io= 总共执行了多少size的IO</li>
+<li>aggrb= group总带宽</li>
+<li>minb= 最小平均带宽.</li>
+<li>maxb= 最大平均带宽.</li>
+<li>mint= group中线程的最短运行时间.</li>
+<li>maxt= group中线程的最长运行时间.</li>
+<li>ios= 所有group总共执行的IO数.</li>
+<li>merge= 总共发生的IO合并数.</li>
+<li>ticks= Number of ticks we kept the disk busy.</li>
+<li>io_queue= 花费在队列上的总共时间.</li>
+<li>util= 磁盘利用率</li>
+<li>为了便于脚本分析，可能需要将结果生成表或图，fio可以生成以分号分割的结果。</li>
+<li>trace文件格式</li>
+</ul>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>Title:</span><a href="/2015/12/24/fio-man-guide/">fio使用指南</a></p>
+        <p><span>Author:</span><a href="/" title="Back to Homepage">半天河(hnuzhoulin)</a></p>
+        <p><span>Created:</span>2015-12-24, 15:52:48</p>
+        <p><span>Updated:</span>2015-12-24, 15:59:05</p>
+        <p>
+            <span>Full URL:</span><a class="post-url" href="/2015/12/24/fio-man-guide/" title="fio使用指南">http://blog.itzhoulin.com/2015/12/24/fio-man-guide/</a>
+            <span class="copy-path" data-clipboard-text="From http://blog.itzhoulin.com/2015/12/24/fio-man-guide/　　By 半天河(hnuzhoulin)" title="Copy Article&#39;s Link &amp; Author"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>License:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"CC BY-NC-SA 4.0"</a> Keep Link &amp; Author if Distribute.
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2015/12/28/ceph-IO-pattern/">
+                    Ceph的IO模式分析
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2015/12/23/using-python-or-shell-create-file-tree/">
+                    文件目录树的python和shell生成方法
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">Contents</strong>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#简介"><span class="toc-number">1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#运行fio"><span class="toc-number">2.</span> <span class="toc-text">运行fio</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#运行方式："><span class="toc-number">2.1.</span> <span class="toc-text">运行方式：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#job文件格式"><span class="toc-number">2.2.</span> <span class="toc-text">job文件格式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#环境变量"><span class="toc-number">2.3.</span> <span class="toc-text">环境变量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#保留keywords"><span class="toc-number">2.4.</span> <span class="toc-text">保留keywords</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#一个job包含的基本的参数"><span class="toc-number">2.5.</span> <span class="toc-text">一个job包含的基本的参数</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#IO类型"><span class="toc-number">2.5.1.</span> <span class="toc-text">IO类型</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#readwrite-str-rw-str"><span class="toc-number">2.5.1.1.</span> <span class="toc-text">readwrite=str,rw=str</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#rw-sequencer-str"><span class="toc-number">2.5.1.2.</span> <span class="toc-text">rw_sequencer=str</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#block-size"><span class="toc-number">2.5.2.</span> <span class="toc-text">block size</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#blocksize-int-bs-int"><span class="toc-number">2.5.2.1.</span> <span class="toc-text">blocksize=int,bs=int</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#IO-size"><span class="toc-number">2.5.3.</span> <span class="toc-text">IO size</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#size-int"><span class="toc-number">2.5.3.1.</span> <span class="toc-text">size=int</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#IO引擎"><span class="toc-number">2.5.4.</span> <span class="toc-text">IO引擎</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#ioengine-str"><span class="toc-number">2.5.4.1.</span> <span class="toc-text">ioengine=str</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#IO-depth"><span class="toc-number">2.5.5.</span> <span class="toc-text">IO depth</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#iodepth-int"><span class="toc-number">2.5.5.1.</span> <span class="toc-text">iodepth=int</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#IO-type"><span class="toc-number">2.5.6.</span> <span class="toc-text">IO type</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#direct-bool"><span class="toc-number">2.5.6.1.</span> <span class="toc-text">direct=bool</span></a><ol class="toc-child"><li class="toc-item toc-level-6"><a class="toc-link" href="#buffered-bool"><span class="toc-number">2.5.6.1.1.</span> <span class="toc-text">buffered=bool</span></a></li></ol></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Num-files"><span class="toc-number">2.5.7.</span> <span class="toc-text">Num files</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#nrfiles-int"><span class="toc-number">2.5.7.1.</span> <span class="toc-text">nrfiles=int</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#openfiles-int"><span class="toc-number">2.5.7.2.</span> <span class="toc-text">openfiles=int</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Num-threads"><span class="toc-number">2.5.8.</span> <span class="toc-text">Num threads</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#详细参数："><span class="toc-number">3.</span> <span class="toc-text">详细参数：</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-name-str"><span class="toc-number">3.1.</span> <span class="toc-text">1.name=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-description-str"><span class="toc-number">3.2.</span> <span class="toc-text">2.description=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-directory-str"><span class="toc-number">3.3.</span> <span class="toc-text">3.directory=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-filename-str"><span class="toc-number">3.4.</span> <span class="toc-text">4.filename=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-opendir-str"><span class="toc-number">3.5.</span> <span class="toc-text">5.opendir=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-lockfile-str"><span class="toc-number">3.6.</span> <span class="toc-text">6.lockfile=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-kb-base-int"><span class="toc-number">3.7.</span> <span class="toc-text">7.kb_base=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-randrepeat-bool"><span class="toc-number">3.8.</span> <span class="toc-text">8.randrepeat=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-use-os-rand-bool"><span class="toc-number">3.9.</span> <span class="toc-text">9.use_os_rand=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-fallocate-str"><span class="toc-number">3.10.</span> <span class="toc-text">7.fallocate=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-fadvise-hint-bool"><span class="toc-number">3.11.</span> <span class="toc-text">8.fadvise_hint=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-filesize-int"><span class="toc-number">3.12.</span> <span class="toc-text">9.filesize=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10-fill-device-bool-fill-fs-bool"><span class="toc-number">3.13.</span> <span class="toc-text">10.fill_device=bool,fill_fs=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11-blockalign-int-ba-int"><span class="toc-number">3.14.</span> <span class="toc-text">11.blockalign=int,ba=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#14-blocksize-range-irange-bsrange-irange"><span class="toc-number">3.15.</span> <span class="toc-text">14.blocksize_range=irange,bsrange=irange</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#15-bssplit-str"><span class="toc-number">3.16.</span> <span class="toc-text">15.bssplit=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#16-blocksize-unaligned-bs-unaligned"><span class="toc-number">3.17.</span> <span class="toc-text">16.blocksize_unaligned,bs_unaligned</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#17-zero-buffers"><span class="toc-number">3.18.</span> <span class="toc-text">17.zero_buffers</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#18-refill-buffers"><span class="toc-number">3.19.</span> <span class="toc-text">18.refill_buffers</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#19-scramble-buffer-bool"><span class="toc-number">3.20.</span> <span class="toc-text">19.scramble_buffer=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#20-buffer-compress-percentage-int"><span class="toc-number">3.21.</span> <span class="toc-text">20.buffer_compress_percentage=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#21-buffer-compress-chunk-int"><span class="toc-number">3.22.</span> <span class="toc-text">21.buffer_compress_chunk=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#22-file-service-type-str"><span class="toc-number">3.23.</span> <span class="toc-text">22.file_service_type=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#23-iodepth-batch-submit-int-iodepth-batch-int"><span class="toc-number">3.24.</span> <span class="toc-text">23.iodepth_batch_submit=int,iodepth_batch=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#24-iodepth-batch-complete-int"><span class="toc-number">3.25.</span> <span class="toc-text">24.iodepth_batch_complete=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#25-iodepth-low-int"><span class="toc-number">3.26.</span> <span class="toc-text">25.iodepth_low=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#26-offset-int"><span class="toc-number">3.27.</span> <span class="toc-text">26.offset=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#27-offset-increment-int"><span class="toc-number">3.28.</span> <span class="toc-text">27.offset_increment=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#28-fsync-int"><span class="toc-number">3.29.</span> <span class="toc-text">28.fsync=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#29-fdatasync-int"><span class="toc-number">3.30.</span> <span class="toc-text">29.fdatasync=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#30-sync-file-range-str-val"><span class="toc-number">3.31.</span> <span class="toc-text">30.sync_file_range=str:val</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#31-overwrite-bool"><span class="toc-number">3.32.</span> <span class="toc-text">31.overwrite=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#32-end-fsync-bool"><span class="toc-number">3.33.</span> <span class="toc-text">32.end_fsync=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#33-fsync-on-close-bool"><span class="toc-number">3.34.</span> <span class="toc-text">33.fsync_on_close=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#34-rwmixread-int"><span class="toc-number">3.35.</span> <span class="toc-text">34.rwmixread=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#35-rwmixwrite-int"><span class="toc-number">3.36.</span> <span class="toc-text">35.rwmixwrite=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#36-norandommap"><span class="toc-number">3.37.</span> <span class="toc-text">36.norandommap</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#37-softrandommap-bool"><span class="toc-number">3.38.</span> <span class="toc-text">37.softrandommap=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#38-nice-int"><span class="toc-number">3.39.</span> <span class="toc-text">38.nice=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#39-prio-int"><span class="toc-number">3.40.</span> <span class="toc-text">39.prio=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#40-prioclass-int"><span class="toc-number">3.41.</span> <span class="toc-text">40.prioclass=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#41-thinktime-int"><span class="toc-number">3.42.</span> <span class="toc-text">41.thinktime=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#42-thinktime-spin-int"><span class="toc-number">3.43.</span> <span class="toc-text">42.thinktime_spin=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#43-thinktime-blocks"><span class="toc-number">3.44.</span> <span class="toc-text">43.thinktime_blocks</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#44-rate-int"><span class="toc-number">3.45.</span> <span class="toc-text">44.rate=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#45-ratemin-int"><span class="toc-number">3.46.</span> <span class="toc-text">45.ratemin=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#46-rate-iops-int"><span class="toc-number">3.47.</span> <span class="toc-text">46.rate_iops=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#47-rate-iops-min-int"><span class="toc-number">3.48.</span> <span class="toc-text">47.rate_iops_min=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#48-ratecycle-int"><span class="toc-number">3.49.</span> <span class="toc-text">48.ratecycle=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#49-cpumask-int"><span class="toc-number">3.50.</span> <span class="toc-text">49.cpumask=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#50-cpus-allowed-str"><span class="toc-number">3.51.</span> <span class="toc-text">50.cpus_allowed=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#51-startdelay-time"><span class="toc-number">3.52.</span> <span class="toc-text">51.startdelay=time</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#52-runtime-time"><span class="toc-number">3.53.</span> <span class="toc-text">52.runtime=time</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#53-time-based"><span class="toc-number">3.54.</span> <span class="toc-text">53.time_based</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#54-ramp-tim-time"><span class="toc-number">3.55.</span> <span class="toc-text">54.ramp_tim=time</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#55-invalidate-bool"><span class="toc-number">3.56.</span> <span class="toc-text">55.invalidate=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#56-sync-bool"><span class="toc-number">3.57.</span> <span class="toc-text">56.sync=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#57-iomem-str-mem-str"><span class="toc-number">3.58.</span> <span class="toc-text">57.iomem=str,mem=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#58-iomem-align-int"><span class="toc-number">3.59.</span> <span class="toc-text">58.iomem_align=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#59-hugepage-size-int"><span class="toc-number">3.60.</span> <span class="toc-text">59.hugepage-size=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#60-exitall"><span class="toc-number">3.61.</span> <span class="toc-text">60.exitall</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#61-bwavgtime-int"><span class="toc-number">3.62.</span> <span class="toc-text">61.bwavgtime=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#62-iopsavgtime-int"><span class="toc-number">3.63.</span> <span class="toc-text">62.iopsavgtime=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#63-create-serialize-bool"><span class="toc-number">3.64.</span> <span class="toc-text">63.create_serialize=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#64-create-fsync-bool"><span class="toc-number">3.65.</span> <span class="toc-text">64.create_fsync=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#65-create-on-open-bool"><span class="toc-number">3.66.</span> <span class="toc-text">65.create_on_open=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#66-create-only-bool"><span class="toc-number">3.67.</span> <span class="toc-text">66.create_only=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#67-pre-read-bool"><span class="toc-number">3.68.</span> <span class="toc-text">67.pre_read=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#68-unlink-bool"><span class="toc-number">3.69.</span> <span class="toc-text">68.unlink=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#69-loops-int"><span class="toc-number">3.70.</span> <span class="toc-text">69.loops=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#70-do-verify-bool"><span class="toc-number">3.71.</span> <span class="toc-text">70.do_verify=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#80-verify-str"><span class="toc-number">3.72.</span> <span class="toc-text">80.verify=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#81-verifysort-bool"><span class="toc-number">3.73.</span> <span class="toc-text">81.verifysort=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#82-verify-offset-int"><span class="toc-number">3.74.</span> <span class="toc-text">82.verify_offset=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#83-verify-interval-int"><span class="toc-number">3.75.</span> <span class="toc-text">83.verify_interval=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#84-verify-pattern-str"><span class="toc-number">3.76.</span> <span class="toc-text">84.verify_pattern=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#85-verify-fatal-bool"><span class="toc-number">3.77.</span> <span class="toc-text">85.verify_fatal=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#86-verify-dump-bool"><span class="toc-number">3.78.</span> <span class="toc-text">86.verify_dump=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#87-verify-async-int"><span class="toc-number">3.79.</span> <span class="toc-text">87.verify_async=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#88-verify-async-cpus-str"><span class="toc-number">3.80.</span> <span class="toc-text">88.verify_async_cpus=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#89-verify-backlog-int"><span class="toc-number">3.81.</span> <span class="toc-text">89.verify_backlog=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#90-verify-backlog-batch-int"><span class="toc-number">3.82.</span> <span class="toc-text">90.verify_backlog_batch=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#91-stonewall-wait-for-previous"><span class="toc-number">3.83.</span> <span class="toc-text">91.stonewall,wait_for_previous</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#92-new-group"><span class="toc-number">3.84.</span> <span class="toc-text">92.new_group</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#93-group-reporting"><span class="toc-number">3.85.</span> <span class="toc-text">93.group_reporting</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#94-thread"><span class="toc-number">3.86.</span> <span class="toc-text">94.thread</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#95-zonesize-int"><span class="toc-number">3.87.</span> <span class="toc-text">95.zonesize=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#96-zoneskip-int"><span class="toc-number">3.88.</span> <span class="toc-text">96.zoneskip=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#97-write-iolog-str"><span class="toc-number">3.89.</span> <span class="toc-text">97.write_iolog=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#98-read-iolog-str"><span class="toc-number">3.90.</span> <span class="toc-text">98.read_iolog=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#99-replay-no-stall"><span class="toc-number">3.91.</span> <span class="toc-text">99.replay_no_stall</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#101-replay-redirect"><span class="toc-number">3.92.</span> <span class="toc-text">101.replay_redirect</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#102-write-bw-log-str"><span class="toc-number">3.93.</span> <span class="toc-text">102.write_bw_log=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#103-write-lat-log-str"><span class="toc-number">3.94.</span> <span class="toc-text">103.write_lat_log=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#104-write-iops-log-str"><span class="toc-number">3.95.</span> <span class="toc-text">104.write_iops_log=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#105-log-avg-msec-int"><span class="toc-number">3.96.</span> <span class="toc-text">105.log_avg_msec=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#106-lockmem-int"><span class="toc-number">3.97.</span> <span class="toc-text">106.lockmem=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#107-exec-preren-str"><span class="toc-number">3.98.</span> <span class="toc-text">107.exec_preren=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#108-exec-postrun-str"><span class="toc-number">3.99.</span> <span class="toc-text">108.exec_postrun=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#109-ioscheduler-str"><span class="toc-number">3.100.</span> <span class="toc-text">109.ioscheduler=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#110-cpuload-int"><span class="toc-number">3.101.</span> <span class="toc-text">110.cpuload=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#120-cpuchunks-int"><span class="toc-number">3.102.</span> <span class="toc-text">120.cpuchunks=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#121-disk-util-bool"><span class="toc-number">3.103.</span> <span class="toc-text">121.disk_util=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#122-disable-lat-bool"><span class="toc-number">3.104.</span> <span class="toc-text">122.disable_lat=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#123-disable-clat-bool"><span class="toc-number">3.105.</span> <span class="toc-text">123.disable_clat=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#124-disable-slat-bool"><span class="toc-number">3.106.</span> <span class="toc-text">124.disable_slat_bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#125-disable-bw-bool"><span class="toc-number">3.107.</span> <span class="toc-text">125.disable_bw=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#126-clat-percentiles-bool"><span class="toc-number">3.108.</span> <span class="toc-text">126.clat_percentiles=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#127-percentile-list-float-list"><span class="toc-number">3.109.</span> <span class="toc-text">127.percentile_list=float_list</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#128-gtod-reduce-bool"><span class="toc-number">3.110.</span> <span class="toc-text">128.gtod_reduce=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#129-gtod-cpu-int"><span class="toc-number">3.111.</span> <span class="toc-text">129.gtod_cpu=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#130-continue-on-error-str"><span class="toc-number">3.112.</span> <span class="toc-text">130.continue_on_error=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#131-cgroup-str"><span class="toc-number">3.113.</span> <span class="toc-text">131.cgroup=str</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#132-cgroup-weitht-int"><span class="toc-number">3.114.</span> <span class="toc-text">132.cgroup_weitht=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#133-cgroup-weight-int"><span class="toc-number">3.115.</span> <span class="toc-text">133.cgroup_weight=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#134-cgroup-nodelete-bool"><span class="toc-number">3.116.</span> <span class="toc-text">134.cgroup_nodelete=bool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#135-uid-int"><span class="toc-number">3.117.</span> <span class="toc-text">135.uid=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#136-gid-int"><span class="toc-number">3.118.</span> <span class="toc-text">136.gid=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#137-flow-id-int"><span class="toc-number">3.119.</span> <span class="toc-text">137.flow_id=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#138-flow-int"><span class="toc-number">3.120.</span> <span class="toc-text">138.flow=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#139-flow-watermark-int"><span class="toc-number">3.121.</span> <span class="toc-text">139.flow_watermark=int</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#140-flow-sleep-int"><span class="toc-number">3.122.</span> <span class="toc-text">140.flow_sleep=int</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#下面的参数只对指定的IO引擎有效："><span class="toc-number">4.</span> <span class="toc-text">下面的参数只对指定的IO引擎有效：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#输出"><span class="toc-number">5.</span> <span class="toc-text">输出</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn {
+        display: none;
+    }
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="Hide"  title="Show or Hide Table of Contents">
+<script>
+    var valueHide = "Hide";
+    var valueShow = "Show";
+
+    if ($(".left-col").is(":hidden")) {
+        $("#tocButton").attr("value", valueShow);
+    }
+
+    $("#tocButton").click(function() {
+        if ($("#toc").is(":hidden")) {
+            $("#tocButton").attr("value", valueHide);
+            $("#toc").slideDown(320);
+            $(".switch-btn, .switch-area").fadeOut(300);
+        }
+        else {
+            $("#tocButton").attr("value", valueShow);
+            $("#toc").slideUp(350);
+            $(".switch-btn, .switch-area").fadeIn(500);
+        }
+    })
+
+    if ($(".toc").length < 1) {
+        $("#toc, #tocButton").hide();
+        $(".switch-btn, .switch-area").show();
+    }
+</script>
+
+
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"fio使用指南　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <!-- 多说评论框 start -->
+    <div class="ds-thread" data-thread-key="2015/12/24/fio-man-guide/" data-title="fio使用指南" data-url="http://blog.itzhoulin.com/2015/12/24/fio-man-guide/"></div>
+    <!-- 多说评论框 end -->
+    <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+    <script type="text/javascript">
+    var duoshuoQuery = {short_name:"itzhoulin"};
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0] 
+         || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+    </script>
+    <!-- 多说公共JS代码 end -->
+</div>
+
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2015/12/28/ceph-IO-pattern/" title="Pre: Ceph的IO模式分析">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="Mini Archives"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2015/12/23/using-python-or-shell-create-file-tree/" title="Next: 文件目录树的python和shell生成方法">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/ceph-journal-ssd-lifetime-expire/">记一次因为ceph日志分区所在SSD寿命到期导致的故障</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/">记一次日志所在SSD故障导致的object unfound</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">因为ceph波动导致kernel rbd挂起</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">Ceph Jewel版功能预览---RBD mirroring</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/01/fio-usage-example/">fio应用</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/04/cetune-performance-metric/">CeTune抓取性能数据的代码段分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/02/using-apache2-and-wsgi-to-run-django/">django项目利用apache2+mod_wsgi运行</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/03/get-ceph-rbd-watches/">ceph下查看使用rbd的客户端</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/01/mac-text-edit-shortcuts/">MAC文本编辑时跳转快捷键</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/">calamari的监控页面没有集群和Pool信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/12/right-steps-delete-ceph-osd/">删除osd的正确姿势</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/06/right-steps-adjusting-ceph-pg-num/">调整pg数量的步骤</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/28/ceph-IO-pattern/">Ceph的IO模式分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/24/fio-man-guide/">fio使用指南</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/23/using-python-or-shell-create-file-tree/">文件目录树的python和shell生成方法</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/07/sqlalchemy-orm/">SQLAlchemy的ORM模型操作数据库</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-release-infernalis/">Ceph V9.2.0版本(代号INFERNALIS)已发布</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-infernalis-five-useful-new-features/">ceph的infernalis版本的五个很实用的新功能</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-manual-repair-object/">Ceph里手动修复Object</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">php-sdk访问ceph对象存储时405错误</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/">一次硬盘被重新分区并写入数据后的整体恢复</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016 半天河(hnuzhoulin)
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="A fast, simple &amp; powerful blog framework">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="Another simple and elegant theme for Hexo">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" >Site Visitors: 
+                            <span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>, </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit">Page Hits: 
+                            <span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.1.22/require.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            var iPad = window.navigator.userAgent.indexOf('iPad');
+            if (iPad > -1 || $(".left-col").css("display") === "none") {
+                var bgColorList = ["#9db3f4", "#414141", "#e5a859", "#f5dfc6", "#c084a0", "#847e72", "#cd8390", "#996731"];
+                var bgColor = Math.ceil(Math.random() * (bgColorList.length - 1));
+                $("body").css({"background-color": bgColorList[bgColor], "background-size": "cover"});
+            }
+            else {
+                var backgroundnum = 5;
+                var backgroundimg = "url(/background/bg-x.jpg)".replace(/x/gi, Math.ceil(Math.random() * backgroundnum));
+                $("body").css({"background": backgroundimg, "background-attachment": "fixed", "background-size": "cover"});
+            }
+        })
+    </script>
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="Back to Top"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" title="Comments"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="Go to Bottom"><i class="fa fa-arrow-down"></i></a>
+</div>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

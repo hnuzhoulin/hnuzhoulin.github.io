@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  
+  <title>Ceph的IO模式分析 | 我的IT江湖之旅</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="ceph的IO模式分析，翻译自sebastien-han的三篇博客，分别从good，badly和ugly三个方面分析">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ceph的IO模式分析">
+<meta property="og:url" content="http://blog.itzhoulin.com/2015/12/28/ceph-IO-pattern/index.html">
+<meta property="og:site_name" content="我的IT江湖之旅">
+<meta property="og:description" content="ceph的IO模式分析，翻译自sebastien-han的三篇博客，分别从good，badly和ugly三个方面分析">
+<meta property="og:image" content="http://sebastien-han.fr/images/ceph-pgs.png">
+<meta property="og:image" content="http://sebastien-han.fr/images/random-io-one-client.png">
+<meta property="og:image" content="http://sebastien-han.fr/images/ceph-io-into-journal.png">
+<meta property="og:image" content="http://sebastien-han.fr/images/ceph-a-single-io.png">
+<meta property="og:image" content="http://sebastien-han.fr/images/ceph-io-random-osd.png">
+<meta property="og:image" content="http://sebastien-han.fr/images/erasure-vs-replication.png">
+<meta property="og:updated_time" content="2016-01-31T16:05:54.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Ceph的IO模式分析">
+<meta name="twitter:description" content="ceph的IO模式分析，翻译自sebastien-han的三篇博客，分别从good，badly和ugly三个方面分析">
+<meta name="twitter:image" content="http://sebastien-han.fr/images/ceph-pgs.png">
+  
+    <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+      <link href="//cdn.bootcss.com/animate.css/3.5.0/animate.min.css" rel="stylesheet">
+  
+  
+  
+      <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+      <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <link href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  
+  
+      <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+  
+  <script src="//cdn.bootcss.com/jquery/1.9.1/jquery.min.js"></script>
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.9/clipboard.min.js"></script>
+  <script>
+      var yiliaConfig = {
+          fancybox: true,
+          animate: true,
+          isHome: false,
+          isPost: true,
+          isArchive: false,
+          isTag: false,
+          isCategory: false,
+          open_in_new: false,
+          fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+          scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.0.9/scrollreveal.min.js"
+      }
+  </script>
+
+  
+      <script>
+          yiliaConfig.rootUrl = "/";
+      </script>
+  
+
+  
+  
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">半天河(hnuzhoulin)</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">python ceph openstack 运维</p>
+        
+                
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>Menu</li>
+                        <li>Tags</li>
+                        
+                        <li>Friends</li>
+                        
+                        
+                        <li>About Me</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/blog-updates/">博客更新</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/calamari/">calamari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cetune/">cetune</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/dns/">dns</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/fio/">fio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/full/">full</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infenalis/">infenalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infernalis/">infernalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jewel/">jewel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/journal/">journal</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kernel/">kernel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/osd/">osd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/pg/">pg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rbd/">rbd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/release/">release</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rgw/">rgw</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shell/">shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shortcut/">shortcut</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sqlalchemy/">sqlalchemy</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ssd/">ssd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tool/">tool</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wsgi/">wsgi</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/排错/">排错</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/翻译/">翻译</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">IT爱好者，慢慢学习</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">python ceph openstack 运维</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/blog-updates/">博客更新</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+</nav>
+      <div class="body-wrap"><article id="post-ceph-IO-pattern" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2015/12/28/ceph-IO-pattern/" class="article-date">
+      <time datetime="2015-12-28T07:37:40.000Z" itemprop="datePublished">2015-12-28</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Ceph的IO模式分析
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/ceph/">ceph</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/翻译/">翻译</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>本文主要是翻译sebastien-han的三篇博客：<a href="http://www.sebastien-han.fr/blog/2014/02/10/ceph-io-patterns-the-good/" target="_blank" rel="external">ceph-io-patterns-the-good</a> 、<a href="http://www.sebastien-han.fr/blog/2014/02/17/ceph-io-patterns-the-bad/" target="_blank" rel="external">ceph-io-patterns-the-bad</a>、<a href="http://www.sebastien-han.fr/blog/2014/02/24/ceph-io-patterns-the-ugly/" target="_blank" rel="external">ceph-io-patterns-the-ugly</a>  欢迎加入 <a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">翻译组</a></p>
+<blockquote>
+<p>一切都是为了性能。基准测试是非常复杂的，得到的测试结果总是难以预测、分析和解释。有时你得到了测试数据，但你不知道它们的意思，也不知道这个结果到底是好呢还是坏呢？好又好在哪里，不好又哪里是瓶颈。在这篇文章中，我将尽力详细的讲解以帮助你理解内部Ceph是如何工作的。</p>
+</blockquote>
+<h2 id="1-The-good"><a href="#1-The-good" class="headerlink" title="1. The good"></a>1. The good</h2><h3 id="1-1-确定的对象位置"><a href="#1-1-确定的对象位置" class="headerlink" title="1.1 确定的对象位置"></a>1.1 确定的对象位置</h3><p><img src="http://sebastien-han.fr/images/ceph-pgs.png" alt="ceph-pgs"></p>
+<p>关于这一点我相信大家已经熟知了，但是在这里我还是要再次解释一下。Ceph用以确定对象位置的方法是独一无二的：</p>
+<p>客户端写入顺序(位置和从属关系见上图):</p>
+<ul>
+<li>=&gt; 一个确定的资源池(包含对象的逻辑概念)</li>
+<li>=&gt; 这个资源池包含有placement groups (可以看做是资源池的分片)</li>
+<li>=&gt; 这个PG 包含对象</li>
+<li>=&gt; 这些对象只属于一个placement group</li>
+</ul>
+<p>上面几个过程都是通过计算实现的， 这使得整个过程具备可重复性和确定性。所以没有哈希表查找，只有公式和计算。这个公式就是我们通常所说的RADOS算法，它决定了对象在集群内的具体位置。</p>
+<h3 id="1-2-整合-集群层面"><a href="#1-2-整合-集群层面" class="headerlink" title="1.2 整合: 集群层面"></a>1.2 整合: 集群层面</h3><blockquote>
+<p>一旦有数据写入Ceph，所有对象在整个集群的节点和磁盘内均匀分布。</p>
+</blockquote>
+<p><img src="http://sebastien-han.fr/images/random-io-one-client.png" alt="random-io-one-client"></p>
+<p>上图阐述了RBD块设备的一个常用使用场景：映射到一个物理机或者一个虚拟机。这两种情况对于存储集群而言是相同的行为，因而无需单独讨论。在这种场景下，客户端产生大量的4K随机操作。显然，在此图中OSD代表一个磁盘。</p>
+<p>正如在前一节中阐述的那样，客户端每次执行一个IO操作都需要计算位置。也多亏了RADOS算法，所有的4K IOs能够充分利用整个集群的网络、磁盘和带宽来将其均匀分布到整个集群。</p>
+<p>注意: 这里的瓶颈可能是交换机的背板带宽，因此需要确保它能够很好的支撑每一个链路的最高速度。</p>
+<h3 id="1-3-整合-OSD层面"><a href="#1-3-整合-OSD层面" class="headerlink" title="1.3 整合: OSD层面"></a>1.3 整合: OSD层面</h3><blockquote>
+<p>一旦有IO到达OSD，不管原来的模式是什么，此时都是连续的。</p>
+</blockquote>
+<p><img src="http://sebastien-han.fr/images/ceph-io-into-journal.png" alt="ceph-io-into-journal"></p>
+<p>上图描述了这样一种场景：不同客户端计算对象位置的时候最终落到了同一个OSD上面。这是相当普遍的一种场景，而且这是一直在发生的事。不同客户端计算它们的对象的位置，最终会落到一个特定的OSD上面。</p>
+<p>这样做的好处是进入到日志的写请求都被序列化了。基本上，客户端的写都是排队进入日志，再等待被flush到后端存储，就像进入到FIFO。</p>
+<p>注意: 这样做的真正好处是能够使用专门的磁盘来存储日志，一般是指SSD。</p>
+<p>确认有效: 主副本OSD在将数据写入日志的同时也将它们发送给其他副本。</p>
+<h2 id="2-The-bad"><a href="#2-The-bad" class="headerlink" title="2. The bad"></a>2. The bad</h2><h3 id="2-1-日志化"><a href="#2-1-日志化" class="headerlink" title="2.1  日志化"></a>2.1  日志化</h3><blockquote>
+<p>每当有IO请求到达OSD的时候，它都会需要两次写操作。</p>
+</blockquote>
+<p>这个表述只关注了日志层面，详情见下图：</p>
+<p><img src="http://sebastien-han.fr/images/ceph-a-single-io.png" alt="Ceph single IO"></p>
+<h4 id="2-1-1-单次写"><a href="#2-1-1-单次写" class="headerlink" title="2.1.1 单次写"></a>2.1.1 单次写</h4><p>Ceph是软件定义存储，这意味着数据的副本和可用性都是由软件智能实现。我认为理解Ceph内部是如何工作的相当重要(默认的逻辑架构)。本文的重点是向你们展示当执行一个写操作的时候底层究竟发生了什么。那么，我们举一个副本数是2的单个对象写的实例来详细阐述。这个写会导致4个IO:</p>
+<ul>
+<li>客户端发送请求到主副本OSD</li>
+<li>第一个IO写入该OSD的日志中</li>
+<li>日志使用libaio，使用 <code>O_DIRECT</code> 和 <code>O_DSYNC</code> 来进行写操作。使用<code>writev()</code>来处理这个写操作</li>
+<li>第二个IO是使用 <code>buffered_io</code> 将数据写入到后端文件系统中，使用 <code>writev()</code>处理写操作</li>
+<li>filestore在达到 <code>filestore_max_sync_interval</code> 设定的时间间隔后，调用 <code>syncfs</code> 并删除日志中对应的条目，并等待 <code>syncfs</code> 结束再释放锁。</li>
+</ul>
+<p>采用同样的操作将数据复制到第二副本OSD。</p>
+<h4 id="2-1-2-关于日志"><a href="#2-1-2-关于日志" class="headerlink" title="2.1.2. 关于日志"></a>2.1.2. 关于日志</h4><p>在前面一幅图中，我提到了日志，但是它到底是干什么的呢？其中几个主要的操作如下：</p>
+<ul>
+<li>保证数据和操作的一致性。正如传统的文件系统日志一样，因此它可以在发生错误的时候进行回滚</li>
+<li>提供原子操作。它保持对已经提交和即将提交的操作的跟踪。</li>
+<li>在日志中的写是连续的</li>
+<li>工作模式是FIFO</li>
+</ul>
+<p>Ceph OSD守护进程在合适的时候停止写操作，然后同步日志到文件系统，同时允许Ceph OSD守护进程从日志中删除已经写入后端存储的数据以便实现空间重复利用。</p>
+<p>上面的表述对于OSD的文件系统是Btrfs或ZFS的情况是不适用的。一般而言，我们建议OSD使用XFS或ext4做文件系统，它们的日志模式是writeahead：先写日志再写到后端文件系统。这跟COW(Copy On Write)文件系统是一个不同的方法，因为它使用的是writeparallel模式即同时写日志和后端文件系统。</p>
+<h4 id="2-1-3-设计的副作用-Design-penalty"><a href="#2-1-3-设计的副作用-Design-penalty" class="headerlink" title="2.1.3. 设计的副作用(Design penalty)"></a>2.1.3. 设计的副作用(Design penalty)</h4><p>显然，你已经注意到了，在writeahead模式下使用日志在写对象的时候会有比较大的性能损耗这一副作用。因为我们写了两次，对于日志跟后端文件系统在同一个磁盘的情况，会导致如下结果：</p>
+<pre><code>Device:             wMB/s
+sdb1 - journal      50.11
+sdb2 - osd_data     40.25
+</code></pre><p>传统的企业级SATA盘在顺序写IO模式下可以提供大约110MB/S的速度。是的，基本上说我们将其分成两个IOs。</p>
+<p>为了避免(或隐藏)这种影响，实现日志有以下几种方法。</p>
+<p>通常，Ceph日志是文件系统上的一个文件(位置在 <code>/var/lib/ceph/osd/&lt;osd-id&gt;/journal</code> )。首先因为文件系统的开销因而这种方式这是非常低效的，其次我们无法确定的知道日志在物理磁盘上的确切位置。(文件和块之间的相关性)。</p>
+<p>实现它的另一种方法是使用OSD数据磁盘的起始裸分区。基本上，你只需要使用最开始的一部分扇区新建一个小的分区来存储日志。由于我们使用的是磁盘的最开始的部分，我们确信这是磁盘上最快的部分。磁盘的外部总是更快的，当磁头越接近中心，性能开始下降(这是一个众所周知的问题)。如果你不想为了日志单独使用一个磁盘的话，这是最好的方法。</p>
+<p>如果你需要更高的性能，可以使用一个独立的磁盘。不幸的是，因为有大量并发日志写而导致磁盘需要花费大量时间进行寻道。</p>
+<p>最后，实现日志的最好方法是使用一个单独的SSD盘。多亏了它，你能够使用SSD的诸多有点：无需寻道，快速顺序写和快速访问时间。</p>
+<h3 id="2-2-文件系统碎片"><a href="#2-2-文件系统碎片" class="headerlink" title="2.2. 文件系统碎片"></a>2.2. 文件系统碎片</h3><p>存储在Ceph中的每个对象在后端文件系统上实际是以文件的形式存在。默认情况下，这些对象存放在 <code>/var/lib/ceph/osd/&lt;osd.id&gt;/current/&lt;pg.id&gt;/</code> 下。由于Ceph作为动态集群而天生具备的分布式特性，Ceph总是针对对象（此处理解为文件）在执行写和更新操作。这样的负载对于传统文件系统而言是很重的，同时如此密集的操作可能导致大量的碎片。很明显，这会导致时延加剧，现而今，文件系统已经具备了诸如精简制备等机制能够有效地控制文件系统碎片。如果你使用RBD，它能够很好的作为虚拟机的块设备和机器的裸设备工作，对象块大小是4MB(默认开启条带)。然而，Ceph集群中的每一个镜像都可以有自己的条带和方法。</p>
+<p>注意：文件系统碎片很少会被考虑，因为文件系统老化很难模拟。</p>
+<p>在Ceph环境中，我们都公开承认：随着时间的推移性能会慢慢下降。对于使用一年的老集群系统而言，可以使用下面的方法应对：</p>
+<pre><code>$ sudo xfs_db -c frag -r /dev/sdd
+actual 196334, ideal 122582, fragmentation factor 37.56%
+</code></pre><p>幸运的是，Ceph核心开发人员最近发起了一个针对这个问题的项目。这个新功能叫做RADOS IO hints。它将执行类似 <code>fadvise(2)</code> 的操作。 <code>fadvise(2)</code> 是一个系统调用，可以用来提示Linux如何缓存文件。这样，内核就可以选择合适的read-ahead和缓存技术来访问到相应的文件。对于更详细的实现方式，请看邮件列表讨论。</p>
+<h3 id="2-3-没有并行读"><a href="#2-3-没有并行读" class="headerlink" title="2.3. 没有并行读"></a>2.3. 没有并行读</h3><p>目前，Ceph不提供任何并行读功能，这意味着Ceph总是从主副本OSD提供读服务。因为我们通常有2个或更多的副本，因此读性能应该可以大大改善。我记得在Ceph邮件列表中有过讨论，但是现在找不到任何资料了。但是我相信它已经是Ceph的一部分开发人员的待办事项。</p>
+<h3 id="2-4-深度清洗消耗IOs"><a href="#2-4-深度清洗消耗IOs" class="headerlink" title="2.4. 深度清洗消耗IOs"></a>2.4. 深度清洗消耗IOs</h3><p>清洗是对对象的一种fsck。它在PG层级检查对象一致性，并且比较对象的主副本和其他副本的版本。</p>
+<p>目前有两种清洗类型：</p>
+<ul>
+<li>轻度清洗（每天）检查对象大小和属性</li>
+<li>深度清洗（每周）读取数据并使用校验值来确保数据一致性</li>
+</ul>
+<p>目前很多用户反馈，深度清洗会对集群产生重大影响。应对这个IO开销的方法很有限，你也可以禁用它，但是你需要使用你自己的方式来实现清洗并使用合适的参数控制它的行为。</p>
+<blockquote>
+<p>Ceph希望尽可能的保证事务和数据的安全。显然，这是要付出代价的，这就是性能。然而，我们看到已经有一些技术来解决Ceph这种设计带来的副作用。</p>
+</blockquote>
+<h2 id="3-The-ugly"><a href="#3-The-ugly" class="headerlink" title="3. The ugly"></a>3. The ugly</h2><blockquote>
+<p>在此之前，我想稍微扯点别的。这里我想公开阐述的问题不仅仅是Ceph存在，其他的分布式存储系统也存在。所以，请牢记一点，下面要讲述的问题不仅仅是Ceph才有。</p>
+</blockquote>
+<h3 id="3-1-RBD的IO模式"><a href="#3-1-RBD的IO模式" class="headerlink" title="3.1. RBD的IO模式"></a>3.1. RBD的IO模式</h3><blockquote>
+<p>一个IO进入到Ceph后会有两次写，第二次写性能更糟：</p>
+</blockquote>
+<p>原理:</p>
+<p><img src="http://sebastien-han.fr/images/ceph-io-random-osd.png" alt="IO patterns on RBD"></p>
+<p>在我最后一次基准测试期间，我们有一个类似的假设，然而我们没有得到机会来证实这个事实。幸运的是英特尔的研究人员将这种假设证实为现实。这种现象很容易理解。基本上，由于其分布式特性以及Ceph的确定性存储对象。因此,对象(来自不同客户端)映射到相同的OSD磁盘。最终顺序流混合在一起。下面是Ceph的IO操作队列的一个实例：</p>
+<ul>
+<li>object1 points to pg1.1</li>
+<li>object2 points to pg1.2</li>
+<li>object3 points to pg1.3</li>
+<li>object4 points to pg1.4</li>
+<li>object5 points to pg1.5</li>
+</ul>
+<p>OSD 1负责这5个PG。然而没人知道这5个目录在文件系统的哪里(<code>/var/lib/ceph/osd/osd.1/current/pg1.{1,2,3,4,5}</code>)。如图所示，PG在块设备上有一个确定的位置（文件系统）。最后，磁盘消耗大部分的时间从一个轨道跳到另一个，因此整体性能下降了。</p>
+<p>由于我讨厌复述，我将引导你们找到来自Intel的那篇详细解释这种现象的杰出博客。<a href="http://software.intel.com/en-us/blogs/2013/11/20/measure-ceph-rbd-performance-in-a-quantitative-way-part-ii" target="_blank" rel="external">点击这里</a></p>
+<h3 id="3-2-如果使用erasure-coding情况会更糟"><a href="#3-2-如果使用erasure-coding情况会更糟" class="headerlink" title="3.2. 如果使用erasure coding情况会更糟"></a>3.2. 如果使用erasure coding情况会更糟</h3><p>借用一下 <a href="http://dachary.org/?p=2171" target="_blank" rel="external">Loic Dachary’s</a> 的图片：</p>
+<p><img src="http://sebastien-han.fr/images/erasure-vs-replication.png" alt="Erasure VS replication"></p>
+<p>这只是一个假设。由于erasure code会给块再分块，因此前面的现象可能会被放大。如图所示，这里不是写3份对象，这里写13份对象：10 x 1M(分块)+ 3(奇偶校验)。我相信erasure code能够为你节省空间，但同时也会降低性能。</p>
+<p>你必须亲自验证。</p>
+<p>最后两个小节有一点偏离IO模式的主题，但是我相信它们很重要，值得认真考虑。</p>
+<h2 id="4-内存位损坏-Memory-bit-corruption"><a href="#4-内存位损坏-Memory-bit-corruption" class="headerlink" title="4. 内存位损坏(Memory bit corruption)"></a>4. 内存位损坏(Memory bit corruption)</h2><p>内存位损坏大多是因为从某一个位置上发生了移位。在分布式副本环境中比如Ceph，这可能导致大规模的数据损坏，因为损坏会在整个集群中扩散。如果发生了移位，一般是很难检测到的，因为客户端文件写入一个文件，而就在其进入Ceph集群的时候就直接损坏了。使用ECC内存针对这种问题的是一个通用的实践方案。</p>
+<p>了解详情见 <a href="http://en.wikipedia.org/wiki/ECC_memory#Problem_background" target="_blank" rel="external">Wikipedia</a></p>
+<h2 id="5-软件定义存储"><a href="#5-软件定义存储" class="headerlink" title="5. 软件定义存储"></a>5. 软件定义存储</h2><p>Ceph是一种软件定义存储，这意味着你所有的IO的计算、存储和平衡都是在程序员写的软件程序的帮助下实现的。因此由于某种原因导致的软件故障可能摧毁你的所有数据。我们已经看到在Ceph中过去的一些特性或标志可能导致数据损坏，不幸的是，一旦你发现它已经太迟了。据我所知，这是有史以来最糟糕的场景但这里的概率是比较低的。</p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>Title:</span><a href="/2015/12/28/ceph-IO-pattern/">Ceph的IO模式分析</a></p>
+        <p><span>Author:</span><a href="/" title="Back to Homepage">半天河(hnuzhoulin)</a></p>
+        <p><span>Created:</span>2015-12-28, 15:37:40</p>
+        <p><span>Updated:</span>2016-02-01, 00:05:54</p>
+        <p>
+            <span>Full URL:</span><a class="post-url" href="/2015/12/28/ceph-IO-pattern/" title="Ceph的IO模式分析">http://blog.itzhoulin.com/2015/12/28/ceph-IO-pattern/</a>
+            <span class="copy-path" data-clipboard-text="From http://blog.itzhoulin.com/2015/12/28/ceph-IO-pattern/　　By 半天河(hnuzhoulin)" title="Copy Article&#39;s Link &amp; Author"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>License:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"CC BY-NC-SA 4.0"</a> Keep Link &amp; Author if Distribute.
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2016/01/06/right-steps-adjusting-ceph-pg-num/">
+                    调整pg数量的步骤
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2015/12/24/fio-man-guide/">
+                    fio使用指南
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">Contents</strong>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-The-good"><span class="toc-number">1.</span> <span class="toc-text">1. The good</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-确定的对象位置"><span class="toc-number">1.1.</span> <span class="toc-text">1.1 确定的对象位置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-整合-集群层面"><span class="toc-number">1.2.</span> <span class="toc-text">1.2 整合: 集群层面</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-整合-OSD层面"><span class="toc-number">1.3.</span> <span class="toc-text">1.3 整合: OSD层面</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-The-bad"><span class="toc-number">2.</span> <span class="toc-text">2. The bad</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-日志化"><span class="toc-number">2.1.</span> <span class="toc-text">2.1  日志化</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#2-1-1-单次写"><span class="toc-number">2.1.1.</span> <span class="toc-text">2.1.1 单次写</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-1-2-关于日志"><span class="toc-number">2.1.2.</span> <span class="toc-text">2.1.2. 关于日志</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-1-3-设计的副作用-Design-penalty"><span class="toc-number">2.1.3.</span> <span class="toc-text">2.1.3. 设计的副作用(Design penalty)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-文件系统碎片"><span class="toc-number">2.2.</span> <span class="toc-text">2.2. 文件系统碎片</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-没有并行读"><span class="toc-number">2.3.</span> <span class="toc-text">2.3. 没有并行读</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-4-深度清洗消耗IOs"><span class="toc-number">2.4.</span> <span class="toc-text">2.4. 深度清洗消耗IOs</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-The-ugly"><span class="toc-number">3.</span> <span class="toc-text">3. The ugly</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-RBD的IO模式"><span class="toc-number">3.1.</span> <span class="toc-text">3.1. RBD的IO模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-如果使用erasure-coding情况会更糟"><span class="toc-number">3.2.</span> <span class="toc-text">3.2. 如果使用erasure coding情况会更糟</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-内存位损坏-Memory-bit-corruption"><span class="toc-number">4.</span> <span class="toc-text">4. 内存位损坏(Memory bit corruption)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-软件定义存储"><span class="toc-number">5.</span> <span class="toc-text">5. 软件定义存储</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn {
+        display: none;
+    }
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="Hide"  title="Show or Hide Table of Contents">
+<script>
+    var valueHide = "Hide";
+    var valueShow = "Show";
+
+    if ($(".left-col").is(":hidden")) {
+        $("#tocButton").attr("value", valueShow);
+    }
+
+    $("#tocButton").click(function() {
+        if ($("#toc").is(":hidden")) {
+            $("#tocButton").attr("value", valueHide);
+            $("#toc").slideDown(320);
+            $(".switch-btn, .switch-area").fadeOut(300);
+        }
+        else {
+            $("#tocButton").attr("value", valueShow);
+            $("#toc").slideUp(350);
+            $(".switch-btn, .switch-area").fadeIn(500);
+        }
+    })
+
+    if ($(".toc").length < 1) {
+        $("#toc, #tocButton").hide();
+        $(".switch-btn, .switch-area").show();
+    }
+</script>
+
+
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Ceph的IO模式分析　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <!-- 多说评论框 start -->
+    <div class="ds-thread" data-thread-key="2015/12/28/ceph-IO-pattern/" data-title="Ceph的IO模式分析" data-url="http://blog.itzhoulin.com/2015/12/28/ceph-IO-pattern/"></div>
+    <!-- 多说评论框 end -->
+    <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+    <script type="text/javascript">
+    var duoshuoQuery = {short_name:"itzhoulin"};
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0] 
+         || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+    </script>
+    <!-- 多说公共JS代码 end -->
+</div>
+
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2016/01/06/right-steps-adjusting-ceph-pg-num/" title="Pre: 调整pg数量的步骤">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="Mini Archives"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2015/12/24/fio-man-guide/" title="Next: fio使用指南">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/ceph-journal-ssd-lifetime-expire/">记一次因为ceph日志分区所在SSD寿命到期导致的故障</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/">记一次日志所在SSD故障导致的object unfound</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">因为ceph波动导致kernel rbd挂起</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">Ceph Jewel版功能预览---RBD mirroring</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/01/fio-usage-example/">fio应用</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/04/cetune-performance-metric/">CeTune抓取性能数据的代码段分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/02/using-apache2-and-wsgi-to-run-django/">django项目利用apache2+mod_wsgi运行</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/03/get-ceph-rbd-watches/">ceph下查看使用rbd的客户端</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/01/mac-text-edit-shortcuts/">MAC文本编辑时跳转快捷键</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/">calamari的监控页面没有集群和Pool信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/12/right-steps-delete-ceph-osd/">删除osd的正确姿势</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/06/right-steps-adjusting-ceph-pg-num/">调整pg数量的步骤</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/28/ceph-IO-pattern/">Ceph的IO模式分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/24/fio-man-guide/">fio使用指南</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/23/using-python-or-shell-create-file-tree/">文件目录树的python和shell生成方法</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/07/sqlalchemy-orm/">SQLAlchemy的ORM模型操作数据库</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-release-infernalis/">Ceph V9.2.0版本(代号INFERNALIS)已发布</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-infernalis-five-useful-new-features/">ceph的infernalis版本的五个很实用的新功能</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-manual-repair-object/">Ceph里手动修复Object</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">php-sdk访问ceph对象存储时405错误</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/">一次硬盘被重新分区并写入数据后的整体恢复</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016 半天河(hnuzhoulin)
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="A fast, simple &amp; powerful blog framework">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="Another simple and elegant theme for Hexo">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" >Site Visitors: 
+                            <span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>, </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit">Page Hits: 
+                            <span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.1.22/require.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            var iPad = window.navigator.userAgent.indexOf('iPad');
+            if (iPad > -1 || $(".left-col").css("display") === "none") {
+                var bgColorList = ["#9db3f4", "#414141", "#e5a859", "#f5dfc6", "#c084a0", "#847e72", "#cd8390", "#996731"];
+                var bgColor = Math.ceil(Math.random() * (bgColorList.length - 1));
+                $("body").css({"background-color": bgColorList[bgColor], "background-size": "cover"});
+            }
+            else {
+                var backgroundnum = 5;
+                var backgroundimg = "url(/background/bg-x.jpg)".replace(/x/gi, Math.ceil(Math.random() * backgroundnum));
+                $("body").css({"background": backgroundimg, "background-attachment": "fixed", "background-size": "cover"});
+            }
+        })
+    </script>
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="Back to Top"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" title="Comments"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="Go to Bottom"><i class="fa fa-arrow-down"></i></a>
+</div>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

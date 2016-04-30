@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  
+  <title>记一次日志所在SSD故障导致的object unfound | 我的IT江湖之旅</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="记一次日志所在SSD故障，继而导致导致ceph故障，同时不正确的处理流程导致的object unfound">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记一次日志所在SSD故障导致的object unfound">
+<meta property="og:url" content="http://blog.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/index.html">
+<meta property="og:site_name" content="我的IT江湖之旅">
+<meta property="og:description" content="记一次日志所在SSD故障，继而导致导致ceph故障，同时不正确的处理流程导致的object unfound">
+<meta property="og:updated_time" content="2016-04-23T09:18:35.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="记一次日志所在SSD故障导致的object unfound">
+<meta name="twitter:description" content="记一次日志所在SSD故障，继而导致导致ceph故障，同时不正确的处理流程导致的object unfound">
+  
+    <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+      <link href="//cdn.bootcss.com/animate.css/3.5.0/animate.min.css" rel="stylesheet">
+  
+  
+  
+      <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+      <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <link href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  
+  
+      <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+  
+  <script src="//cdn.bootcss.com/jquery/1.9.1/jquery.min.js"></script>
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.9/clipboard.min.js"></script>
+  <script>
+      var yiliaConfig = {
+          fancybox: true,
+          animate: true,
+          isHome: false,
+          isPost: true,
+          isArchive: false,
+          isTag: false,
+          isCategory: false,
+          open_in_new: false,
+          fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+          scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.0.9/scrollreveal.min.js"
+      }
+  </script>
+
+  
+      <script>
+          yiliaConfig.rootUrl = "/";
+      </script>
+  
+
+  
+  
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">半天河(hnuzhoulin)</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">python ceph openstack 运维</p>
+        
+                
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>Menu</li>
+                        <li>Tags</li>
+                        
+                        <li>Friends</li>
+                        
+                        
+                        <li>About Me</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/blog-updates/">博客更新</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/calamari/">calamari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cetune/">cetune</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/dns/">dns</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/fio/">fio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/full/">full</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infenalis/">infenalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infernalis/">infernalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jewel/">jewel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/journal/">journal</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kernel/">kernel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/osd/">osd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/pg/">pg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rbd/">rbd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/release/">release</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rgw/">rgw</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shell/">shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shortcut/">shortcut</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sqlalchemy/">sqlalchemy</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ssd/">ssd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tool/">tool</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wsgi/">wsgi</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/排错/">排错</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/翻译/">翻译</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">IT爱好者，慢慢学习</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">python ceph openstack 运维</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/blog-updates/">博客更新</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+</nav>
+      <div class="body-wrap"><article id="post-object-unfound-when-wrong-steps-in-ceph-full" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/" class="article-date">
+      <time datetime="2016-04-20T06:43:57.000Z" itemprop="datePublished">2016-04-20</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      记一次日志所在SSD故障导致的object unfound
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/ceph/">ceph</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ssd/">ssd</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/排错/">排错</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <h2 id="1-问题"><a href="#1-问题" class="headerlink" title="1.问题"></a>1.问题</h2><p>节点node-65因为其中一个既做系统又做日志分区的SSD寿命到期性能急剧下降导致对应OSD延时超级大，且有OSD无法启动，同时，整个过程依然有虚拟机在对集群进行读写。</p>
+<p>在成功通过先调整reweight为0给SSD减压最后替换这个SSD再恢复reweight之后，有一个object 处于unfound状态，同时导致其所在的pg整个处于backfilling状态</p>
+<h2 id="2-处理流程及总结"><a href="#2-处理流程及总结" class="headerlink" title="2.处理流程及总结"></a>2.处理流程及总结</h2><h3 id="2-1-pg以及object相关信息"><a href="#2-1-pg以及object相关信息" class="headerlink" title="2.1.pg以及object相关信息"></a>2.1.pg以及object相关信息</h3><p>该pg的信息如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line">ceph pg map 4.438</span><br><span class="line">osdmap e42522 pg 4.438 (4.438) -&gt; up [34,20,30] acting [7,11]</span><br><span class="line"></span><br><span class="line">ceph pg 4.438 query</span><br><span class="line">&#123; <span class="string">"state"</span>: <span class="string">"active+recovering+degraded+remapped"</span>,</span><br><span class="line">  <span class="string">"epoch"</span>: 42479,</span><br><span class="line">  <span class="string">"up"</span>: [</span><br><span class="line">        34,</span><br><span class="line">        20,</span><br><span class="line">        30],</span><br><span class="line">  <span class="string">"acting"</span>: [</span><br><span class="line">        7,</span><br><span class="line">        11],</span><br><span class="line">  <span class="string">"backfill_targets"</span>: [</span><br><span class="line">        <span class="string">"20"</span>,</span><br><span class="line">        <span class="string">"30"</span>,</span><br><span class="line">        <span class="string">"34"</span>],</span><br><span class="line">  <span class="string">"actingbackfill"</span>: [</span><br><span class="line">        <span class="string">"7"</span>,</span><br><span class="line">        <span class="string">"11"</span>,</span><br><span class="line">        <span class="string">"20"</span>,</span><br><span class="line">        <span class="string">"30"</span>,</span><br><span class="line">        <span class="string">"34"</span>],</span><br><span class="line">---</span><br><span class="line"><span class="string">"recovery_state"</span>: [</span><br><span class="line">        &#123; <span class="string">"name"</span>: <span class="string">"Started\/Primary\/Active"</span>,</span><br><span class="line">          <span class="string">"enter_time"</span>: <span class="string">"2016-03-19 10:24:50.186833"</span>,</span><br><span class="line">          <span class="string">"might_have_unfound"</span>: [</span><br><span class="line">                &#123; <span class="string">"osd"</span>: <span class="string">"6"</span>,</span><br><span class="line">                  <span class="string">"status"</span>: <span class="string">"osd is down"</span>&#125;,</span><br><span class="line">                &#123; <span class="string">"osd"</span>: <span class="string">"11"</span>,</span><br><span class="line">                  <span class="string">"status"</span>: <span class="string">"already probed"</span>&#125;,</span><br><span class="line">                &#123; <span class="string">"osd"</span>: <span class="string">"20"</span>,</span><br><span class="line">                  <span class="string">"status"</span>: <span class="string">"already probed"</span>&#125;,</span><br><span class="line">                &#123; <span class="string">"osd"</span>: <span class="string">"30"</span>,</span><br><span class="line">                  <span class="string">"status"</span>: <span class="string">"already probed"</span>&#125;,</span><br><span class="line">                &#123; <span class="string">"osd"</span>: <span class="string">"31"</span>,</span><br><span class="line">                  <span class="string">"status"</span>: <span class="string">"already probed"</span>&#125;,</span><br><span class="line">                &#123; <span class="string">"osd"</span>: <span class="string">"34"</span>,</span><br><span class="line">                  <span class="string">"status"</span>: <span class="string">"already probed"</span>&#125;],</span><br><span class="line">          <span class="string">"recovery_progress"</span>: &#123; <span class="string">"backfill_targets"</span>: [</span><br><span class="line">                    <span class="string">"20"</span>,</span><br><span class="line">                    <span class="string">"30"</span>,</span><br><span class="line">                    <span class="string">"34"</span>],</span><br><span class="line">              <span class="string">"waiting_on_backfill"</span>: [],</span><br><span class="line">              <span class="string">"last_backfill_started"</span>: <span class="string">"0\/\/0\/\/-1"</span>,</span><br><span class="line">              <span class="string">"backfill_info"</span>: &#123; <span class="string">"begin"</span>: <span class="string">"0\/\/0\/\/-1"</span>,</span><br><span class="line">                  <span class="string">"end"</span>: <span class="string">"0\/\/0\/\/-1"</span>,</span><br><span class="line">                  <span class="string">"objects"</span>: []&#125;,</span><br><span class="line">              <span class="string">"peer_backfill_info"</span>: [],</span><br><span class="line">              <span class="string">"backfills_in_flight"</span>: [],</span><br><span class="line">              <span class="string">"recovering"</span>: [],</span><br><span class="line">              <span class="string">"pg_backend"</span>: &#123; <span class="string">"pull_from_peer"</span>: [],</span><br><span class="line">                  <span class="string">"pushing"</span>: []&#125;&#125;,</span><br><span class="line">          <span class="string">"scrub"</span>: &#123; <span class="string">"scrubber.epoch_start"</span>: <span class="string">"0"</span>,</span><br><span class="line">              <span class="string">"scrubber.active"</span>: 0,</span><br><span class="line">              <span class="string">"scrubber.block_writes"</span>: 0,</span><br><span class="line">              <span class="string">"scrubber.finalizing"</span>: 0,</span><br><span class="line">              <span class="string">"scrubber.waiting_on"</span>: 0,</span><br><span class="line">              <span class="string">"scrubber.waiting_on_whom"</span>: []&#125;&#125;,</span><br><span class="line">        &#123; <span class="string">"name"</span>: <span class="string">"Started"</span>,</span><br><span class="line">          <span class="string">"enter_time"</span>: <span class="string">"2016-03-19 10:24:49.182580"</span>&#125;],</span><br><span class="line">  <span class="string">"agent_state"</span>: &#123;&#125;&#125;</span><br></pre></td></tr></table></figure>
+<p>居然up和scting 不一致，应该是调整了osd 的crush reweight导致的。</p>
+<p>ubfound object的信息如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">ceph pg 4.438 list_missing</span><br><span class="line">&#123; <span class="string">"offset"</span>: &#123; <span class="string">"oid"</span>: <span class="string">""</span>,</span><br><span class="line">      <span class="string">"key"</span>: <span class="string">""</span>,</span><br><span class="line">      <span class="string">"snapid"</span>: 0,</span><br><span class="line">      <span class="string">"hash"</span>: 0,</span><br><span class="line">      <span class="string">"max"</span>: 0,</span><br><span class="line">      <span class="string">"pool"</span>: -1,</span><br><span class="line">      <span class="string">"namespace"</span>: <span class="string">""</span>&#125;,</span><br><span class="line">  <span class="string">"num_missing"</span>: 1,</span><br><span class="line">  <span class="string">"num_unfound"</span>: 1,</span><br><span class="line">  <span class="string">"objects"</span>: [</span><br><span class="line">        &#123; <span class="string">"oid"</span>: &#123; <span class="string">"oid"</span>: <span class="string">"rbd_data.188b9163c78e9.00000000000015f2"</span>,</span><br><span class="line">              <span class="string">"key"</span>: <span class="string">""</span>,</span><br><span class="line">              <span class="string">"snapid"</span>: -2,</span><br><span class="line">              <span class="string">"hash"</span>: 2427198520,</span><br><span class="line">              <span class="string">"max"</span>: 0,</span><br><span class="line">              <span class="string">"pool"</span>: 4,</span><br><span class="line">              <span class="string">"namespace"</span>: <span class="string">""</span>&#125;,</span><br><span class="line">          <span class="string">"need"</span>: <span class="string">"39188'2314230"</span>,</span><br><span class="line">          <span class="string">"have"</span>: <span class="string">"39174'2314229"</span>,</span><br><span class="line">          <span class="string">"locations"</span>: []&#125;],</span><br></pre></td></tr></table></figure>
+<h3 id="2-2-使用旧版或者直接删除该object"><a href="#2-2-使用旧版或者直接删除该object" class="headerlink" title="2.2.使用旧版或者直接删除该object"></a>2.2.使用旧版或者直接删除该object</h3><p>按照ceph官网的troubleshoot手册，对于这种问题，可以直接告诉ceph使用已有的旧版本或者直接删除：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root at node-67:~<span class="comment"># ceph pg 4.438 mark_unfound_lost revert</span></span><br><span class="line">Error EINVAL: pg has 1 unfound objects but we haven<span class="string">'t probed all sources,not marking lost</span><br><span class="line"></span><br><span class="line">root at node-67:~# ceph pg 4.438 mark_unfound_lost delete</span><br><span class="line">Error EINVAL: pg has 1 unfound objects but we haven'</span>t probed all sources,not marking lost</span><br></pre></td></tr></table></figure>
+<p>看信息貌似是该object的一个副本没有准备好且不处于lost状态，但是实际情况是osd.6因为leveldb故障已经被踢出集群。</p>
+<blockquote>
+<p><strong>注意：</strong> 从这里得到的经验是只有在确认该osd没有用之后再使用删除操作，要实现 <strong>迁移数据和该osd不对外提供服务</strong> 的方法最好是使用调整crush reweight的方法。</p>
+</blockquote>
+<h3 id="2-3-尝试使用ceph-objectstore-tool"><a href="#2-3-尝试使用ceph-objectstore-tool" class="headerlink" title="2.3.尝试使用ceph-objectstore-tool"></a>2.3.尝试使用ceph-objectstore-tool</h3><p>在邮件列表上看到使用ceph-objectstore-tool可以将pg数据导出来在导入集群，因为osd.6的数据分区是依然保存完好的。但是目前使用的ceph版本的ceph-objectstore-tool不支持pg导入导出，F版必须是0.80.11版才有，单独下载ceph-test安装包也因为依赖无法完成安装。（目前集群状态不正常，不敢直接升级到0.80.11）</p>
+<p>期间将osd.6的硬盘插入别的服务器中，使用0.80.11版本的ceph-test包中的ceph-objectstore-tool工具成功将gaipg数据导出，但是不能导入也没用。</p>
+<h3 id="2-4-重建osd-6"><a href="#2-4-重建osd-6" class="headerlink" title="2.4.重建osd.6"></a>2.4.重建osd.6</h3><p>仔细检查前面的所有输出，发现之所以不能通过<code>ceph pg 4.438 mark_unfound_lost revert</code>恢复object是因为还有osd.6不处于可用状态或者标记为lost状态。因此想到一个折中的方法，我重新加入一个osd.6是不是可行呢？</p>
+<p>根据这个思路，为了保证原来的osd.6的数据以备不时之需，换一个新硬盘插到osd.6的位置作为新的osd.6，使用新下面的步骤操作：</p>
+<ul>
+<li>使用ceph-deploy添加osd，会自动使用目前缺失的6作为序号</li>
+<li>会进行数据同步，查看ceph -w日志</li>
+<li>在处理到pg4.438时，日志报告有object丢失，但是不影响该pg其他数据同步</li>
+<li>执行 <code>ceph pg 4.438 mark_unfound_lost revert</code> </li>
+<li>再次同步</li>
+<li>集群OK</li>
+</ul>
+<h2 id="3-总结"><a href="#3-总结" class="headerlink" title="3.总结"></a>3.总结</h2><p>从最近的几次集群故障来看，ceph还是比较健壮的，可能遇到的问题和故障都已经有相应的解决工具（这个应该得益于社区活跃）和方法，我们只需要为这些工具和方法准备所需的前提条件就可以。</p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>Title:</span><a href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/">记一次日志所在SSD故障导致的object unfound</a></p>
+        <p><span>Author:</span><a href="/" title="Back to Homepage">半天河(hnuzhoulin)</a></p>
+        <p><span>Created:</span>2016-04-20, 14:43:57</p>
+        <p><span>Updated:</span>2016-04-23, 17:18:35</p>
+        <p>
+            <span>Full URL:</span><a class="post-url" href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/" title="记一次日志所在SSD故障导致的object unfound">http://blog.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</a>
+            <span class="copy-path" data-clipboard-text="From http://blog.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/　　By 半天河(hnuzhoulin)" title="Copy Article&#39;s Link &amp; Author"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>License:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"CC BY-NC-SA 4.0"</a> Keep Link &amp; Author if Distribute.
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2016/04/20/deal_with_ceph_full/">
+                    ceph full或者nearfull的解决方法探究
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">
+                    因为ceph波动导致kernel rbd挂起
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">Contents</strong>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-问题"><span class="toc-number">1.</span> <span class="toc-text">1.问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-处理流程及总结"><span class="toc-number">2.</span> <span class="toc-text">2.处理流程及总结</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-pg以及object相关信息"><span class="toc-number">2.1.</span> <span class="toc-text">2.1.pg以及object相关信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-使用旧版或者直接删除该object"><span class="toc-number">2.2.</span> <span class="toc-text">2.2.使用旧版或者直接删除该object</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-尝试使用ceph-objectstore-tool"><span class="toc-number">2.3.</span> <span class="toc-text">2.3.尝试使用ceph-objectstore-tool</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-4-重建osd-6"><span class="toc-number">2.4.</span> <span class="toc-text">2.4.重建osd.6</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-总结"><span class="toc-number">3.</span> <span class="toc-text">3.总结</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn {
+        display: none;
+    }
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="Hide"  title="Show or Hide Table of Contents">
+<script>
+    var valueHide = "Hide";
+    var valueShow = "Show";
+
+    if ($(".left-col").is(":hidden")) {
+        $("#tocButton").attr("value", valueShow);
+    }
+
+    $("#tocButton").click(function() {
+        if ($("#toc").is(":hidden")) {
+            $("#tocButton").attr("value", valueHide);
+            $("#toc").slideDown(320);
+            $(".switch-btn, .switch-area").fadeOut(300);
+        }
+        else {
+            $("#tocButton").attr("value", valueShow);
+            $("#toc").slideUp(350);
+            $(".switch-btn, .switch-area").fadeIn(500);
+        }
+    })
+
+    if ($(".toc").length < 1) {
+        $("#toc, #tocButton").hide();
+        $(".switch-btn, .switch-area").show();
+    }
+</script>
+
+
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"记一次日志所在SSD故障导致的object unfound　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <!-- 多说评论框 start -->
+    <div class="ds-thread" data-thread-key="2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/" data-title="记一次日志所在SSD故障导致的object unfound" data-url="http://blog.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/"></div>
+    <!-- 多说评论框 end -->
+    <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+    <script type="text/javascript">
+    var duoshuoQuery = {short_name:"itzhoulin"};
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0] 
+         || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+    </script>
+    <!-- 多说公共JS代码 end -->
+</div>
+
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2016/04/20/deal_with_ceph_full/" title="Pre: ceph full或者nearfull的解决方法探究">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="Mini Archives"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2016/04/18/kernel-rbd-hang-when-ceph-full/" title="Next: 因为ceph波动导致kernel rbd挂起">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/ceph-journal-ssd-lifetime-expire/">记一次因为ceph日志分区所在SSD寿命到期导致的故障</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/">记一次日志所在SSD故障导致的object unfound</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">因为ceph波动导致kernel rbd挂起</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">Ceph Jewel版功能预览---RBD mirroring</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/01/fio-usage-example/">fio应用</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/04/cetune-performance-metric/">CeTune抓取性能数据的代码段分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/02/using-apache2-and-wsgi-to-run-django/">django项目利用apache2+mod_wsgi运行</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/03/get-ceph-rbd-watches/">ceph下查看使用rbd的客户端</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/01/mac-text-edit-shortcuts/">MAC文本编辑时跳转快捷键</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/">calamari的监控页面没有集群和Pool信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/12/right-steps-delete-ceph-osd/">删除osd的正确姿势</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/06/right-steps-adjusting-ceph-pg-num/">调整pg数量的步骤</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/28/ceph-IO-pattern/">Ceph的IO模式分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/24/fio-man-guide/">fio使用指南</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/23/using-python-or-shell-create-file-tree/">文件目录树的python和shell生成方法</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/07/sqlalchemy-orm/">SQLAlchemy的ORM模型操作数据库</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-release-infernalis/">Ceph V9.2.0版本(代号INFERNALIS)已发布</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-infernalis-five-useful-new-features/">ceph的infernalis版本的五个很实用的新功能</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-manual-repair-object/">Ceph里手动修复Object</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">php-sdk访问ceph对象存储时405错误</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/">一次硬盘被重新分区并写入数据后的整体恢复</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016 半天河(hnuzhoulin)
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="A fast, simple &amp; powerful blog framework">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="Another simple and elegant theme for Hexo">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" >Site Visitors: 
+                            <span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>, </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit">Page Hits: 
+                            <span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.1.22/require.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            var iPad = window.navigator.userAgent.indexOf('iPad');
+            if (iPad > -1 || $(".left-col").css("display") === "none") {
+                var bgColorList = ["#9db3f4", "#414141", "#e5a859", "#f5dfc6", "#c084a0", "#847e72", "#cd8390", "#996731"];
+                var bgColor = Math.ceil(Math.random() * (bgColorList.length - 1));
+                $("body").css({"background-color": bgColorList[bgColor], "background-size": "cover"});
+            }
+            else {
+                var backgroundnum = 5;
+                var backgroundimg = "url(/background/bg-x.jpg)".replace(/x/gi, Math.ceil(Math.random() * backgroundnum));
+                $("body").css({"background": backgroundimg, "background-attachment": "fixed", "background-size": "cover"});
+            }
+        })
+    </script>
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="Back to Top"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" title="Comments"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="Go to Bottom"><i class="fa fa-arrow-down"></i></a>
+</div>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

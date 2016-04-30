@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  
+  <title>ceph下查看使用rbd的客户端 | 我的IT江湖之旅</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="查看ceph的rbd两种使用方式下的客户端">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ceph下查看使用rbd的客户端">
+<meta property="og:url" content="http://blog.itzhoulin.com/2016/02/03/get-ceph-rbd-watches/index.html">
+<meta property="og:site_name" content="我的IT江湖之旅">
+<meta property="og:description" content="查看ceph的rbd两种使用方式下的客户端">
+<meta property="og:updated_time" content="2016-02-03T06:55:40.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ceph下查看使用rbd的客户端">
+<meta name="twitter:description" content="查看ceph的rbd两种使用方式下的客户端">
+  
+    <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+      <link href="//cdn.bootcss.com/animate.css/3.5.0/animate.min.css" rel="stylesheet">
+  
+  
+  
+      <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+      <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <link href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  
+  
+      <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+  
+  <script src="//cdn.bootcss.com/jquery/1.9.1/jquery.min.js"></script>
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.9/clipboard.min.js"></script>
+  <script>
+      var yiliaConfig = {
+          fancybox: true,
+          animate: true,
+          isHome: false,
+          isPost: true,
+          isArchive: false,
+          isTag: false,
+          isCategory: false,
+          open_in_new: false,
+          fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+          scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.0.9/scrollreveal.min.js"
+      }
+  </script>
+
+  
+      <script>
+          yiliaConfig.rootUrl = "/";
+      </script>
+  
+
+  
+  
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">半天河(hnuzhoulin)</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">python ceph openstack 运维</p>
+        
+                
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>Menu</li>
+                        <li>Tags</li>
+                        
+                        <li>Friends</li>
+                        
+                        
+                        <li>About Me</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/blog-updates/">博客更新</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/calamari/">calamari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cetune/">cetune</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/dns/">dns</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/fio/">fio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/full/">full</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infenalis/">infenalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infernalis/">infernalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jewel/">jewel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/journal/">journal</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kernel/">kernel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/osd/">osd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/pg/">pg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rbd/">rbd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/release/">release</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rgw/">rgw</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shell/">shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shortcut/">shortcut</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sqlalchemy/">sqlalchemy</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ssd/">ssd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tool/">tool</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wsgi/">wsgi</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/排错/">排错</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/翻译/">翻译</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">IT爱好者，慢慢学习</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">python ceph openstack 运维</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/blog-updates/">博客更新</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+</nav>
+      <div class="body-wrap"><article id="post-get-ceph-rbd-watches" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2016/02/03/get-ceph-rbd-watches/" class="article-date">
+      <time datetime="2016-02-03T06:51:33.000Z" itemprop="datePublished">2016-02-03</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      ceph下查看使用rbd的客户端
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/ceph/">ceph</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/rbd/">rbd</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <h2 id="一-背景"><a href="#一-背景" class="headerlink" title="一.背景"></a>一.背景</h2><p>不知道挂载点这个表述是否准确。真实的需求是有个时候删除rbd块会提示当前rbd正在使用中，如法删除。对于linux下是文件或者目录可以通过<code>lsof</code>查看当前文件或目录的使用进程。对于ceph也希望有一个合适的方式查看当前rbd块在哪个主机上被使用。</p>
+<h2 id="二-解决方法"><a href="#二-解决方法" class="headerlink" title="二.解决方法"></a>二.解决方法</h2><p>对于rbd块的使用，目前主要有两种形式：内核模块map后再mount和通过libvirt等供给虚拟机使用。两种方式不太一样。</p>
+<h3 id="2-1-内核模块map"><a href="#2-1-内核模块map" class="headerlink" title="2.1 内核模块map"></a>2.1 内核模块map</h3><p>查看方法如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">##查看rbd池下的rbd</span><br><span class="line">root@node-62:~# rbd ls</span><br><span class="line">gci</span><br><span class="line"></span><br><span class="line">##查看gci的挂载点</span><br><span class="line">root@node-62:~# rados -p rbd listwatchers gci.rbd</span><br><span class="line">watcher=10.1.41.205:0/1642395845 client.5493237 cookie=2</span><br><span class="line"></span><br><span class="line">##去挂载点检查</span><br><span class="line">root@node-67:~# rbd showmapped |grep gci</span><br><span class="line">2  rbd  gci          -    /dev/rbd2</span><br></pre></td></tr></table></figure>
+<h3 id="2-1-虚拟机通过libvirt使用rbd"><a href="#2-1-虚拟机通过libvirt使用rbd" class="headerlink" title="2.1 虚拟机通过libvirt使用rbd"></a>2.1 虚拟机通过libvirt使用rbd</h3><p>查看方法如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">##查看该虚拟机卷的信息</span><br><span class="line">root@node-67:~# rbd info volume-997d91e8-40f3-4ede-affb-8b61775fccde -p volumes</span><br><span class="line">rbd image &apos;volume-997d91e8-40f3-4ede-affb-8b61775fccde&apos;:</span><br><span class="line">        size 300 GB in 76800 objects</span><br><span class="line">        order 22 (4096 kB objects)</span><br><span class="line">        block_name_prefix: rbd_data.10475c6f9a52</span><br><span class="line">        format: 2</span><br><span class="line">        features: layering</span><br><span class="line">        parent: volumes/volume-4461e760-8c3d-4e7f-9537-c27b301a74c2@snapshot-d17bc874-c589-4118-b6af-058f1c6e3a02</span><br><span class="line">        overlap: 300 GB</span><br><span class="line">        </span><br><span class="line">##查看该卷的挂载点</span><br><span class="line">root@node-67:~# rados -p volumes listwatchers rbd_header.10475c6f9a52</span><br><span class="line">watcher=10.1.41.201:0/1001261 client.4449991 cookie=1</span><br><span class="line"></span><br><span class="line">## 通过nova show验证该卷是否在物理机10.1.41.201(node-63)上</span><br><span class="line">root@node-67:~# nova show zhoulin_UbuntuKylin_0824</span><br><span class="line">+--------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+</span><br><span class="line">| Property                             | Value                                                                                                                                            |</span><br><span class="line">+--------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+</span><br><span class="line">| OS-DCF:diskConfig                    | AUTO                                                                                                                                             |</span><br><span class="line">| OS-EXT-AZ:availability_zone          | nova                                                                                                                                             |</span><br><span class="line">| OS-EXT-SRV-ATTR:host                 | node-63                                                                                                                                          |</span><br><span class="line">| OS-EXT-SRV-ATTR:hypervisor_hostname  | node-63                                                                                                                                          |</span><br><span class="line">| OS-EXT-SRV-ATTR:instance_name        | instance-00000086                                                                                                                                |</span><br><span class="line">| OS-EXT-STS:power_state               | 1                                                                                                                                                |</span><br><span class="line">| OS-EXT-STS:task_state                | -                                                                                                                                                |</span><br><span class="line">| OS-EXT-STS:vm_state                  | active                                                                                                                                           |</span><br><span class="line">| OS-SRV-USG:launched_at               | 2015-08-24T02:14:34.000000                                                                                                                       |</span><br><span class="line">| OS-SRV-USG:terminated_at             | -                                                                                                                                                |</span><br><span class="line">| accessIPv4                           |                                                                                                                                                  |</span><br><span class="line">| accessIPv6                           |                                                                                                                                                  |</span><br><span class="line">| config_drive                         |                                                                                                                                                  |</span><br><span class="line">| created                              | 2015-08-24T02:14:28Z                                                                                                                             |</span><br><span class="line">| flavor                               | m1.large (903620b6-e4e2-49a7-bcca-38139b9d4e30)                                                                                                  |</span><br><span class="line">| hostId                               | 73f6a8472a61da98b5ecbf7a5b7a94791991bdc69a94f3fe984f58dc                                                                                         |</span><br><span class="line">| id                                   | 3b5a16f5-b2a3-4e74-95c0-bd3e2114016a                                                                                                             |</span><br><span class="line">| image                                | Attempt to boot from volume - no image supplied                                                                                                  |</span><br><span class="line">| key_name                             | ubuntu                                                                                                                                           |</span><br><span class="line">| metadata                             | &#123;&#125;                                                                                                                                               |</span><br><span class="line">| name                                 | zhoulin_UbuntuKylin_0824                                                                                                                         |</span><br><span class="line">| novanetwork network                  |                                                                                                                                                  |</span><br><span class="line">| os-extended-volumes:volumes_attached | [&#123;&quot;id&quot;: &quot;997d91e8-40f3-4ede-affb-8b61775fccde&quot;&#125;, &#123;&quot;id&quot;: &quot;5f9ba54a-c7e1-441a-b28c-180995accec1&quot;&#125;, &#123;&quot;id&quot;: &quot;8256288a-fca8-4d70-9d8e-f1a0a7821a1a&quot;&#125;] |</span><br><span class="line">| progress                             | 0                                                                                                                                                |</span><br><span class="line">| security_groups                      | default                                                                                                                                          |</span><br><span class="line">| status                               | ACTIVE                                                                                                                                           |</span><br><span class="line">| tenant_id                            | 26d260968b1e4a8caa9356aafff090e6                                                                                                                 |</span><br><span class="line">| updated                              | 2016-01-31T01:51:12Z                                                                                                                             |</span><br><span class="line">| user_id                              | c18a490fffb846fc9d52aa62b4d07ae2                                                                                                                 |</span><br><span class="line">+--------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+</span><br></pre></td></tr></table></figure></p>
+<h2 id="三-总结"><a href="#三-总结" class="headerlink" title="三.总结"></a>三.总结</h2><p>基本都是利用<code>rados listwatchers</code>去查看，只是两种方式需要读取的文件不一样。</p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>Title:</span><a href="/2016/02/03/get-ceph-rbd-watches/">ceph下查看使用rbd的客户端</a></p>
+        <p><span>Author:</span><a href="/" title="Back to Homepage">半天河(hnuzhoulin)</a></p>
+        <p><span>Created:</span>2016-02-03, 14:51:33</p>
+        <p><span>Updated:</span>2016-02-03, 14:55:40</p>
+        <p>
+            <span>Full URL:</span><a class="post-url" href="/2016/02/03/get-ceph-rbd-watches/" title="ceph下查看使用rbd的客户端">http://blog.itzhoulin.com/2016/02/03/get-ceph-rbd-watches/</a>
+            <span class="copy-path" data-clipboard-text="From http://blog.itzhoulin.com/2016/02/03/get-ceph-rbd-watches/　　By 半天河(hnuzhoulin)" title="Copy Article&#39;s Link &amp; Author"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>License:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"CC BY-NC-SA 4.0"</a> Keep Link &amp; Author if Distribute.
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2016/03/02/using-apache2-and-wsgi-to-run-django/">
+                    django项目利用apache2+mod_wsgi运行
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2016/02/01/mac-text-edit-shortcuts/">
+                    MAC文本编辑时跳转快捷键
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">Contents</strong>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#一-背景"><span class="toc-number">1.</span> <span class="toc-text">一.背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#二-解决方法"><span class="toc-number">2.</span> <span class="toc-text">二.解决方法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-内核模块map"><span class="toc-number">2.1.</span> <span class="toc-text">2.1 内核模块map</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-虚拟机通过libvirt使用rbd"><span class="toc-number">2.2.</span> <span class="toc-text">2.1 虚拟机通过libvirt使用rbd</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#三-总结"><span class="toc-number">3.</span> <span class="toc-text">三.总结</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn {
+        display: none;
+    }
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="Hide"  title="Show or Hide Table of Contents">
+<script>
+    var valueHide = "Hide";
+    var valueShow = "Show";
+
+    if ($(".left-col").is(":hidden")) {
+        $("#tocButton").attr("value", valueShow);
+    }
+
+    $("#tocButton").click(function() {
+        if ($("#toc").is(":hidden")) {
+            $("#tocButton").attr("value", valueHide);
+            $("#toc").slideDown(320);
+            $(".switch-btn, .switch-area").fadeOut(300);
+        }
+        else {
+            $("#tocButton").attr("value", valueShow);
+            $("#toc").slideUp(350);
+            $(".switch-btn, .switch-area").fadeIn(500);
+        }
+    })
+
+    if ($(".toc").length < 1) {
+        $("#toc, #tocButton").hide();
+        $(".switch-btn, .switch-area").show();
+    }
+</script>
+
+
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"ceph下查看使用rbd的客户端　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <!-- 多说评论框 start -->
+    <div class="ds-thread" data-thread-key="2016/02/03/get-ceph-rbd-watches/" data-title="ceph下查看使用rbd的客户端" data-url="http://blog.itzhoulin.com/2016/02/03/get-ceph-rbd-watches/"></div>
+    <!-- 多说评论框 end -->
+    <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+    <script type="text/javascript">
+    var duoshuoQuery = {short_name:"itzhoulin"};
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0] 
+         || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+    </script>
+    <!-- 多说公共JS代码 end -->
+</div>
+
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2016/03/02/using-apache2-and-wsgi-to-run-django/" title="Pre: django项目利用apache2+mod_wsgi运行">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="Mini Archives"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2016/02/01/mac-text-edit-shortcuts/" title="Next: MAC文本编辑时跳转快捷键">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/ceph-journal-ssd-lifetime-expire/">记一次因为ceph日志分区所在SSD寿命到期导致的故障</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/">记一次日志所在SSD故障导致的object unfound</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">因为ceph波动导致kernel rbd挂起</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">Ceph Jewel版功能预览---RBD mirroring</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/01/fio-usage-example/">fio应用</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/04/cetune-performance-metric/">CeTune抓取性能数据的代码段分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/02/using-apache2-and-wsgi-to-run-django/">django项目利用apache2+mod_wsgi运行</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/03/get-ceph-rbd-watches/">ceph下查看使用rbd的客户端</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/01/mac-text-edit-shortcuts/">MAC文本编辑时跳转快捷键</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/">calamari的监控页面没有集群和Pool信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/12/right-steps-delete-ceph-osd/">删除osd的正确姿势</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/06/right-steps-adjusting-ceph-pg-num/">调整pg数量的步骤</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/28/ceph-IO-pattern/">Ceph的IO模式分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/24/fio-man-guide/">fio使用指南</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/23/using-python-or-shell-create-file-tree/">文件目录树的python和shell生成方法</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/07/sqlalchemy-orm/">SQLAlchemy的ORM模型操作数据库</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-release-infernalis/">Ceph V9.2.0版本(代号INFERNALIS)已发布</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-infernalis-five-useful-new-features/">ceph的infernalis版本的五个很实用的新功能</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-manual-repair-object/">Ceph里手动修复Object</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">php-sdk访问ceph对象存储时405错误</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/">一次硬盘被重新分区并写入数据后的整体恢复</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016 半天河(hnuzhoulin)
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="A fast, simple &amp; powerful blog framework">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="Another simple and elegant theme for Hexo">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" >Site Visitors: 
+                            <span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>, </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit">Page Hits: 
+                            <span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.1.22/require.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            var iPad = window.navigator.userAgent.indexOf('iPad');
+            if (iPad > -1 || $(".left-col").css("display") === "none") {
+                var bgColorList = ["#9db3f4", "#414141", "#e5a859", "#f5dfc6", "#c084a0", "#847e72", "#cd8390", "#996731"];
+                var bgColor = Math.ceil(Math.random() * (bgColorList.length - 1));
+                $("body").css({"background-color": bgColorList[bgColor], "background-size": "cover"});
+            }
+            else {
+                var backgroundnum = 5;
+                var backgroundimg = "url(/background/bg-x.jpg)".replace(/x/gi, Math.ceil(Math.random() * backgroundnum));
+                $("body").css({"background": backgroundimg, "background-attachment": "fixed", "background-size": "cover"});
+            }
+        })
+    </script>
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="Back to Top"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" title="Comments"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="Go to Bottom"><i class="fa fa-arrow-down"></i></a>
+</div>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

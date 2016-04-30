@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  
+  <title>Ceph Jewel版功能预览---RBD mirroring | 我的IT江湖之旅</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="ceph的jewel版新功能预览之rbd-mirroring，译自Sébastien博客">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ceph Jewel版功能预览---RBD mirroring">
+<meta property="og:url" content="http://blog.itzhoulin.com/2016/04/02/ceph-jewel-preview-rbd-mirroring/index.html">
+<meta property="og:site_name" content="我的IT江湖之旅">
+<meta property="og:description" content="ceph的jewel版新功能预览之rbd-mirroring，译自Sébastien博客">
+<meta property="og:image" content="http://sebastien-han.fr/images/ceph-rbd-mirroring.jpg">
+<meta property="og:image" content="http://sebastien-han.fr/images/ceph-rbd-mirror.png">
+<meta property="og:image" content="http://sebastien-han.fr/images/ceph-rbd-mirror-inside.png">
+<meta property="og:image" content="http://sebastien-han.fr/images/openstack-multisite-ceph-no-regions.png">
+<meta property="og:updated_time" content="2016-04-02T14:41:58.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Ceph Jewel版功能预览---RBD mirroring">
+<meta name="twitter:description" content="ceph的jewel版新功能预览之rbd-mirroring，译自Sébastien博客">
+<meta name="twitter:image" content="http://sebastien-han.fr/images/ceph-rbd-mirroring.jpg">
+  
+    <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+      <link href="//cdn.bootcss.com/animate.css/3.5.0/animate.min.css" rel="stylesheet">
+  
+  
+  
+      <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+      <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <link href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  
+  
+      <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+  
+  <script src="//cdn.bootcss.com/jquery/1.9.1/jquery.min.js"></script>
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.9/clipboard.min.js"></script>
+  <script>
+      var yiliaConfig = {
+          fancybox: true,
+          animate: true,
+          isHome: false,
+          isPost: true,
+          isArchive: false,
+          isTag: false,
+          isCategory: false,
+          open_in_new: false,
+          fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+          scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.0.9/scrollreveal.min.js"
+      }
+  </script>
+
+  
+      <script>
+          yiliaConfig.rootUrl = "/";
+      </script>
+  
+
+  
+  
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">半天河(hnuzhoulin)</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">python ceph openstack 运维</p>
+        
+                
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>Menu</li>
+                        <li>Tags</li>
+                        
+                        <li>Friends</li>
+                        
+                        
+                        <li>About Me</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/blog-updates/">博客更新</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/calamari/">calamari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cetune/">cetune</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/dns/">dns</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/fio/">fio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/full/">full</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infenalis/">infenalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infernalis/">infernalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jewel/">jewel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/journal/">journal</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kernel/">kernel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/osd/">osd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/pg/">pg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rbd/">rbd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/release/">release</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rgw/">rgw</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shell/">shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shortcut/">shortcut</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sqlalchemy/">sqlalchemy</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ssd/">ssd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tool/">tool</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wsgi/">wsgi</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/排错/">排错</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/翻译/">翻译</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">IT爱好者，慢慢学习</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">python ceph openstack 运维</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/blog-updates/">博客更新</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+</nav>
+      <div class="body-wrap"><article id="post-ceph-jewel-preview-rbd-mirroring" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/" class="article-date">
+      <time datetime="2016-04-02T14:41:58.000Z" itemprop="datePublished">2016-04-02</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Ceph Jewel版功能预览---RBD mirroring
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/ceph/">ceph</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/jewel/">jewel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/rbd/">rbd</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/翻译/">翻译</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p><em>由Ceph中国社区-半天河翻译，XXXX 校稿。</em></p>
+<p>英文出处：<a href="http://www.sebastien-han.fr/blog/2016/03/28/ceph-jewel-preview-ceph-rbd-mirroring/" target="_blank" rel="external">Sébastien Han</a> 欢迎加入<a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">翻译组</a></p>
+<p><img src="http://sebastien-han.fr/images/ceph-rbd-mirroring.jpg" alt=""></p>
+<p>RBD的镜像特性将在Ceph的下一个稳定版（Jewel）中可用。</p>
+<h2 id="I-原因"><a href="#I-原因" class="headerlink" title="I. 原因"></a>I. 原因</h2><p>这里我们想解决的或者说克服的问题就是同步应该是Ceph的一个自然属性。这也暗示了目前Ceph块存储解决方案（俗称RBD）还不能很好的跨地域。这里需要提醒一下，Ceph只在<strong>所有副本</strong>都写入的时候才认为一个写操作完成。这就是为什么建立一个跨很长距离地域的集群通常都不是一个好主意，因为这种情况延时一般都很高。集群必须等到所有的写操作都完成，所以客户端可能需要大量的时间来进行确认。</p>
+<p>因此，我们需要一种机制来允许我们在不同地域的集群之间复制块设备。这种方法将帮助我们实现下面两个不同的目的:</p>
+<ul>
+<li>灾难恢复</li>
+<li>全局块设备分布</li>
+</ul>
+<p><img src="http://sebastien-han.fr/images/ceph-rbd-mirror.png" alt="ceph-rbd-mirror"></p>
+<h2 id="II-具体实现"><a href="#II-具体实现" class="headerlink" title="II. 具体实现"></a>II. 具体实现</h2><h2 id="II-1-一个新的守护进程"><a href="#II-1-一个新的守护进程" class="headerlink" title="II.1. 一个新的守护进程"></a>II.1. 一个新的守护进程</h2><p>一个新的守护进程：<code>rbd-mirror</code>将负责把一个集群的镜像同步到另一个集群。在这两集群中都需要配置守护进程，它会同时连接本地和远程集群。在当前Jewel版本中，主要是实现两个守护进程之间一对一的关系，而在未来将会扩展到1对N。这样，在Jewel以后的版本中，你将能够配置一个集群备份到多个目标备份集群中。</p>
+<p>作为一个起点，它将通过一个配置文件、一个用户和一个密钥来连接到其他Ceph集群(找到monitors)。使用admin用户也是可以的。<code>rbd-mirror</code>的守护进程使用cephx机制与monitors进行身份验证，这是常用也是默认的方法。</p>
+<p>为了能够彼此连接，每个守护进程必须注册另一个守护进程，更准确地说另一个集群。这是在pool级别设置的，命令是：<code>rbd mirror pool peer add</code>。连接信息可以这样获取:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ rbd mirror pool info</span><br><span class="line">Enabled: true</span><br><span class="line">Peers:</span><br><span class="line">  UUID                                 NAME        CLIENT</span><br><span class="line">    786b42ea-97eb-4b16-95f4-867f02b67289 ceph-remote client.admin</span><br></pre></td></tr></table></figure>
+<h3 id="II-2-镜像"><a href="#II-2-镜像" class="headerlink" title="II.2. 镜像"></a>II.2. 镜像</h3><p><img src="http://sebastien-han.fr/images/ceph-rbd-mirror-inside.png" alt="ceph-rbd-mirror-inside"></p>
+<p>RBD镜像的实现依赖于RBD镜像的两个新特性:</p>
+<ul>
+<li>日志特性: 为作用在镜像上的每一个事务启用日志</li>
+<li>镜像特性: 通过这个明确的告诉 <code>rbd-mirror</code> 进程复制这个镜像</li>
+</ul>
+<p>后续还会有命令和librbd接口来为一个特定的镜像启用/禁用镜像功能。日志维护着这个镜像上的所有事务的操作记录列表。它可以被视为存在于集群中的另一个RBD镜像(一系列RADOS对象)。一般来说，一个写操作首先到达日志，再返回到客户端，然后被写入底层rbd镜像中。由于性能的原因，这个日志可以存放在跟执行日志化的镜像不同的资源池中。目前，每一个RBD镜像都有一个日志。在我们为Ceph实现一致性组（consistency group）之前，可能会一直保持这种结构。对于不熟悉这些概念的人而言，可以这样理解：一致性组是一个实体，它管理着可以被视为是一个的一堆卷(如:RBD镜像)。这样，你就可以针对这个组内的所有卷执行一些操作，比如快照。有了一致性组，就可以保证所有卷在同一个一致的状态上。所以当一致性组在Ceph中实现后，我们将使用一个日志来记录所有的RBD镜像，同时作为这个组的一部分。</p>
+<p>所以现在，我知道你们中的一些人已经在思考这个问题了：“我能够在已经存在的镜像上启用日志功能吗？“ 是的，可以！Ceph将简单地给你的镜像做一个快照，针对这个快照做一个RBD复制操作，然后在复制得到的镜像上开始记录日志。它只是一个后台任务。</p>
+<p>镜像功能的启用和禁用可以作用在整个资源池或者一个镜像上。如果在资源池级别启用了镜像功能，这样资源池中的每一个启用了日志特性的镜像将会被镜像代理复制。可以使用这个命令启用：<code>rbd mirror pool enable</code>。</p>
+<p>使用下面的命令配置一个镜像：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ rbd create rbd/leseb --image-feature exclusive-lock,journaling</span><br></pre></td></tr></table></figure>
+<p>这个特性也可以通过下面的方式动态激活：</p>
+<p><code>rbd feature enable rbd/leseb exclusive-lock &amp;&amp; rbd feature enable rbd/leseb journaling</code></p>
+<h2 id="III-灾难恢复"><a href="#III-灾难恢复" class="headerlink" title="III. 灾难恢复"></a>III. 灾难恢复</h2><p>做cross-sync复制是可能的，甚至着是默认的实现方式。这意味着<strong>在两个不同位置的资源池的名字必须相同</strong>。因此镜像会在其他集群中得到相同的名字，这带来了两个挑战:</p>
+<ol>
+<li>使用同一个资源池既存放你的主数据又存放备份数据（来自于其他集群）会影响性能</li>
+<li>然而，拥有完全相同的资源池名称肯定是更容易执行恢复的。从OpenStack的角度来看，你只需要用卷ID来填充数据库记录。</li>
+</ol>
+<p>每个镜像都有一个<code>mirroring_directory</code>对象，它包含有主镜像所在位置的标记。本地的镜像会被晋升为<code>primary</code>(使用命令<code>rbd mirror image promote</code>)，并且是可写的，而远端的备份镜像则会持有一个锁。锁意味着这个镜像在被晋升为主且原来的主降级（<code>rbd mirror image demote</code>）之前是不能写的(只读模式)。因此这也是晋升和降级功能的由来。一旦备份镜像晋升为主，原来的主镜像将被降级为副。这意味着同步将会以相反的方式进行(副变成主，同时向原来是主而现在是副的镜像执行同步操作)。</p>
+<p>如果平台受脑裂情况的影响，<code>rbd-mirror</code>守护进程不会尝试任何同步，所以你必须自己找到正确的镜像。意味着你将不得不手动强制同步您认为的最新版本的镜像。这种情况你可以运行命令<code>rbd mirror image resync</code>。</p>
+<p>IV. OpenStack集成<br>目前，镜像功能需要两个环境运行在相同的L2层网络上。这样两个集群才可以彼此访问。后续还会实现一个新的守护进程，它可能被称为<code>mirroring-proxy</code>。它将负责转发镜像请求。同样的在这里我们将面临两个挑战:</p>
+<ol>
+<li>在一个守护进程的帮助下使用转发机制将允许我们只对外公开这个守护进程</li>
+<li>这里使用一个守护进程的方式可能会引发更多的讨论</li>
+</ol>
+<p>因此，这是在安全性和性能方面的一点平衡。</p>
+<p>就实现而言，这个守护进程可能会需要一个专用的服务器来运行，因为它需要大量的带宽。所以一个拥有多个网卡的服务器是理想配置。不幸的是，当前初始版本的rbd-mirroring守护进程<strong>没有任何高可用</strong>。因此这个守护进程只能运行一个。所以当考虑这个守护进程的高可用性时，在不同的服务器上运行多个进程以提供HA和卸载的能力将会在后续的Jewel版本中提供。</p>
+<p>在试图为OpenStack提供灾难恢复的场景下，RBD镜像功能是非常有用的。下图是一个设计的例子:</p>
+<p><img src="http://sebastien-han.fr/images/openstack-multisite-ceph-no-regions.png" alt="openstack-multisite-ceph-no-regions"></p>
+<blockquote>
+<p>如果你想了解更多关于RBD镜像功能的设计细节，你可以阅读 <a href="http://www.spinics.net/lists/ceph-devel/msg24169.html" target="_blank" rel="external">Josh Durgin’s design draft discussion</a> 和 <a href="http://pad.ceph.com/p/rbd_mirror_daemon" target="_blank" rel="external">pad from the Ceph Online Summit</a>.</p>
+</blockquote>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>Title:</span><a href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">Ceph Jewel版功能预览---RBD mirroring</a></p>
+        <p><span>Author:</span><a href="/" title="Back to Homepage">半天河(hnuzhoulin)</a></p>
+        <p><span>Created:</span>2016-04-02, 22:41:58</p>
+        <p><span>Updated:</span>2016-04-02, 22:41:58</p>
+        <p>
+            <span>Full URL:</span><a class="post-url" href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/" title="Ceph Jewel版功能预览---RBD mirroring">http://blog.itzhoulin.com/2016/04/02/ceph-jewel-preview-rbd-mirroring/</a>
+            <span class="copy-path" data-clipboard-text="From http://blog.itzhoulin.com/2016/04/02/ceph-jewel-preview-rbd-mirroring/　　By 半天河(hnuzhoulin)" title="Copy Article&#39;s Link &amp; Author"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>License:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"CC BY-NC-SA 4.0"</a> Keep Link &amp; Author if Distribute.
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">
+                    因为ceph波动导致kernel rbd挂起
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2016/04/01/fio-usage-example/">
+                    fio应用
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">Contents</strong>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#I-原因"><span class="toc-number">1.</span> <span class="toc-text">I. 原因</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#II-具体实现"><span class="toc-number">2.</span> <span class="toc-text">II. 具体实现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#II-1-一个新的守护进程"><span class="toc-number">3.</span> <span class="toc-text">II.1. 一个新的守护进程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#II-2-镜像"><span class="toc-number">3.1.</span> <span class="toc-text">II.2. 镜像</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#III-灾难恢复"><span class="toc-number">4.</span> <span class="toc-text">III. 灾难恢复</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn {
+        display: none;
+    }
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="Hide"  title="Show or Hide Table of Contents">
+<script>
+    var valueHide = "Hide";
+    var valueShow = "Show";
+
+    if ($(".left-col").is(":hidden")) {
+        $("#tocButton").attr("value", valueShow);
+    }
+
+    $("#tocButton").click(function() {
+        if ($("#toc").is(":hidden")) {
+            $("#tocButton").attr("value", valueHide);
+            $("#toc").slideDown(320);
+            $(".switch-btn, .switch-area").fadeOut(300);
+        }
+        else {
+            $("#tocButton").attr("value", valueShow);
+            $("#toc").slideUp(350);
+            $(".switch-btn, .switch-area").fadeIn(500);
+        }
+    })
+
+    if ($(".toc").length < 1) {
+        $("#toc, #tocButton").hide();
+        $(".switch-btn, .switch-area").show();
+    }
+</script>
+
+
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Ceph Jewel版功能预览---RBD mirroring　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <!-- 多说评论框 start -->
+    <div class="ds-thread" data-thread-key="2016/04/02/ceph-jewel-preview-rbd-mirroring/" data-title="Ceph Jewel版功能预览---RBD mirroring" data-url="http://blog.itzhoulin.com/2016/04/02/ceph-jewel-preview-rbd-mirroring/"></div>
+    <!-- 多说评论框 end -->
+    <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+    <script type="text/javascript">
+    var duoshuoQuery = {short_name:"itzhoulin"};
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0] 
+         || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+    </script>
+    <!-- 多说公共JS代码 end -->
+</div>
+
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2016/04/18/kernel-rbd-hang-when-ceph-full/" title="Pre: 因为ceph波动导致kernel rbd挂起">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="Mini Archives"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2016/04/01/fio-usage-example/" title="Next: fio应用">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/ceph-journal-ssd-lifetime-expire/">记一次因为ceph日志分区所在SSD寿命到期导致的故障</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/">记一次日志所在SSD故障导致的object unfound</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">因为ceph波动导致kernel rbd挂起</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">Ceph Jewel版功能预览---RBD mirroring</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/01/fio-usage-example/">fio应用</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/04/cetune-performance-metric/">CeTune抓取性能数据的代码段分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/02/using-apache2-and-wsgi-to-run-django/">django项目利用apache2+mod_wsgi运行</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/03/get-ceph-rbd-watches/">ceph下查看使用rbd的客户端</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/01/mac-text-edit-shortcuts/">MAC文本编辑时跳转快捷键</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/">calamari的监控页面没有集群和Pool信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/12/right-steps-delete-ceph-osd/">删除osd的正确姿势</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/06/right-steps-adjusting-ceph-pg-num/">调整pg数量的步骤</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/28/ceph-IO-pattern/">Ceph的IO模式分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/24/fio-man-guide/">fio使用指南</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/23/using-python-or-shell-create-file-tree/">文件目录树的python和shell生成方法</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/07/sqlalchemy-orm/">SQLAlchemy的ORM模型操作数据库</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-release-infernalis/">Ceph V9.2.0版本(代号INFERNALIS)已发布</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-infernalis-five-useful-new-features/">ceph的infernalis版本的五个很实用的新功能</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-manual-repair-object/">Ceph里手动修复Object</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">php-sdk访问ceph对象存储时405错误</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/">一次硬盘被重新分区并写入数据后的整体恢复</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016 半天河(hnuzhoulin)
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="A fast, simple &amp; powerful blog framework">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="Another simple and elegant theme for Hexo">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" >Site Visitors: 
+                            <span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>, </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit">Page Hits: 
+                            <span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.1.22/require.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            var iPad = window.navigator.userAgent.indexOf('iPad');
+            if (iPad > -1 || $(".left-col").css("display") === "none") {
+                var bgColorList = ["#9db3f4", "#414141", "#e5a859", "#f5dfc6", "#c084a0", "#847e72", "#cd8390", "#996731"];
+                var bgColor = Math.ceil(Math.random() * (bgColorList.length - 1));
+                $("body").css({"background-color": bgColorList[bgColor], "background-size": "cover"});
+            }
+            else {
+                var backgroundnum = 5;
+                var backgroundimg = "url(/background/bg-x.jpg)".replace(/x/gi, Math.ceil(Math.random() * backgroundnum));
+                $("body").css({"background": backgroundimg, "background-attachment": "fixed", "background-size": "cover"});
+            }
+        })
+    </script>
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="Back to Top"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" title="Comments"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="Go to Bottom"><i class="fa fa-arrow-down"></i></a>
+</div>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

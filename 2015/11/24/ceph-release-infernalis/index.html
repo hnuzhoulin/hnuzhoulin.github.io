@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  
+  <title>Ceph V9.2.0版本(代号INFERNALIS)已发布 | 我的IT江湖之旅</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="ceph的infernalis版更新记录">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ceph V9.2.0版本(代号INFERNALIS)已发布">
+<meta property="og:url" content="http://blog.itzhoulin.com/2015/11/24/ceph-release-infernalis/index.html">
+<meta property="og:site_name" content="我的IT江湖之旅">
+<meta property="og:description" content="ceph的infernalis版更新记录">
+<meta property="og:image" content="http://ceph.com/release_images/infernalis-460x148.png">
+<meta property="og:updated_time" content="2015-12-28T07:40:05.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Ceph V9.2.0版本(代号INFERNALIS)已发布">
+<meta name="twitter:description" content="ceph的infernalis版更新记录">
+<meta name="twitter:image" content="http://ceph.com/release_images/infernalis-460x148.png">
+  
+    <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+      <link href="//cdn.bootcss.com/animate.css/3.5.0/animate.min.css" rel="stylesheet">
+  
+  
+  
+      <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+      <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <link href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  
+  
+      <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+  
+  <script src="//cdn.bootcss.com/jquery/1.9.1/jquery.min.js"></script>
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.9/clipboard.min.js"></script>
+  <script>
+      var yiliaConfig = {
+          fancybox: true,
+          animate: true,
+          isHome: false,
+          isPost: true,
+          isArchive: false,
+          isTag: false,
+          isCategory: false,
+          open_in_new: false,
+          fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+          scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.0.9/scrollreveal.min.js"
+      }
+  </script>
+
+  
+      <script>
+          yiliaConfig.rootUrl = "/";
+      </script>
+  
+
+  
+  
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">半天河(hnuzhoulin)</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">python ceph openstack 运维</p>
+        
+                
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>Menu</li>
+                        <li>Tags</li>
+                        
+                        <li>Friends</li>
+                        
+                        
+                        <li>About Me</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/blog-updates/">博客更新</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/calamari/">calamari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cetune/">cetune</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/dns/">dns</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/fio/">fio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/full/">full</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infenalis/">infenalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infernalis/">infernalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jewel/">jewel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/journal/">journal</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kernel/">kernel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/osd/">osd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/pg/">pg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rbd/">rbd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/release/">release</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rgw/">rgw</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shell/">shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shortcut/">shortcut</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sqlalchemy/">sqlalchemy</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ssd/">ssd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tool/">tool</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wsgi/">wsgi</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/排错/">排错</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/翻译/">翻译</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">IT爱好者，慢慢学习</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">python ceph openstack 运维</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/blog-updates/">博客更新</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+</nav>
+      <div class="body-wrap"><article id="post-ceph-release-infernalis" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2015/11/24/ceph-release-infernalis/" class="article-date">
+      <time datetime="2015-11-24T05:05:15.000Z" itemprop="datePublished">2015-11-24</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Ceph V9.2.0版本(代号INFERNALIS)已发布
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/ceph/">ceph</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/infernalis/">infernalis</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/release/">release</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>本文由Ceph中国社区-AmosG翻译 Thomas校稿</p>
+<p>英文出处：<a href="http://ceph.com/releases/v9-2-0-infernalis-released/" target="_blank" rel="external">官网releases栏</a> 欢迎加入<a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">Ceph中国社区翻译组</a></p>
+<p><img src="http://ceph.com/release_images/infernalis-460x148.png" alt=""></p>
+<p>此次的主发版本将是Ceph下一个稳定系列的基石。自Hammer v0.94.x发布后，我们做了重大修改，这个更新过程很不简单。请仔细阅读以下的发行说明。</p>
+<h2 id="自Hammer版本以来所做的重要修改"><a href="#自Hammer版本以来所做的重要修改" class="headerlink" title="自Hammer版本以来所做的重要修改"></a>自Hammer版本以来所做的重要修改</h2><ul>
+<li><strong>General</strong><ul>
+<li>Ceph的守护进程现已通过systemd来管理(Ubuntu Trusty是个例外，仍沿用upstart来管理)</li>
+<li>Ceph的守护进程以ceph用户而非root运行</li>
+<li>在Red Hat的发行版本中，也存在SeLinux Policy</li>
+</ul>
+</li>
+<li><strong>RADOS</strong><ul>
+<li>RADOS的cache层现在可通过代理将写操作发送到持久层(base tier)，允许直接处理写操作无需先强制将对象移至cache层</li>
+<li>对SHEC 纠删码的支持已不再标记为实验性的。SHEC通过消耗一些额外的存储空间来换取更快的修复速度。</li>
+<li>为（优化）客户端IO、数据恢复、数据清理、快照裁剪提供统一的队列。</li>
+<li>对低层级的修复工具（ceph-objectstore-tool）做了许多改进</li>
+<li>为方便使用新的存储后端（如NewStore），内部ObjectStore API已做了重大的修改</li>
+</ul>
+</li>
+<li><strong>RGW</strong><ul>
+<li>Swift API现已支持对象过期机制</li>
+<li>Swift API的兼容性方面做出了很大改善</li>
+</ul>
+</li>
+<li><strong>RBD</strong><ul>
+<li>通过rbd du命令显示实际的使用（容量）信息（当object-map处于enabled状态时该操作很快）</li>
+<li>对object-map特性的稳定性做了许多改善。</li>
+<li>object-map和exclusive-lock特性可动态的开启或者关闭。</li>
+<li>现在你可以依据个体镜像(individual image)来存储用户的元数据并设置持久的librbd选项。</li>
+<li>新的深度扁平（deep-flatten）特性允许对一个克隆及其所有的快照进行扁平化处理（在此之前快照不能被扁平化。）</li>
+<li>更快的export-diff命令（使用了aio）。另外新增了fast-diff特性。</li>
+<li>可通过单位后缀指定-size参数大小（如–size 64G）。</li>
+<li>有一个新的rbd status命令，现在可通过该命令来显示谁打开/映射了某个镜像。</li>
+</ul>
+</li>
+<li><strong>CephFS</strong><ul>
+<li>现已可对快照进行重命名操作</li>
+<li>在管理、诊断、检查和修复工具上已作出了持续的改善</li>
+<li>32位主机上，ceph-fuse客户端表现得更好</li>
+</ul>
+</li>
+</ul>
+<h2 id="发行版的兼容性"><a href="#发行版的兼容性" class="headerlink" title="发行版的兼容性"></a>发行版的兼容性</h2><p>我们已决定放弃对多个旧的Linux发行版的支持，这样一来我们就可以转用更新的编译器工具链（如C++11）。尽管通过安装向后兼容的开发工具来在旧版本中生成Ceph还是可能的，但我们不会在ceph.com上为这些发行版生成并发布release版本的安装包。</p>
+<p>我们现在为以下的版本生成安装包：</p>
+<ul>
+<li>CentOS 7或更高的版本。我们已放弃对CentOS 6（以及其它RHEL 6的衍生系列，如Scientific Linux 6）的支持</li>
+<li>Debian Jessie 8.x或后续版本。 Debian Wheezy 7.x的g++对C++11的支持并不完整（而且没有systemd）</li>
+<li>Ubuntu Trusty 14.04或后续版本版本。 Ubuntu Precise 12.04已不再受支持</li>
+<li>Fedora 22或后续版本版本</li>
+</ul>
+<h2 id="从Firefly更新至Infernalis"><a href="#从Firefly更新至Infernalis" class="headerlink" title="从Firefly更新至Infernalis"></a>从Firefly更新至Infernalis</h2><p>我们不推荐从Firefly v0.80.z直接更新。虽然直接更新是可能的，但会存在停机时间。我们推荐先更新至Hammer v0.94.4或之后的v0.94.z的发行版，只有那样才能做到线上更新至Infernalis 9.2.z(见下文)。</p>
+<p>若需线下直接从Firefly版更新至Infernalis版，那么在任一Infernalis OSD允许启动之前，必须停止所有的Firefly OSD并将其标记为down状态。通过Infernalis的监控器来保证这种隔离机制，因此，使用类似如下的升级步骤</p>
+<ol>
+<li>在monitor主机上更新Ceph</li>
+<li>重启所有的ceph-mon守护进程</li>
+<li>在所有的OSD主机上更新Ceph</li>
+<li>停止所有的ceph-osd守护进程</li>
+<li>将所有的OSD标记为down，所用的执行命令类似于：<code>ceph osd down seq 0 1000</code></li>
+<li>重启所有的ceph-osd守护进程</li>
+<li>升级并重启余下的守护进程(ceph-mds, radosgw)</li>
+</ol>
+<h2 id="从Hammer更新至Infernalis"><a href="#从Hammer更新至Infernalis" class="headerlink" title="从Hammer更新至Infernalis"></a>从Hammer更新至Infernalis</h2><ul>
+<li>对支持systemd(CentOS 7, Fedora, Debian Jessie 8.x, OpenSUSE)的所有Linux发行版而言，Ceph守护进程现在使用原生的systemd文件而不是遗留的sysvinit脚本来进行管理。比如：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl start ceph.target   # start all daemons</span><br><span class="line">systemctl start ceph.target   # start all daemons</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>值得注意的是，主流的发行版中，Ubuntu trusty 14.04还未使用systemd。下一个Ubuntu LTS（即16.04）中，将会使用systemd替换upstart。</p>
+<ul>
+<li><p>现在，默认情况下，Ceph守护进程将以ceph用户和组的身份运行。 在Fedora和Debian（以及其他诸如RHEL/CentOS和Ubuntu等衍生发行版）中ceph用户被赋予了一个静态UID。在SUSE中ceph用户会在其创建的时候被动态的赋予一个UID。</p>
+<p>  如果你的系统中已有ceph用户，那么升级安装包的过程中将会出现问题。我们建议在升级前，先移除或重命名已有的ceph用户或ceph组。</p>
+<p>  升级过程中，管理员有两个选择：</p>
+<ol>
+<li><p>将如下行添加至所有主机的ceph.conf中：<br> <code>setuser match path = /var/lib/ceph/$type/$cluster-$id</code></p>
+<p> 这将使得Ceph的守护进程以root身份运行（即：未放弃特权及切换至ceph用户），如果Ceph守护进程的数据目录的所有者仍是root。新部署的守护进程将以ceph用户来创建数据目录，并以非特权运行，但升级的守护进程仍以root身份运行。</p>
+</li>
+<li><p>升级过程中修复数据的所有权。这是我们所偏好的选择，但这个选择工作量大而且耗时。对每个主机，需做如下步骤的操作：</p>
+<p> 1). 升级ceph安装包。这就创建了ceph用户和组。如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph-deploy install --stable infernalis HOST</span><br></pre></td></tr></table></figure>
+<p> 2). 停止守护进程</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">service ceph stop           # fedora, centos, rhel, debian</span><br><span class="line">stop ceph-all               # ubuntu</span><br></pre></td></tr></table></figure>
+<p> 3). 修复所有权</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chown -R ceph:ceph /var/lib/ceph</span><br></pre></td></tr></table></figure>
+<p> 4). 重启守护进程</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">start ceph-all                # ubuntu</span><br><span class="line">systemctl start ceph.target   # debian, centos, fedora, rhel</span><br></pre></td></tr></table></figure>
+<p> 另一个可行的方法是:相同的过程可以用单一的守护进程类型来完成，比如：只停止监控器并改变/var/lib/ceph/mon的所有者。</p>
+</li>
+</ol>
+</li>
+<li><p>处于实验阶段的KeyValueStore OSD后端所采用的磁盘格式(on-disk format)已发生了变化。如果你所要升级的测试集群中用到了它，那么你需要移除所有用到该后端的OSD。</p>
+</li>
+<li>与集群满一样，当达到存储池的配额时，librados操作将会无限期阻塞。（而之前的版本中会返回-ENOSPC）。默认状态下，当一个集群或pool满了，就会发生阻塞。如果你的librados应用能优雅地处理ENOSPC或EDQUOT等错误，那么你可以通过使用lirados中新的OPERATION_FULL_TRY标记来获取错误返回码。</li>
+<li>librbd的rbd_aio_read和Image::aio_read API方法在成功时将不再返回已读的字节数，而是在成功时返回0，失败时返回一个负值。</li>
+<li><code>ceph scrub</code>, <code>ceph compact</code> 和 <code>ceph sync force</code> 已弃用，取而代之的是 ‘ceph mon scrub’, ‘ceph mon compact’ 和 ‘ceph mon sync force’。</li>
+<li><code>ceph mon_metadata</code> 现在应写成 <code>ceph mon metadata</code>。没有必要弃用这个命令（自引入以来一直存在）。</li>
+<li>osdmaptool命令的–dump-json已由–dump json替换。</li>
+<li>pg ls-by-{pool,primary,osd} 和 pg ls 这两命令中的recovery参数改为了recovering, 用来包含所列出的pg中正处于recovering状态的pg。</li>
+</ul>
+<p>更多变化内容请详见<a href="http://ceph.com/releases/v9-2-0-infernalis-released/" target="_blank" rel="external">发行说明</a></p>
+<p>转载自<a href="http://bbs.ceph.org.cn/article/20" target="_blank" rel="external">cph中国社区</a></p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>Title:</span><a href="/2015/11/24/ceph-release-infernalis/">Ceph V9.2.0版本(代号INFERNALIS)已发布</a></p>
+        <p><span>Author:</span><a href="/" title="Back to Homepage">半天河(hnuzhoulin)</a></p>
+        <p><span>Created:</span>2015-11-24, 13:05:15</p>
+        <p><span>Updated:</span>2015-12-28, 15:40:05</p>
+        <p>
+            <span>Full URL:</span><a class="post-url" href="/2015/11/24/ceph-release-infernalis/" title="Ceph V9.2.0版本(代号INFERNALIS)已发布">http://blog.itzhoulin.com/2015/11/24/ceph-release-infernalis/</a>
+            <span class="copy-path" data-clipboard-text="From http://blog.itzhoulin.com/2015/11/24/ceph-release-infernalis/　　By 半天河(hnuzhoulin)" title="Copy Article&#39;s Link &amp; Author"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>License:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"CC BY-NC-SA 4.0"</a> Keep Link &amp; Author if Distribute.
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2015/12/07/sqlalchemy-orm/">
+                    SQLAlchemy的ORM模型操作数据库
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2015/11/24/ceph-infernalis-five-useful-new-features/">
+                    ceph的infernalis版本的五个很实用的新功能
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">Contents</strong>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#自Hammer版本以来所做的重要修改"><span class="toc-number">1.</span> <span class="toc-text">自Hammer版本以来所做的重要修改</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#发行版的兼容性"><span class="toc-number">2.</span> <span class="toc-text">发行版的兼容性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#从Firefly更新至Infernalis"><span class="toc-number">3.</span> <span class="toc-text">从Firefly更新至Infernalis</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#从Hammer更新至Infernalis"><span class="toc-number">4.</span> <span class="toc-text">从Hammer更新至Infernalis</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn {
+        display: none;
+    }
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="Hide"  title="Show or Hide Table of Contents">
+<script>
+    var valueHide = "Hide";
+    var valueShow = "Show";
+
+    if ($(".left-col").is(":hidden")) {
+        $("#tocButton").attr("value", valueShow);
+    }
+
+    $("#tocButton").click(function() {
+        if ($("#toc").is(":hidden")) {
+            $("#tocButton").attr("value", valueHide);
+            $("#toc").slideDown(320);
+            $(".switch-btn, .switch-area").fadeOut(300);
+        }
+        else {
+            $("#tocButton").attr("value", valueShow);
+            $("#toc").slideUp(350);
+            $(".switch-btn, .switch-area").fadeIn(500);
+        }
+    })
+
+    if ($(".toc").length < 1) {
+        $("#toc, #tocButton").hide();
+        $(".switch-btn, .switch-area").show();
+    }
+</script>
+
+
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Ceph V9.2.0版本(代号INFERNALIS)已发布　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <!-- 多说评论框 start -->
+    <div class="ds-thread" data-thread-key="2015/11/24/ceph-release-infernalis/" data-title="Ceph V9.2.0版本(代号INFERNALIS)已发布" data-url="http://blog.itzhoulin.com/2015/11/24/ceph-release-infernalis/"></div>
+    <!-- 多说评论框 end -->
+    <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+    <script type="text/javascript">
+    var duoshuoQuery = {short_name:"itzhoulin"};
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0] 
+         || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+    </script>
+    <!-- 多说公共JS代码 end -->
+</div>
+
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2015/12/07/sqlalchemy-orm/" title="Pre: SQLAlchemy的ORM模型操作数据库">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="Mini Archives"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2015/11/24/ceph-infernalis-five-useful-new-features/" title="Next: ceph的infernalis版本的五个很实用的新功能">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/ceph-journal-ssd-lifetime-expire/">记一次因为ceph日志分区所在SSD寿命到期导致的故障</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/">记一次日志所在SSD故障导致的object unfound</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">因为ceph波动导致kernel rbd挂起</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">Ceph Jewel版功能预览---RBD mirroring</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/01/fio-usage-example/">fio应用</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/04/cetune-performance-metric/">CeTune抓取性能数据的代码段分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/02/using-apache2-and-wsgi-to-run-django/">django项目利用apache2+mod_wsgi运行</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/03/get-ceph-rbd-watches/">ceph下查看使用rbd的客户端</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/01/mac-text-edit-shortcuts/">MAC文本编辑时跳转快捷键</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/">calamari的监控页面没有集群和Pool信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/12/right-steps-delete-ceph-osd/">删除osd的正确姿势</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/06/right-steps-adjusting-ceph-pg-num/">调整pg数量的步骤</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/28/ceph-IO-pattern/">Ceph的IO模式分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/24/fio-man-guide/">fio使用指南</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/23/using-python-or-shell-create-file-tree/">文件目录树的python和shell生成方法</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/07/sqlalchemy-orm/">SQLAlchemy的ORM模型操作数据库</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-release-infernalis/">Ceph V9.2.0版本(代号INFERNALIS)已发布</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-infernalis-five-useful-new-features/">ceph的infernalis版本的五个很实用的新功能</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-manual-repair-object/">Ceph里手动修复Object</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">php-sdk访问ceph对象存储时405错误</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/">一次硬盘被重新分区并写入数据后的整体恢复</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016 半天河(hnuzhoulin)
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="A fast, simple &amp; powerful blog framework">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="Another simple and elegant theme for Hexo">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" >Site Visitors: 
+                            <span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>, </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit">Page Hits: 
+                            <span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.1.22/require.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            var iPad = window.navigator.userAgent.indexOf('iPad');
+            if (iPad > -1 || $(".left-col").css("display") === "none") {
+                var bgColorList = ["#9db3f4", "#414141", "#e5a859", "#f5dfc6", "#c084a0", "#847e72", "#cd8390", "#996731"];
+                var bgColor = Math.ceil(Math.random() * (bgColorList.length - 1));
+                $("body").css({"background-color": bgColorList[bgColor], "background-size": "cover"});
+            }
+            else {
+                var backgroundnum = 5;
+                var backgroundimg = "url(/background/bg-x.jpg)".replace(/x/gi, Math.ceil(Math.random() * backgroundnum));
+                $("body").css({"background": backgroundimg, "background-attachment": "fixed", "background-size": "cover"});
+            }
+        })
+    </script>
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="Back to Top"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" title="Comments"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="Go to Bottom"><i class="fa fa-arrow-down"></i></a>
+</div>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>
