@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8">
   
-  <title>fio应用 | 我的IT江湖之旅</title>
+  <title>search | 我的IT江湖之旅</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="fio的具体应用实例，比如如何输出过程曲线并画图">
-<meta property="og:type" content="article">
-<meta property="og:title" content="fio应用">
-<meta property="og:url" content="http://blog.itzhoulin.com/2016/04/01/fio-usage-example/index.html">
+  <meta name="description" content="每周至少一篇博客回顾总结遇到的问题">
+<meta property="og:type" content="website">
+<meta property="og:title" content="search">
+<meta property="og:url" content="http://blog.itzhoulin.com/search/index.html">
 <meta property="og:site_name" content="我的IT江湖之旅">
-<meta property="og:description" content="fio的具体应用实例，比如如何输出过程曲线并画图">
-<meta property="og:updated_time" content="2016-04-06T02:51:03.000Z">
+<meta property="og:description" content="每周至少一篇博客回顾总结遇到的问题">
+<meta property="og:updated_time" content="2016-05-05T04:12:11.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="fio应用">
-<meta name="twitter:description" content="fio的具体应用实例，比如如何输出过程曲线并画图">
+<meta name="twitter:title" content="search">
+<meta name="twitter:description" content="每周至少一篇博客回顾总结遇到的问题">
   
     <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
   
@@ -44,7 +44,7 @@
           fancybox: true,
           animate: true,
           isHome: false,
-          isPost: true,
+          isPost: false,
           isArchive: false,
           isTag: false,
           isCategory: false,
@@ -251,11 +251,11 @@
         </header>                
     </div>
 </nav>
-      <div class="body-wrap"><article id="post-fio-usage-example" class="article article-type-post" itemscope itemprop="blogPost">
+      <div class="body-wrap"><article id="search-undefined" class="article article-type-search" itemscope itemprop="blogPost">
   
     <div class="article-meta">
-      <a href="/2016/04/01/fio-usage-example/" class="article-date">
-      <time datetime="2016-04-01T06:13:24.000Z" itemprop="datePublished">2016-04-01</time>
+      <a href="/search/index.html" class="article-date">
+      <time datetime="2016-05-05T04:12:11.000Z" itemprop="datePublished">2016-05-05</time>
 </a>
     </div>
   
@@ -268,7 +268,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      fio应用
+      search
     </h1>
   
 
@@ -276,16 +276,8 @@
       
       <div class="article-info article-info-post">
         
-    <div class="article-category tagcloud">
-    <a class="article-category-link" href="/categories/tool/">tool</a>
-    </div>
-
 
         
-    <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/fio/">fio</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/">linux</a></li></ul>
-    </div>
-
         <div class="clearfix"></div>
       </div>
       
@@ -293,102 +285,52 @@
     <div class="article-entry" itemprop="articleBody">
       
           
-        <h2 id="1-输出bw，lat和iops数据并画图"><a href="#1-输出bw，lat和iops数据并画图" class="headerlink" title="1.输出bw，lat和iops数据并画图"></a>1.输出bw，lat和iops数据并画图</h2><p>fio安装完后自带有一个高级脚本<code>fio_generate_plots</code>能够根据fio输出的数据进行画图。操作流程如下：</p>
-<h3 id="1-1设置fio输出详细日志"><a href="#1-1设置fio输出详细日志" class="headerlink" title="1.1设置fio输出详细日志"></a>1.1设置fio输出详细日志</h3><p>fio的输出日志主要包含三种：<strong>bw</strong>，<strong>lat</strong>和<strong>iops</strong>，设置这三种的参数如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">write_bw_<span class="built_in">log</span>=rw</span><br><span class="line">write_lat_<span class="built_in">log</span>=rw</span><br><span class="line">write_iops_<span class="built_in">log</span>=rw</span><br></pre></td></tr></table></figure>
-<p>这里需要强调的一点是，后面接的参数<strong>rw</strong>，是输出日志文件名的<strong>prefix</strong>，如最终会生成的日志文件如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">rw_iops.log</span><br><span class="line">rw_clat.log</span><br><span class="line">rw_slat.log</span><br><span class="line">rw_lat.log</span><br><span class="line">rw_bw.log</span><br></pre></td></tr></table></figure>
-<p>这个参数在后面画图的时候也要用到。</p>
-<h3 id="1-2-画图"><a href="#1-2-画图" class="headerlink" title="1.2 画图"></a>1.2 画图</h3><p>前提是还需要安装好<code>gnuplot</code>，然后使用下面的命令即可自动画图：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:/tmp&gt; fio_generate_plots bw</span><br></pre></td></tr></table></figure>
-<p>发现没有，<code>fio_generate_plots</code>接受的唯一参数就是这个日志文件名的prefix。</p>
-<p>本例中生成的图片文件有：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">bw-bw.svg  </span><br><span class="line">bw-clat.svg  </span><br><span class="line">bw-iops.svg  </span><br><span class="line">bw-lat.svg  </span><br><span class="line">bw-slat.svg</span><br></pre></td></tr></table></figure>
+              <style>
+    .article-meta {
+        display: none;
+    }
+    #container .article .article-title {
+        padding-right: 0;
+    }
+    .article-header {
+        padding: 0;
+        padding-top: 26px;
+        border-left: none;
+        text-align: center;
+    }
+    .article-header:hover {
+        border-left: none;
+    }
+    .article-title {
+        font-size: 1.6em
+    }
+    .article-meta {
+        display: none;
+    }
+    .article-entry hr {
+        margin: 0;
+    }
+    #container .article-info-post.article-info {
+      display: none;
+      }
+    #container .article .article-title {
+    padding: 0;
+    }
+</style>
+
+
+          
+        
       
     </div>
     
   </div>
   
     
-    <div class="copyright">
-        <p><span>Title:</span><a href="/2016/04/01/fio-usage-example/">fio应用</a></p>
-        <p><span>Author:</span><a href="/" title="Back to Homepage">半天河(hnuzhoulin)</a></p>
-        <p><span>Created:</span>2016-04-01, 14:13:24</p>
-        <p><span>Updated:</span>2016-04-06, 10:51:03</p>
-        <p>
-            <span>Full URL:</span><a class="post-url" href="/2016/04/01/fio-usage-example/" title="fio应用">http://blog.itzhoulin.com/2016/04/01/fio-usage-example/</a>
-            <span class="copy-path" data-clipboard-text="From http://blog.itzhoulin.com/2016/04/01/fio-usage-example/　　By 半天河(hnuzhoulin)" title="Copy Article&#39;s Link &amp; Author"><i class="fa fa-clipboard"></i></span>
-            <script> var clipboard = new Clipboard('.copy-path'); </script>
-        </p>
-        <p>
-            <span>License:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"CC BY-NC-SA 4.0"</a> Keep Link &amp; Author if Distribute.
-        </p>
-    </div>
 
-
-
-    <nav id="article-nav">
-        
-            <div id="article-nav-newer" class="article-nav-title">
-                <a href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">
-                    Ceph Jewel版功能预览---RBD mirroring
-                </a>
-            </div>
-        
-        
-            <div id="article-nav-older" class="article-nav-title">
-                <a href="/2016/03/04/cetune-performance-metric/">
-                    CeTune抓取性能数据的代码段分析
-                </a>
-            </div>
-        
-    </nav>
 
   
 </article>
-
-    <div id="toc" class="toc-article">
-    <strong class="toc-title">Contents</strong>
-    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-输出bw，lat和iops数据并画图"><span class="toc-number">1.</span> <span class="toc-text">1.输出bw，lat和iops数据并画图</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1设置fio输出详细日志"><span class="toc-number">1.1.</span> <span class="toc-text">1.1设置fio输出详细日志</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-画图"><span class="toc-number">1.2.</span> <span class="toc-text">1.2 画图</span></a></li></ol></li></ol>
-</div>
-<style>
-    .left-col .switch-btn {
-        display: none;
-    }
-    .left-col .switch-area {
-        display: none;
-    }
-</style>
-
-<input type="button" id="tocButton" value="Hide"  title="Show or Hide Table of Contents">
-<script>
-    var valueHide = "Hide";
-    var valueShow = "Show";
-
-    if ($(".left-col").is(":hidden")) {
-        $("#tocButton").attr("value", valueShow);
-    }
-
-    $("#tocButton").click(function() {
-        if ($("#toc").is(":hidden")) {
-            $("#tocButton").attr("value", valueHide);
-            $("#toc").slideDown(320);
-            $(".switch-btn, .switch-area").fadeOut(300);
-        }
-        else {
-            $("#tocButton").attr("value", valueShow);
-            $("#toc").slideUp(350);
-            $(".switch-btn, .switch-area").fadeIn(500);
-        }
-    })
-
-    if ($(".toc").length < 1) {
-        $("#toc, #tocButton").hide();
-        $(".switch-btn, .switch-area").show();
-    }
-</script>
-
-
 
 
 
@@ -406,7 +348,7 @@
         </div>
         <script>
             window._bd_share_config={
-                "common":{"bdSnsKey":{},"bdText":"fio应用　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+                "common":{"bdSnsKey":{},"bdText":"search　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
         </script>
     
 
@@ -422,7 +364,7 @@
     
       <div class="duoshuo" id="comments">
     <!-- 多说评论框 start -->
-    <div class="ds-thread" data-thread-key="2016/04/01/fio-usage-example/" data-title="fio应用" data-url="http://blog.itzhoulin.com/2016/04/01/fio-usage-example/"></div>
+    <div class="ds-thread" data-thread-key="search/index.html" data-title="search" data-url="http://blog.itzhoulin.com/search/index.html"></div>
     <!-- 多说评论框 end -->
     <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
     <script type="text/javascript">
@@ -441,26 +383,6 @@
 
     
 
-
-
-
-    <div class="scroll" id="post-nav-button">
-        
-            <a href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/" title="Pre: Ceph Jewel版功能预览---RBD mirroring">
-                <i class="fa fa-angle-left"></i>
-            </a>
-        
-
-        <a title="Mini Archives"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
-
-        
-            <a href="/2016/03/04/cetune-performance-metric/" title="Next: CeTune抓取性能数据的代码段分析">
-                <i class="fa fa-angle-right"></i>
-            </a>
-        
-    </div>
-
-    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2016/04/24/blog-updates/">博客更新</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/ceph-journal-ssd-lifetime-expire/">记一次因为ceph日志分区所在SSD寿命到期导致的故障</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/">记一次日志所在SSD故障导致的object unfound</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">因为ceph波动导致kernel rbd挂起</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">Ceph Jewel版功能预览---RBD mirroring</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/01/fio-usage-example/">fio应用</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/04/cetune-performance-metric/">CeTune抓取性能数据的代码段分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/02/using-apache2-and-wsgi-to-run-django/">django项目利用apache2+mod_wsgi运行</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/03/get-ceph-rbd-watches/">ceph下查看使用rbd的客户端</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/01/mac-text-edit-shortcuts/">MAC文本编辑时跳转快捷键</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/">calamari的监控页面没有集群和Pool信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/12/right-steps-delete-ceph-osd/">删除osd的正确姿势</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/06/right-steps-adjusting-ceph-pg-num/">调整pg数量的步骤</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/28/ceph-IO-pattern/">Ceph的IO模式分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/24/fio-man-guide/">fio使用指南</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/23/using-python-or-shell-create-file-tree/">文件目录树的python和shell生成方法</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/07/sqlalchemy-orm/">SQLAlchemy的ORM模型操作数据库</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-release-infernalis/">Ceph V9.2.0版本(代号INFERNALIS)已发布</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-infernalis-five-useful-new-features/">ceph的infernalis版本的五个很实用的新功能</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-manual-repair-object/">Ceph里手动修复Object</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">php-sdk访问ceph对象存储时405错误</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/">一次硬盘被重新分区并写入数据后的整体恢复</a></li></ul>
 
 
 
