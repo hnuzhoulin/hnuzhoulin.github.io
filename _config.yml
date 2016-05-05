@@ -120,5 +120,15 @@ stylus:
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
-      type: git
-      repository: git@github.com:hnuzhoulin/hnuzhoulin.github.io.git
+- type: git
+  repository: git@github.com:hnuzhoulin/hnuzhoulin.github.io.git
+
+- type: rsync
+  host: 139.162.20.191
+  user: root
+  root: /var/www/html
+  port: 44666
+  delete: true
+  verbose: true
+  ignore_errors: false
+
