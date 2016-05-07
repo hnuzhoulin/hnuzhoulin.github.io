@@ -3,6 +3,7 @@
 
 
     
+    
   <url>
     <loc>http://www.itzhoulin.com/2016/04/24/blog-updates/</loc>
     <lastmod>2016-05-07T06:19:45.000Z</lastmod>
@@ -99,9 +100,9 @@
         <title>因为ceph波动导致kernel rbd挂起</title>
         <pubTime>2016-04-18T02:44:27.000Z</pubTime>
         
-        <tag>rbd</tag>
-         
         <tag>排错</tag>
+         
+        <tag>rbd</tag>
          
         <tag>kernel</tag>
          
