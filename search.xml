@@ -5,7 +5,7 @@
     
     <entry>
       <title><![CDATA[博客更新]]></title>
-      <url>http://blog.itzhoulin.com/2016/04/24/blog-updates/</url>
+      <url>http://www.itzhoulin.com/2016/04/24/blog-updates/</url>
       <content type="html"><![CDATA[<h3 id="TODO-List"><a href="#TODO-List" class="headerlink" title="TODO List"></a>TODO List</h3><ol>
 <li>Yelee主题学习：</li>
 <li>实现CND加速</li>
@@ -39,7 +39,7 @@
     
     <entry>
       <title><![CDATA[记一次因为ceph日志分区所在SSD寿命到期导致的故障]]></title>
-      <url>http://blog.itzhoulin.com/2016/04/20/ceph-journal-ssd-lifetime-expire/</url>
+      <url>http://www.itzhoulin.com/2016/04/20/ceph-journal-ssd-lifetime-expire/</url>
       <content type="html"><![CDATA[<h2 id="1-环境"><a href="#1-环境" class="headerlink" title="1.环境"></a>1.环境</h2><ul>
 <li>openstack加ceph，计算存储放在一起，管理节点独立。</li>
 <li>4个存储节点，每个节点12块3T的SATA硬盘，都做OSD</li>
@@ -90,40 +90,8 @@
     </entry>
     
     <entry>
-      <title><![CDATA[ceph full或者nearfull的解决方法探究]]></title>
-      <url>http://blog.itzhoulin.com/2016/04/20/deal_with_ceph_full/</url>
-      <content type="html"><![CDATA[<h2 id="1-问题"><a href="#1-问题" class="headerlink" title="1.问题"></a>1.问题</h2><p>昨晚在测试环境新建了7个rbd，然后在不同节点上向这些rbd执行fio，对rbd进行初始化。今早来发现fio没有按时完成，没有输出信息，一看集群状态如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@console:~/CeTune/benchmarking<span class="comment"># ceph health detail</span></span><br><span class="line">HEALTH_ERR 1 full osd(s); 3 near full osd(s)</span><br><span class="line">osd.4 is full at 95%</span><br><span class="line">osd.0 is near full at 87%</span><br><span class="line">osd.2 is near full at 90%</span><br><span class="line">osd.3 is near full at 90%</span><br></pre></td></tr></table></figure>
-<p>这个对于见过场面的我来说不是什么大事（PS：其实主要因为是测试环境），于是乎习惯性翻笔记，但是发现以前的操作处理记录没了，于是乎今天记录一下今天的解决步骤。</p>
-<h2 id="2-解决"><a href="#2-解决" class="headerlink" title="2.解决"></a>2.解决</h2><h3 id="2-0-根本之道"><a href="#2-0-根本之道" class="headerlink" title="2.0.根本之道"></a>2.0.根本之道</h3><p>集群满了，说明空间不够用，因此添加OSD才是最终的出路，但是一旦集群有OSD达到full的级别，及时添加OSD，集群也不会进行数据平衡操作，因此先要能让集群动起来在根据实际情况选择添加OSD还是删除数据。</p>
-<h3 id="2-1-调整OSD的full比例"><a href="#2-1-调整OSD的full比例" class="headerlink" title="2.1.调整OSD的full比例"></a>2.1.调整OSD的full比例</h3><p>执行下面的命令调整OSD的full和nearfull的比例：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 98'</span></span><br><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 0.98'</span></span><br></pre></td></tr></table></figure>
-<p>上面两个是最容易想到的，但是实际上调整这两个后并不能很好的解决我的这个问题，这个时候及时选择删除rbd以腾出空间依然弹出错误如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@console:~/cluster<span class="comment"># rbd rm volume-b0d3175b-7e74-4f71-aae5-39a53eda11ad</span></span><br><span class="line">2016-04-08 08:56:27.911165 7f4cee0da7c0  0 client.104114.objecter  FULL, paused modify 0x1cc3a60 tid 2</span><br></pre></td></tr></table></figure>
-<p>在回看我的场景，基本是所有的OSD的数据都满了，也就是说整个集群（包括pg和OSD）都是full的状态，因此还需要设置一个pg的full比例：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph pg <span class="built_in">set</span>_full_ratio 0.98</span><br></pre></td></tr></table></figure>
-<p>此时再次执行删除rbd操作就会开始工作了，删除可能会比较慢</p>
-<p>PS：<strong>不推荐的删除方式</strong>，先解挂所有rbd，再删除所有rbd，最后直接删除OSD数据目录下current目录下的所有文件。即使是这样，由于我的集群整个满了，删除都消耗了十几分钟。</p>
-<h2 id="3-扩展"><a href="#3-扩展" class="headerlink" title="3.扩展"></a>3.扩展</h2><p>对于只有部分OSD用量满的情况跟前面的处理方式有很大不同。当然，<strong>让集群能够动起来是最开始要做的事</strong> ，这里的情况跟前面第二节介绍的方法还是要所有区别，尤其是对于线上环境，因为一旦调整这个全局的比例，可能整个集群的数据都会动起来，可能会有更多的数据迁移。因此另一种解决方法是临时调整、单个调整。但是，但是，但是，最最重要也是最先要解决的就是找到为什么只有少数OSD空间用量会满。</p>
-<h3 id="3-1-数据分布不均匀的原因"><a href="#3-1-数据分布不均匀的原因" class="headerlink" title="3.1.数据分布不均匀的原因"></a>3.1.数据分布不均匀的原因</h3><h4 id="3-1-1-crushmap问题"><a href="#3-1-1-crushmap问题" class="headerlink" title="3.1.1.crushmap问题"></a>3.1.1.crushmap问题</h4><p>出现这种问题的原因可能是你手动修改过crushmap，将某些OSD划到了单独的组；或者是数据分布规则设定有误等。这种情况就只能自己到处crushmap分析一下了。不好举例，有问题的欢迎沟通。</p>
-<p>####3.1.2.pg数设置不合理<br>这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 <strong>file-&gt;object-&gt;pg-&gt;OSD-&gt;physics disk</strong> 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 <strong>pg_num</strong> 和 <strong>pgp_num</strong> 。有关调整这部分的工作和注意事项等见我的另一篇博文：<a href="http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num" target="_blank" rel="external">调整pg数量的步骤</a></p>
-<p>有一个python程序可以看各个pool在各个OSD上的pg分布，由此可以判断一下pg是否分布均匀。进而使用上面的方法调整该pool的pg_num和pgp_num。脚本点击<a href="https://gist.github.com/hnuzhoulin/fef193f5e26533fc08c86ad30209646d" target="_blank" rel="external">这里</a></p>
-<h3 id="3-2-调整OSD的weight"><a href="#3-2-调整OSD的weight" class="headerlink" title="3.2.调整OSD的weight"></a>3.2.调整OSD的weight</h3><p>对于只是少数OSD容量满的情况下，不管是上一小节中的调整crushmap还是pg_num的方法解决，最首先也还是需要集群能够进行正常读写操作，因此可以设置单个OSD的full和nearfull比例，也可以使用调整weight的方法。</p>
-<p>关于一个OSD的weght，一共有两种：</p>
-<ul>
-<li>一种就是在crush自动设置的weight，这个值是根据OSD所在硬盘空间大小算出来的，1T的硬盘可用空间，这个值为1.</li>
-<li>另一种就是人为添加的用以表示数据分布权重值的 reweight，这个值介于0-1之间，越小表示分布权重越低。</li>
-</ul>
-<p>两种weoght都可以在命令 <code>ceph osd ree</code> 中看到，如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">root@node1:~<span class="comment"># ceph osd tree</span></span><br><span class="line"><span class="comment"># id    weight  type name       up/down reweight</span></span><br><span class="line">-1      13.65   root default</span><br><span class="line">-2      2.73            host node1</span><br><span class="line">0       2.73                    osd.0   up      1</span><br><span class="line">-3      2.73            host node2</span><br><span class="line">1       2.73                    osd.1   up      1</span><br><span class="line">-4      2.73            host node3</span><br><span class="line">2       2.73                    osd.2   up      1</span><br><span class="line">-5      2.73            host node4</span><br><span class="line">3       2.73                    osd.3   up      1</span><br><span class="line">-6      2.73            host node5</span><br><span class="line">4       2.73                    osd.4   up      1</span><br></pre></td></tr></table></figure>
-<p>从上面的额输出来看，第二列的weight就是crush根据硬盘可用容量计算出来的，最后一列的reweight就是这个OSD的数据分布权重。这里我们应对某一个OSD满的另一种方法就是调整reweight，以降低数据在该OSD上的分布，调整的效果可以看看这个<a href="http://cephnotes.ksperis.com/blog/2013/12/09/ceph-osd-reweight/" target="_blank" rel="external">博文</a>，此文ceph中国论坛有<a href="http://bbs.ceph.org.cn/article/38" target="_blank" rel="external">翻译稿</a></p>
-<p>ceph提供有自动调节reweight的工具：<code>ceph osd reweight-by-utilization</code></p>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[记一次日志所在SSD故障导致的object unfound]]></title>
-      <url>http://blog.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</url>
+      <url>http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</url>
       <content type="html"><![CDATA[<h2 id="1-问题"><a href="#1-问题" class="headerlink" title="1.问题"></a>1.问题</h2><p>节点node-65因为其中一个既做系统又做日志分区的SSD寿命到期性能急剧下降导致对应OSD延时超级大，且有OSD无法启动，同时，整个过程依然有虚拟机在对集群进行读写。</p>
 <p>在成功通过先调整reweight为0给SSD减压最后替换这个SSD再恢复reweight之后，有一个object 处于unfound状态，同时导致其所在的pg整个处于backfilling状态</p>
 <h2 id="2-处理流程及总结"><a href="#2-处理流程及总结" class="headerlink" title="2.处理流程及总结"></a>2.处理流程及总结</h2><h3 id="2-1-pg以及object相关信息"><a href="#2-1-pg以及object相关信息" class="headerlink" title="2.1.pg以及object相关信息"></a>2.1.pg以及object相关信息</h3><p>该pg的信息如下：</p>
@@ -154,8 +122,40 @@
     </entry>
     
     <entry>
+      <title><![CDATA[ceph full或者nearfull的解决方法探究]]></title>
+      <url>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</url>
+      <content type="html"><![CDATA[<h2 id="1-问题"><a href="#1-问题" class="headerlink" title="1.问题"></a>1.问题</h2><p>昨晚在测试环境新建了7个rbd，然后在不同节点上向这些rbd执行fio，对rbd进行初始化。今早来发现fio没有按时完成，没有输出信息，一看集群状态如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@console:~/CeTune/benchmarking<span class="comment"># ceph health detail</span></span><br><span class="line">HEALTH_ERR 1 full osd(s); 3 near full osd(s)</span><br><span class="line">osd.4 is full at 95%</span><br><span class="line">osd.0 is near full at 87%</span><br><span class="line">osd.2 is near full at 90%</span><br><span class="line">osd.3 is near full at 90%</span><br></pre></td></tr></table></figure>
+<p>这个对于见过场面的我来说不是什么大事（PS：其实主要因为是测试环境），于是乎习惯性翻笔记，但是发现以前的操作处理记录没了，于是乎今天记录一下今天的解决步骤。</p>
+<h2 id="2-解决"><a href="#2-解决" class="headerlink" title="2.解决"></a>2.解决</h2><h3 id="2-0-根本之道"><a href="#2-0-根本之道" class="headerlink" title="2.0.根本之道"></a>2.0.根本之道</h3><p>集群满了，说明空间不够用，因此添加OSD才是最终的出路，但是一旦集群有OSD达到full的级别，及时添加OSD，集群也不会进行数据平衡操作，因此先要能让集群动起来在根据实际情况选择添加OSD还是删除数据。</p>
+<h3 id="2-1-调整OSD的full比例"><a href="#2-1-调整OSD的full比例" class="headerlink" title="2.1.调整OSD的full比例"></a>2.1.调整OSD的full比例</h3><p>执行下面的命令调整OSD的full和nearfull的比例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 98'</span></span><br><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 0.98'</span></span><br></pre></td></tr></table></figure>
+<p>上面两个是最容易想到的，但是实际上调整这两个后并不能很好的解决我的这个问题，这个时候及时选择删除rbd以腾出空间依然弹出错误如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@console:~/cluster<span class="comment"># rbd rm volume-b0d3175b-7e74-4f71-aae5-39a53eda11ad</span></span><br><span class="line">2016-04-08 08:56:27.911165 7f4cee0da7c0  0 client.104114.objecter  FULL, paused modify 0x1cc3a60 tid 2</span><br></pre></td></tr></table></figure>
+<p>在回看我的场景，基本是所有的OSD的数据都满了，也就是说整个集群（包括pg和OSD）都是full的状态，因此还需要设置一个pg的full比例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph pg <span class="built_in">set</span>_full_ratio 0.98</span><br></pre></td></tr></table></figure>
+<p>此时再次执行删除rbd操作就会开始工作了，删除可能会比较慢</p>
+<p>PS：<strong>不推荐的删除方式</strong>，先解挂所有rbd，再删除所有rbd，最后直接删除OSD数据目录下current目录下的所有文件。即使是这样，由于我的集群整个满了，删除都消耗了十几分钟。</p>
+<h2 id="3-扩展"><a href="#3-扩展" class="headerlink" title="3.扩展"></a>3.扩展</h2><p>对于只有部分OSD用量满的情况跟前面的处理方式有很大不同。当然，<strong>让集群能够动起来是最开始要做的事</strong> ，这里的情况跟前面第二节介绍的方法还是要所有区别，尤其是对于线上环境，因为一旦调整这个全局的比例，可能整个集群的数据都会动起来，可能会有更多的数据迁移。因此另一种解决方法是临时调整、单个调整。但是，但是，但是，最最重要也是最先要解决的就是找到为什么只有少数OSD空间用量会满。</p>
+<h3 id="3-1-数据分布不均匀的原因"><a href="#3-1-数据分布不均匀的原因" class="headerlink" title="3.1.数据分布不均匀的原因"></a>3.1.数据分布不均匀的原因</h3><h4 id="3-1-1-crushmap问题"><a href="#3-1-1-crushmap问题" class="headerlink" title="3.1.1.crushmap问题"></a>3.1.1.crushmap问题</h4><p>出现这种问题的原因可能是你手动修改过crushmap，将某些OSD划到了单独的组；或者是数据分布规则设定有误等。这种情况就只能自己到处crushmap分析一下了。不好举例，有问题的欢迎沟通。</p>
+<p>####3.1.2.pg数设置不合理<br>这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 <strong>file-&gt;object-&gt;pg-&gt;OSD-&gt;physics disk</strong> 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 <strong>pg_num</strong> 和 <strong>pgp_num</strong> 。有关调整这部分的工作和注意事项等见我的另一篇博文：<a href="http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num">调整pg数量的步骤</a></p>
+<p>有一个python程序可以看各个pool在各个OSD上的pg分布，由此可以判断一下pg是否分布均匀。进而使用上面的方法调整该pool的pg_num和pgp_num。脚本点击<a href="https://gist.github.com/hnuzhoulin/fef193f5e26533fc08c86ad30209646d" target="_blank" rel="external">这里</a></p>
+<h3 id="3-2-调整OSD的weight"><a href="#3-2-调整OSD的weight" class="headerlink" title="3.2.调整OSD的weight"></a>3.2.调整OSD的weight</h3><p>对于只是少数OSD容量满的情况下，不管是上一小节中的调整crushmap还是pg_num的方法解决，最首先也还是需要集群能够进行正常读写操作，因此可以设置单个OSD的full和nearfull比例，也可以使用调整weight的方法。</p>
+<p>关于一个OSD的weght，一共有两种：</p>
+<ul>
+<li>一种就是在crush自动设置的weight，这个值是根据OSD所在硬盘空间大小算出来的，1T的硬盘可用空间，这个值为1.</li>
+<li>另一种就是人为添加的用以表示数据分布权重值的 reweight，这个值介于0-1之间，越小表示分布权重越低。</li>
+</ul>
+<p>两种weoght都可以在命令 <code>ceph osd ree</code> 中看到，如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">root@node1:~<span class="comment"># ceph osd tree</span></span><br><span class="line"><span class="comment"># id    weight  type name       up/down reweight</span></span><br><span class="line">-1      13.65   root default</span><br><span class="line">-2      2.73            host node1</span><br><span class="line">0       2.73                    osd.0   up      1</span><br><span class="line">-3      2.73            host node2</span><br><span class="line">1       2.73                    osd.1   up      1</span><br><span class="line">-4      2.73            host node3</span><br><span class="line">2       2.73                    osd.2   up      1</span><br><span class="line">-5      2.73            host node4</span><br><span class="line">3       2.73                    osd.3   up      1</span><br><span class="line">-6      2.73            host node5</span><br><span class="line">4       2.73                    osd.4   up      1</span><br></pre></td></tr></table></figure>
+<p>从上面的额输出来看，第二列的weight就是crush根据硬盘可用容量计算出来的，最后一列的reweight就是这个OSD的数据分布权重。这里我们应对某一个OSD满的另一种方法就是调整reweight，以降低数据在该OSD上的分布，调整的效果可以看看这个<a href="http://cephnotes.ksperis.com/blog/2013/12/09/ceph-osd-reweight/" target="_blank" rel="external">博文</a>，此文ceph中国论坛有<a href="http://bbs.ceph.org.cn/article/38" target="_blank" rel="external">翻译稿</a></p>
+<p>ceph提供有自动调节reweight的工具：<code>ceph osd reweight-by-utilization</code></p>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[因为ceph波动导致kernel rbd挂起]]></title>
-      <url>http://blog.itzhoulin.com/2016/04/18/kernel-rbd-hang-when-ceph-full/</url>
+      <url>http://www.itzhoulin.com/2016/04/18/kernel-rbd-hang-when-ceph-full/</url>
       <content type="html"><![CDATA[<h2 id="1-问题"><a href="#1-问题" class="headerlink" title="1.问题"></a>1.问题</h2><p>有一个ceph环境的使用方式如下：</p>
 <ul>
 <li>在某一个ceph节点上map rbd</li>
@@ -197,7 +197,7 @@
     
     <entry>
       <title><![CDATA[Ceph Jewel版功能预览---RBD mirroring]]></title>
-      <url>http://blog.itzhoulin.com/2016/04/02/ceph-jewel-preview-rbd-mirroring/</url>
+      <url>http://www.itzhoulin.com/2016/04/02/ceph-jewel-preview-rbd-mirroring/</url>
       <content type="html"><![CDATA[<p><em>由Ceph中国社区-半天河翻译，XXXX 校稿。</em></p>
 <p>英文出处：<a href="http://www.sebastien-han.fr/blog/2016/03/28/ceph-jewel-preview-ceph-rbd-mirroring/" target="_blank" rel="external">Sébastien Han</a> 欢迎加入<a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">翻译组</a></p>
 <p><img src="http://sebastien-han.fr/images/ceph-rbd-mirroring.jpg" alt=""></p>
@@ -250,7 +250,7 @@
     
     <entry>
       <title><![CDATA[fio应用]]></title>
-      <url>http://blog.itzhoulin.com/2016/04/01/fio-usage-example/</url>
+      <url>http://www.itzhoulin.com/2016/04/01/fio-usage-example/</url>
       <content type="html"><![CDATA[<h2 id="1-输出bw，lat和iops数据并画图"><a href="#1-输出bw，lat和iops数据并画图" class="headerlink" title="1.输出bw，lat和iops数据并画图"></a>1.输出bw，lat和iops数据并画图</h2><p>fio安装完后自带有一个高级脚本<code>fio_generate_plots</code>能够根据fio输出的数据进行画图。操作流程如下：</p>
 <h3 id="1-1设置fio输出详细日志"><a href="#1-1设置fio输出详细日志" class="headerlink" title="1.1设置fio输出详细日志"></a>1.1设置fio输出详细日志</h3><p>fio的输出日志主要包含三种：<strong>bw</strong>，<strong>lat</strong>和<strong>iops</strong>，设置这三种的参数如下：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">write_bw_<span class="built_in">log</span>=rw</span><br><span class="line">write_lat_<span class="built_in">log</span>=rw</span><br><span class="line">write_iops_<span class="built_in">log</span>=rw</span><br></pre></td></tr></table></figure>
@@ -266,7 +266,7 @@
     
     <entry>
       <title><![CDATA[CeTune抓取性能数据的代码段分析]]></title>
-      <url>http://blog.itzhoulin.com/2016/03/04/cetune-performance-metric/</url>
+      <url>http://www.itzhoulin.com/2016/03/04/cetune-performance-metric/</url>
       <content type="html"><![CDATA[<h2 id="1-sar数据"><a href="#1-sar数据" class="headerlink" title="1.sar数据"></a>1.sar数据</h2><h3 id="1-1-抓取命令为："><a href="#1-1-抓取命令为：" class="headerlink" title="1.1 抓取命令为："></a>1.1 抓取命令为：</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">common.pdsh(user, nodes, <span class="string">"sar -A %s &gt; %s/`hostname`_sar.txt &amp; echo `date +%s`' sar start' &gt;&gt; %s/`hostname`_process_log.txt"</span> % (monitor_interval, dest_dir, <span class="string">'%s'</span>, dest_dir))</span><br></pre></td></tr></table></figure>
 <p>数据写入<code>node1_sar.txt</code>文件，<code>node1_process_log.txt</code>文件记录开始时间</p>
 <h3 id="1-2-停止命令"><a href="#1-2-停止命令" class="headerlink" title="1.2 停止命令"></a>1.2 停止命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">common.pdsh(user, nodes, <span class="string">"killall -9 sar; echo `date +%s`' sar stop' &gt;&gt; %s/`hostname`_process_log.txt"</span> % (<span class="string">'%s'</span>, dest_dir), option = <span class="string">"check_return"</span>)</span><br></pre></td></tr></table></figure>
@@ -369,7 +369,7 @@
     
     <entry>
       <title><![CDATA[django项目利用apache2+mod_wsgi运行]]></title>
-      <url>http://blog.itzhoulin.com/2016/03/02/using-apache2-and-wsgi-to-run-django/</url>
+      <url>http://www.itzhoulin.com/2016/03/02/using-apache2-and-wsgi-to-run-django/</url>
       <content type="html"><![CDATA[<h2 id="1-前提"><a href="#1-前提" class="headerlink" title="1.前提"></a>1.前提</h2><p>假设django项目名为<code>myproject</code>,为了便于处理权限，将项目目录置于<code>/var/www</code>目录下。</p>
 <h2 id="2-安装"><a href="#2-安装" class="headerlink" title="2.安装"></a>2.安装</h2><p>安装apache和mod_wsgi：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install apache2 libapache2-mod-wsgi</span><br></pre></td></tr></table></figure></p>
 <h2 id="3-配置"><a href="#3-配置" class="headerlink" title="3.配置"></a>3.配置</h2><p>编辑文件<code>/etc/apache2/sites-enabled/000-default</code>，替换为下面的内容：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&lt;VirtualHost *:80&gt;</span><br><span class="line">    . . .</span><br><span class="line">    Alias /static /var/www/myproject/static</span><br><span class="line">    &lt;Directory /home/user/myproject/static&gt;</span><br><span class="line">        Require all granted</span><br><span class="line">    &lt;/Directory&gt;</span><br><span class="line"></span><br><span class="line">    &lt;Directory /var/www/myproject/myproject&gt;</span><br><span class="line">        &lt;Files wsgi.py&gt;</span><br><span class="line">            Require all granted</span><br><span class="line">        &lt;/Files&gt;</span><br><span class="line">    &lt;/Directory&gt;</span><br><span class="line"></span><br><span class="line">    WSGIDaemonProcess myproject python-path=/var/www/myproject:/usr/lib/python2.7/site-packages:/usr/local/lib/python2.7/site-packages</span><br><span class="line">    WSGIProcessGroup myproject</span><br><span class="line">    WSGIScriptAlias / /var/www/myproject/myproject/wsgi.py</span><br><span class="line"></span><br><span class="line">&lt;/VirtualHost&gt;</span><br></pre></td></tr></table></figure></p>
@@ -389,7 +389,7 @@
     
     <entry>
       <title><![CDATA[ceph下查看使用rbd的客户端]]></title>
-      <url>http://blog.itzhoulin.com/2016/02/03/get-ceph-rbd-watches/</url>
+      <url>http://www.itzhoulin.com/2016/02/03/get-ceph-rbd-watches/</url>
       <content type="html"><![CDATA[<h2 id="一-背景"><a href="#一-背景" class="headerlink" title="一.背景"></a>一.背景</h2><p>不知道挂载点这个表述是否准确。真实的需求是有个时候删除rbd块会提示当前rbd正在使用中，如法删除。对于linux下是文件或者目录可以通过<code>lsof</code>查看当前文件或目录的使用进程。对于ceph也希望有一个合适的方式查看当前rbd块在哪个主机上被使用。</p>
 <h2 id="二-解决方法"><a href="#二-解决方法" class="headerlink" title="二.解决方法"></a>二.解决方法</h2><p>对于rbd块的使用，目前主要有两种形式：内核模块map后再mount和通过libvirt等供给虚拟机使用。两种方式不太一样。</p>
 <h3 id="2-1-内核模块map"><a href="#2-1-内核模块map" class="headerlink" title="2.1 内核模块map"></a>2.1 内核模块map</h3><p>查看方法如下：</p>
@@ -401,7 +401,7 @@
     
     <entry>
       <title><![CDATA[MAC文本编辑时跳转快捷键]]></title>
-      <url>http://blog.itzhoulin.com/2016/02/01/mac-text-edit-shortcuts/</url>
+      <url>http://www.itzhoulin.com/2016/02/01/mac-text-edit-shortcuts/</url>
       <content type="html"><![CDATA[<p>在电脑上码字的时候，经常会遇到需要对某段文字进行修改或者操作的情况，大家通常的做法是用鼠标去移动光标快速定位，但是右手（或者左手）反复的在鼠标和键盘之前来回切换其实是很浪费时间的一件事，有时候，通过键盘移动光标比拖动鼠标来的更快。<br><br><br>今天我就教大家三招，让你在最短的时间内把光标移动到你想要的位置，提高在电脑上码字的效率。</p>
 <h2 id="1-全文-amp-段落定位"><a href="#1-全文-amp-段落定位" class="headerlink" title="1. 全文 &amp; 段落定位"></a>1. 全文 &amp; 段落定位</h2><p>目标位置比较远的时候，需要对光标远程定位，下面的组合键可以帮到我们。</p>
 <h3 id="1-1-Command-方向键上-下"><a href="#1-1-Command-方向键上-下" class="headerlink" title="1.1 Command + 方向键上/下"></a>1.1 Command + 方向键上/下</h3><p>「Command + 方向键上」将光标快速移动到整篇文本开头，类似的，「Command + 方向键下」快速移动到文章结尾。</p>
@@ -431,7 +431,7 @@
     
     <entry>
       <title><![CDATA[calamari的监控页面没有集群和Pool信息]]></title>
-      <url>http://blog.itzhoulin.com/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/</url>
+      <url>http://www.itzhoulin.com/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/</url>
       <content type="html"><![CDATA[<h2 id="一-问题："><a href="#一-问题：" class="headerlink" title="一.问题："></a>一.问题：</h2><h3 id="1-dashboard没有IOPS和Usage信息"><a href="#1-dashboard没有IOPS和Usage信息" class="headerlink" title="1.dashboard没有IOPS和Usage信息"></a>1.dashboard没有IOPS和Usage信息</h3><p>在calamari的dashboard页面，IOPS和Usage两项没有数据，如下图：<br><img src="https://cloud.githubusercontent.com/assets/4092006/12389397/95791f32-be2c-11e5-8f08-14a3c7967376.png" alt=""></p>
 <h3 id="2-监控页面没有集群和Pools信息"><a href="#2-监控页面没有集群和Pools信息" class="headerlink" title="2.监控页面没有集群和Pools信息"></a>2.监控页面没有集群和Pools信息</h3><p>在监控页面，能够看到节点的监控信息，但是cluster和Pools两大类里面没有监控数据，如下图：<br><img src="https://cloud.githubusercontent.com/assets/4092006/12389269/c7afbeda-be2b-11e5-8e79-7e2eb6ab0691.png" alt=""></p>
 <h3 id="3-日志信息"><a href="#3-日志信息" class="headerlink" title="3.日志信息"></a>3.日志信息</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">2016-01-30 21:00:20,166 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.72.num_bytes</span><br><span class="line">2016-01-30 21:00:20,179 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.73.num_objects</span><br><span class="line">2016-01-30 21:00:20,190 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.73.num_bytes</span><br><span class="line">2016-01-30 21:00:35,155 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.df.total_used</span><br><span class="line">2016-01-30 21:00:35,167 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.df.total_space</span><br><span class="line">2016-01-30 21:00:35,177 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.df.total_avail</span><br><span class="line">2016-01-30 21:00:39,503 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.df.total_used</span><br><span class="line">2016-01-30 21:00:39,522 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.0.num_objects</span><br><span class="line">2016-01-30 21:00:39,526 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.df.total_space</span><br><span class="line">2016-01-30 21:00:39,549 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.df.total_avail</span><br><span class="line">2016-01-30 21:00:39,558 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.0.num_bytes</span><br><span class="line">2016-01-30 21:00:39,579 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.1.num_objects</span><br><span class="line">2016-01-30 21:00:39,601 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.1.num_bytes</span><br><span class="line">2016-01-30 21:00:39,621 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.2.num_objects</span><br><span class="line">2016-01-30 21:00:39,640 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.2.num_bytes</span><br></pre></td></tr></table></figure>
@@ -448,7 +448,7 @@
     
     <entry>
       <title><![CDATA[删除osd的正确姿势]]></title>
-      <url>http://blog.itzhoulin.com/2016/01/12/right-steps-delete-ceph-osd/</url>
+      <url>http://www.itzhoulin.com/2016/01/12/right-steps-delete-ceph-osd/</url>
       <content type="html"><![CDATA[<p>最近邮件列表又有关于删除osd正确姿势的讨论，按照官网的步骤走的话，在 <code>标记osd为out</code> 和 <code>从crushmap删除osd</code> 这两步都会触发数据再平衡。</p>
 <p>根据邮件列表的指示，总结删除osd的正确姿势如下：</p>
 <ol>
@@ -465,7 +465,7 @@
     
     <entry>
       <title><![CDATA[调整pg数量的步骤]]></title>
-      <url>http://blog.itzhoulin.com/2016/01/06/right-steps-adjusting-ceph-pg-num/</url>
+      <url>http://www.itzhoulin.com/2016/01/06/right-steps-adjusting-ceph-pg-num/</url>
       <content type="html"><![CDATA[<h1 id="1-计算合适的pg数"><a href="#1-计算合适的pg数" class="headerlink" title="1.计算合适的pg数"></a>1.计算合适的pg数</h1><p>关于pg数值的合理值的计算参考 <code>http://ceph.com/pgcalc/</code> 。但是请谨记，在你真正还是调整pg前，请确保集群状态是健康的。 </p>
 <h1 id="2-调整前确保状态ok"><a href="#2-调整前确保状态ok" class="headerlink" title="2.调整前确保状态ok"></a>2.调整前确保状态ok</h1><p>如果 <code>ceph -s</code> 命令显示的集群状态是OK的，此时就可以动态的增大pg的值。</p>
 <p><strong>注意：</strong> 增大pg有几个步骤，同时必须比较平滑的增大，不能一次性调的太猛。对于生产环境格外注意。</p>
@@ -490,7 +490,7 @@ osd recovery op priority = 1
     
     <entry>
       <title><![CDATA[Ceph的IO模式分析]]></title>
-      <url>http://blog.itzhoulin.com/2015/12/28/ceph-IO-pattern/</url>
+      <url>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</url>
       <content type="html"><![CDATA[<p>本文主要是翻译sebastien-han的三篇博客：<a href="http://www.sebastien-han.fr/blog/2014/02/10/ceph-io-patterns-the-good/" target="_blank" rel="external">ceph-io-patterns-the-good</a> 、<a href="http://www.sebastien-han.fr/blog/2014/02/17/ceph-io-patterns-the-bad/" target="_blank" rel="external">ceph-io-patterns-the-bad</a>、<a href="http://www.sebastien-han.fr/blog/2014/02/24/ceph-io-patterns-the-ugly/" target="_blank" rel="external">ceph-io-patterns-the-ugly</a>  欢迎加入 <a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">翻译组</a></p>
 <blockquote>
 <p>一切都是为了性能。基准测试是非常复杂的，得到的测试结果总是难以预测、分析和解释。有时你得到了测试数据，但你不知道它们的意思，也不知道这个结果到底是好呢还是坏呢？好又好在哪里，不好又哪里是瓶颈。在这篇文章中，我将尽力详细的讲解以帮助你理解内部Ceph是如何工作的。</p>
@@ -601,7 +601,7 @@ actual 196334, ideal 122582, fragmentation factor 37.56%
     
     <entry>
       <title><![CDATA[fio使用指南]]></title>
-      <url>http://blog.itzhoulin.com/2015/12/24/fio-man-guide/</url>
+      <url>http://www.itzhoulin.com/2015/12/24/fio-man-guide/</url>
       <content type="html"><![CDATA[<p>这个文档是对fio-2.0.9 HOWTO文档的翻译，fio的参数太多了，翻译这个文档时并没有测试每一个参数的功能和使用方法，只有少量参数做了试验，大部分的参数采用的是根据字面翻译或是个人理解的翻译，必然有些出入，先发出来，以后有使用的时候再被充和修改。在另一个文档中会对fio自带的实例进行分析，可能会更为清晰一些。</p>
 <p>fio这个工具实在太强大了，列举一下他的NB之处吧</p>
 <ul>
@@ -938,7 +938,7 @@ e.g.rate=500k, 限制读到500KB/s
     
     <entry>
       <title><![CDATA[文件目录树的python和shell生成方法]]></title>
-      <url>http://blog.itzhoulin.com/2015/12/23/using-python-or-shell-create-file-tree/</url>
+      <url>http://www.itzhoulin.com/2015/12/23/using-python-or-shell-create-file-tree/</url>
       <content type="html"><![CDATA[<h2 id="1-背景"><a href="#1-背景" class="headerlink" title="1.背景"></a>1.背景</h2><p>背景很明确，需要遍历一个目录下的所有文件和目录，生成目录树，输出样式为相对路径显示目录和目录下的文件</p>
 <h2 id="2-python实现"><a href="#2-python实现" class="headerlink" title="2.python实现"></a>2.python实现</h2><h3 id="2-1-基础版"><a href="#2-1-基础版" class="headerlink" title="2.1.基础版"></a>2.1.基础版</h3><pre><code>import os
 currentDir = &apos;/home/ubuntu/data/user-config/Downloads/ceph&apos;
@@ -1087,7 +1087,7 @@ ergodic $1 $2 $3[/bash]
     
     <entry>
       <title><![CDATA[SQLAlchemy的ORM模型操作数据库]]></title>
-      <url>http://blog.itzhoulin.com/2015/12/07/sqlalchemy-orm/</url>
+      <url>http://www.itzhoulin.com/2015/12/07/sqlalchemy-orm/</url>
       <content type="html"><![CDATA[<p>SQLAlchemy 是python 操作数据库的一个库。能够进行<strong>ORM</strong>映射</p>
 <blockquote>
 <p>SQLAlchemy采用简单的Python语言，为高效和高性能的数据库访问设计，实现了完整的企业级持久模型</p>
@@ -1164,7 +1164,7 @@ Session.configure(bind=engine)
     
     <entry>
       <title><![CDATA[Ceph V9.2.0版本(代号INFERNALIS)已发布]]></title>
-      <url>http://blog.itzhoulin.com/2015/11/24/ceph-release-infernalis/</url>
+      <url>http://www.itzhoulin.com/2015/11/24/ceph-release-infernalis/</url>
       <content type="html"><![CDATA[<p>本文由Ceph中国社区-AmosG翻译 Thomas校稿</p>
 <p>英文出处：<a href="http://ceph.com/releases/v9-2-0-infernalis-released/" target="_blank" rel="external">官网releases栏</a> 欢迎加入<a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">Ceph中国社区翻译组</a></p>
 <p><img src="http://ceph.com/release_images/infernalis-460x148.png" alt=""></p>
@@ -1268,7 +1268,7 @@ Session.configure(bind=engine)
     
     <entry>
       <title><![CDATA[ceph的infernalis版本的五个很实用的新功能]]></title>
-      <url>http://blog.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</url>
+      <url>http://www.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</url>
       <content type="html"><![CDATA[<p><em>本文由 Ceph中国社区-半天河翻译，Thomas校稿。</em></p>
 <p>英文出处：<a href="http://www.sebastien-han.fr/blog/2015/11/18/five-useful-new-features-from-ceph-infernalis/" target="_blank" rel="external">Sébastien Han</a>  欢迎加入 <a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">翻译组</a></p>
 <p><img src="http://www.sebastien-han.fr/images/ceph-infernalis-5-new-features.jpg" alt=""></p>
@@ -1288,7 +1288,7 @@ Session.configure(bind=engine)
     
     <entry>
       <title><![CDATA[Ceph里手动修复Object]]></title>
-      <url>http://blog.itzhoulin.com/2015/11/24/ceph-manual-repair-object/</url>
+      <url>http://www.itzhoulin.com/2015/11/24/ceph-manual-repair-object/</url>
       <content type="html"><![CDATA[<p><em>本文由 Ceph中国社区-半天河翻译，高华敏 校稿。</em></p>
 <p>英文出处：<a href="http://www.sebastien-han.fr/blog/2015/04/27/ceph-manually-repair-object/" target="_blank" rel="external">Sébastien Han</a>  欢迎加入 <a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">ceph中国社区翻译组</a></p>
 <p><img src="http://sebastien-han.fr/images/ceph-manually-repair-objects.jpg" alt="ceph-manually-repair-objects"></p>
@@ -1335,7 +1335,7 @@ Session.configure(bind=engine)
     
     <entry>
       <title><![CDATA[php-sdk访问ceph对象存储时405错误]]></title>
-      <url>http://blog.itzhoulin.com/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/</url>
+      <url>http://www.itzhoulin.com/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/</url>
       <content type="html"><![CDATA[<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><p>在使用ceph对象存储的php sdk备份数据到ceph时，在对象存储创建bucket失败，错误如下：</p>
 <pre><code>[Code] =&gt; MethodNotAllowed
 </code></pre><p>查看rgw日志错误代码是 <strong>405</strong></p>
@@ -1357,7 +1357,7 @@ rgw print continue = false
     
     <entry>
       <title><![CDATA[一次硬盘被重新分区并写入数据后的整体恢复]]></title>
-      <url>http://blog.itzhoulin.com/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/</url>
+      <url>http://www.itzhoulin.com/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/</url>
       <content type="html"><![CDATA[<h2 id="1-前请提要"><a href="#1-前请提要" class="headerlink" title="1.前请提要"></a>1.前请提要</h2><p>新买了一个SanDisk的3.0的U盘，于是换系统到<strong>移动硬盘</strong>里的win8.1进行测试，测试完成后就开始制作<strong>多系统启动U盘</strong>，使用大白菜制作，由于自定义了背景字体等，于是跟常规制作方式不一样，弹出了一个类似<strong>UltraISO</strong>的制作框，于是没多看没多想，点了制作隐藏分区，勾选格式化，悲催就在这里，默认选择的是我的移动硬盘，等到提示说是使用中时才发现，惨剧已经酿成。只能先把多系统启动盘做完再说，后面的没什么问题。</p>
 <p>但是在重启后查看移动银盘发现，<strong>500G的空间被分割成一个470M的隐藏分区，剩余空间为未分区状态</strong>。</p>
 <p><strong><code>实际分区：</code></strong></p>

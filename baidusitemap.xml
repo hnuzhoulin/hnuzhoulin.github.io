@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/04/24/blog-updates/</loc>
+    <lastmod>2016-05-07T06:19:45.000Z</lastmod>
+    <data>
+        <display>
+        <title>博客更新</title>
+        <pubTime>2016-04-24T08:53:35.000Z</pubTime>
+        
+         
+           
+        </display>
+    </data>
+    </url>
+
+    
+    
+    
+    
+    
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</loc>
+    <lastmod>2016-04-23T09:18:35.000Z</lastmod>
+    <data>
+        <display>
+        <title>ceph full或者nearfull的解决方法探究</title>
+        <pubTime>2016-04-20T06:43:57.000Z</pubTime>
+        
+        <tag>排错</tag>
+         
+        <tag>full</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</loc>
+    <lastmod>2016-04-23T09:18:35.000Z</lastmod>
+    <data>
+        <display>
+        <title>记一次日志所在SSD故障导致的object unfound</title>
+        <pubTime>2016-04-20T06:43:57.000Z</pubTime>
+        
+        <tag>排错</tag>
+         
+        <tag>ssd</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/04/20/ceph-journal-ssd-lifetime-expire/</loc>
+    <lastmod>2016-04-20T07:19:39.000Z</lastmod>
+    <data>
+        <display>
+        <title>记一次因为ceph日志分区所在SSD寿命到期导致的故障</title>
+        <pubTime>2016-04-20T06:44:17.000Z</pubTime>
+        
+        <tag>排错</tag>
+         
+        <tag>ssd</tag>
+         
+        <tag>journal</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/04/18/kernel-rbd-hang-when-ceph-full/</loc>
+    <lastmod>2016-04-18T02:44:27.000Z</lastmod>
+    <data>
+        <display>
+        <title>因为ceph波动导致kernel rbd挂起</title>
+        <pubTime>2016-04-18T02:44:27.000Z</pubTime>
+        
+        <tag>rbd</tag>
+         
+        <tag>排错</tag>
+         
+        <tag>kernel</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/04/01/fio-usage-example/</loc>
+    <lastmod>2016-04-06T02:51:03.000Z</lastmod>
+    <data>
+        <display>
+        <title>fio应用</title>
+        <pubTime>2016-04-01T06:13:24.000Z</pubTime>
+        
+        <tag>linux</tag>
+         
+        <tag>fio</tag>
+         
+         
+           
+             
+              <breadCrumb title="tool" url="http://www.itzhoulin.com/categories/tool/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/04/02/ceph-jewel-preview-rbd-mirroring/</loc>
+    <lastmod>2016-04-02T14:41:58.000Z</lastmod>
+    <data>
+        <display>
+        <title>Ceph Jewel版功能预览---RBD mirroring</title>
+        <pubTime>2016-04-02T14:41:58.000Z</pubTime>
+        
+        <tag>翻译</tag>
+         
+        <tag>rbd</tag>
+         
+        <tag>jewel</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/01/06/right-steps-adjusting-ceph-pg-num/</loc>
+    <lastmod>2016-03-26T03:18:06.000Z</lastmod>
+    <data>
+        <display>
+        <title>调整pg数量的步骤</title>
+        <pubTime>2016-01-06T08:59:18.000Z</pubTime>
+        
+        <tag>排错</tag>
+         
+        <tag>pg</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/03/04/cetune-performance-metric/</loc>
+    <lastmod>2016-03-17T07:53:11.000Z</lastmod>
+    <data>
+        <display>
+        <title>CeTune抓取性能数据的代码段分析</title>
+        <pubTime>2016-03-04T03:58:06.000Z</pubTime>
+        
+        <tag>cetune</tag>
+         
+        <tag>performance</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2015/12/07/sqlalchemy-orm/</loc>
+    <lastmod>2016-03-12T01:56:49.000Z</lastmod>
+    <data>
+        <display>
+        <title>SQLAlchemy的ORM模型操作数据库</title>
+        <pubTime>2015-12-07T13:11:27.000Z</pubTime>
+        
+        <tag>sqlalchemy</tag>
+         
+         
+           
+             
+              <breadCrumb title="python" url="http://www.itzhoulin.com/categories/python/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/03/02/using-apache2-and-wsgi-to-run-django/</loc>
+    <lastmod>2016-03-02T03:45:48.000Z</lastmod>
+    <data>
+        <display>
+        <title>django项目利用apache2+mod_wsgi运行</title>
+        <pubTime>2016-03-02T03:44:59.000Z</pubTime>
+        
+        <tag>django</tag>
+         
+        <tag>wsgi</tag>
+         
+         
+           
+             
+              <breadCrumb title="python" url="http://www.itzhoulin.com/categories/python/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/02/03/get-ceph-rbd-watches/</loc>
+    <lastmod>2016-02-03T06:55:40.000Z</lastmod>
+    <data>
+        <display>
+        <title>ceph下查看使用rbd的客户端</title>
+        <pubTime>2016-02-03T06:51:33.000Z</pubTime>
+        
+        <tag>rbd</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/02/01/mac-text-edit-shortcuts/</loc>
+    <lastmod>2016-02-01T01:20:20.000Z</lastmod>
+    <data>
+        <display>
+        <title>MAC文本编辑时跳转快捷键</title>
+        <pubTime>2016-01-31T16:19:29.000Z</pubTime>
+        
+        <tag>shortcut</tag>
+         
+         
+           
+             
+              <breadCrumb title="mac" url="http://www.itzhoulin.com/categories/mac/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/</loc>
+    <lastmod>2016-01-31T16:06:41.000Z</lastmod>
+    <data>
+        <display>
+        <title>calamari的监控页面没有集群和Pool信息</title>
+        <pubTime>2016-01-31T14:56:22.000Z</pubTime>
+        
+        <tag>calamari</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</loc>
+    <lastmod>2016-01-31T16:05:54.000Z</lastmod>
+    <data>
+        <display>
+        <title>Ceph的IO模式分析</title>
+        <pubTime>2015-12-28T07:37:40.000Z</pubTime>
+        
+        <tag>翻译</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</loc>
+    <lastmod>2016-01-31T16:05:54.000Z</lastmod>
+    <data>
+        <display>
+        <title>ceph的infernalis版本的五个很实用的新功能</title>
+        <pubTime>2015-11-24T04:42:46.000Z</pubTime>
+        
+        <tag>infenalis</tag>
+         
+        <tag>tool</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2016/01/12/right-steps-delete-ceph-osd/</loc>
+    <lastmod>2016-01-31T16:05:51.000Z</lastmod>
+    <data>
+        <display>
+        <title>删除osd的正确姿势</title>
+        <pubTime>2016-01-12T05:46:35.000Z</pubTime>
+        
+        <tag>osd</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2015/11/24/ceph-manual-repair-object/</loc>
+    <lastmod>2016-01-31T16:05:50.000Z</lastmod>
+    <data>
+        <display>
+        <title>Ceph里手动修复Object</title>
+        <pubTime>2015-11-24T04:02:18.000Z</pubTime>
+        
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2015/11/24/ceph-release-infernalis/</loc>
+    <lastmod>2015-12-28T07:40:05.000Z</lastmod>
+    <data>
+        <display>
+        <title>Ceph V9.2.0版本(代号INFERNALIS)已发布</title>
+        <pubTime>2015-11-24T05:05:15.000Z</pubTime>
+        
+        <tag>infernalis</tag>
+         
+        <tag>release</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2015/12/24/fio-man-guide/</loc>
+    <lastmod>2015-12-24T07:59:05.000Z</lastmod>
+    <data>
+        <display>
+        <title>fio使用指南</title>
+        <pubTime>2015-12-24T07:52:48.000Z</pubTime>
+        
+        <tag>linux</tag>
+         
+         
+           
+             
+              <breadCrumb title="tool" url="http://www.itzhoulin.com/categories/tool/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2015/12/23/using-python-or-shell-create-file-tree/</loc>
+    <lastmod>2015-12-23T04:09:45.000Z</lastmod>
+    <data>
+        <display>
+        <title>文件目录树的python和shell生成方法</title>
+        <pubTime>2015-12-23T04:07:17.000Z</pubTime>
+        
+        <tag>python</tag>
+         
+        <tag>shell</tag>
+         
+         
+           
+             
+              <breadCrumb title="program" url="http://www.itzhoulin.com/categories/program/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/</loc>
+    <lastmod>2015-11-22T14:10:06.000Z</lastmod>
+    <data>
+        <display>
+        <title>php-sdk访问ceph对象存储时405错误</title>
+        <pubTime>2015-11-22T14:09:04.000Z</pubTime>
+        
+        <tag>rgw</tag>
+         
+        <tag>dns</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/</loc>
+    <lastmod>2015-11-21T15:39:50.000Z</lastmod>
+    <data>
+        <display>
+        <title>一次硬盘被重新分区并写入数据后的整体恢复</title>
+        <pubTime>2015-11-21T15:39:50.000Z</pubTime>
+        
+        <tag>排错</tag>
+         
+         
+           
+             
+              <breadCrumb title="linux" url="http://www.itzhoulin.com/categories/linux/"/>
+          
+        </display>
+    </data>
+    </url>
+
+</urlset>

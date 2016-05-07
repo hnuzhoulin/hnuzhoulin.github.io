@@ -4,9 +4,9 @@
   <subtitle>python ceph openstack 运维</subtitle>
   <link href="/atom.xml" rel="self"/>
   
-  <link href="http://blog.itzhoulin.com/"/>
+  <link href="http://www.itzhoulin.com/"/>
   <updated>2016-05-07T06:19:45.000Z</updated>
-  <id>http://blog.itzhoulin.com/</id>
+  <id>http://www.itzhoulin.com/</id>
   
   <author>
     <name>半天河(hnuzhoulin)</name>
@@ -17,8 +17,8 @@
   
   <entry>
     <title>博客更新</title>
-    <link href="http://blog.itzhoulin.com/2016/04/24/blog-updates/"/>
-    <id>http://blog.itzhoulin.com/2016/04/24/blog-updates/</id>
+    <link href="http://www.itzhoulin.com/2016/04/24/blog-updates/"/>
+    <id>http://www.itzhoulin.com/2016/04/24/blog-updates/</id>
     <published>2016-04-24T08:53:35.000Z</published>
     <updated>2016-05-07T06:19:45.000Z</updated>
     
@@ -63,8 +63,8 @@
   
   <entry>
     <title>记一次因为ceph日志分区所在SSD寿命到期导致的故障</title>
-    <link href="http://blog.itzhoulin.com/2016/04/20/ceph-journal-ssd-lifetime-expire/"/>
-    <id>http://blog.itzhoulin.com/2016/04/20/ceph-journal-ssd-lifetime-expire/</id>
+    <link href="http://www.itzhoulin.com/2016/04/20/ceph-journal-ssd-lifetime-expire/"/>
+    <id>http://www.itzhoulin.com/2016/04/20/ceph-journal-ssd-lifetime-expire/</id>
     <published>2016-04-20T06:44:17.000Z</published>
     <updated>2016-04-20T07:19:39.000Z</updated>
     
@@ -122,21 +122,21 @@
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="排错" scheme="http://blog.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
+      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
     
-      <category term="ssd" scheme="http://blog.itzhoulin.com/tags/ssd/"/>
+      <category term="ssd" scheme="http://www.itzhoulin.com/tags/ssd/"/>
     
-      <category term="journal" scheme="http://blog.itzhoulin.com/tags/journal/"/>
+      <category term="journal" scheme="http://www.itzhoulin.com/tags/journal/"/>
     
   </entry>
   
   <entry>
     <title>记一次日志所在SSD故障导致的object unfound</title>
-    <link href="http://blog.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/"/>
-    <id>http://blog.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</id>
+    <link href="http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/"/>
+    <id>http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</id>
     <published>2016-04-20T06:43:57.000Z</published>
     <updated>2016-04-23T09:18:35.000Z</updated>
     
@@ -174,19 +174,19 @@
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="排错" scheme="http://blog.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
+      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
     
-      <category term="ssd" scheme="http://blog.itzhoulin.com/tags/ssd/"/>
+      <category term="ssd" scheme="http://www.itzhoulin.com/tags/ssd/"/>
     
   </entry>
   
   <entry>
     <title>ceph full或者nearfull的解决方法探究</title>
-    <link href="http://blog.itzhoulin.com/2016/04/20/deal_with_ceph_full/"/>
-    <id>http://blog.itzhoulin.com/2016/04/20/deal_with_ceph_full/</id>
+    <link href="http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/"/>
+    <id>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</id>
     <published>2016-04-20T06:43:57.000Z</published>
     <updated>2016-04-23T09:18:35.000Z</updated>
     
@@ -204,7 +204,7 @@
 &lt;p&gt;PS：&lt;strong&gt;不推荐的删除方式&lt;/strong&gt;，先解挂所有rbd，再删除所有rbd，最后直接删除OSD数据目录下current目录下的所有文件。即使是这样，由于我的集群整个满了，删除都消耗了十几分钟。&lt;/p&gt;
 &lt;h2 id=&quot;3-扩展&quot;&gt;&lt;a href=&quot;#3-扩展&quot; class=&quot;headerlink&quot; title=&quot;3.扩展&quot;&gt;&lt;/a&gt;3.扩展&lt;/h2&gt;&lt;p&gt;对于只有部分OSD用量满的情况跟前面的处理方式有很大不同。当然，&lt;strong&gt;让集群能够动起来是最开始要做的事&lt;/strong&gt; ，这里的情况跟前面第二节介绍的方法还是要所有区别，尤其是对于线上环境，因为一旦调整这个全局的比例，可能整个集群的数据都会动起来，可能会有更多的数据迁移。因此另一种解决方法是临时调整、单个调整。但是，但是，但是，最最重要也是最先要解决的就是找到为什么只有少数OSD空间用量会满。&lt;/p&gt;
 &lt;h3 id=&quot;3-1-数据分布不均匀的原因&quot;&gt;&lt;a href=&quot;#3-1-数据分布不均匀的原因&quot; class=&quot;headerlink&quot; title=&quot;3.1.数据分布不均匀的原因&quot;&gt;&lt;/a&gt;3.1.数据分布不均匀的原因&lt;/h3&gt;&lt;h4 id=&quot;3-1-1-crushmap问题&quot;&gt;&lt;a href=&quot;#3-1-1-crushmap问题&quot; class=&quot;headerlink&quot; title=&quot;3.1.1.crushmap问题&quot;&gt;&lt;/a&gt;3.1.1.crushmap问题&lt;/h4&gt;&lt;p&gt;出现这种问题的原因可能是你手动修改过crushmap，将某些OSD划到了单独的组；或者是数据分布规则设定有误等。这种情况就只能自己到处crushmap分析一下了。不好举例，有问题的欢迎沟通。&lt;/p&gt;
-&lt;p&gt;####3.1.2.pg数设置不合理&lt;br&gt;这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 &lt;strong&gt;file-&amp;gt;object-&amp;gt;pg-&amp;gt;OSD-&amp;gt;physics disk&lt;/strong&gt; 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 &lt;strong&gt;pg_num&lt;/strong&gt; 和 &lt;strong&gt;pgp_num&lt;/strong&gt; 。有关调整这部分的工作和注意事项等见我的另一篇博文：&lt;a href=&quot;http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;调整pg数量的步骤&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;####3.1.2.pg数设置不合理&lt;br&gt;这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 &lt;strong&gt;file-&amp;gt;object-&amp;gt;pg-&amp;gt;OSD-&amp;gt;physics disk&lt;/strong&gt; 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 &lt;strong&gt;pg_num&lt;/strong&gt; 和 &lt;strong&gt;pgp_num&lt;/strong&gt; 。有关调整这部分的工作和注意事项等见我的另一篇博文：&lt;a href=&quot;http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num&quot;&gt;调整pg数量的步骤&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;有一个python程序可以看各个pool在各个OSD上的pg分布，由此可以判断一下pg是否分布均匀。进而使用上面的方法调整该pool的pg_num和pgp_num。脚本点击&lt;a href=&quot;https://gist.github.com/hnuzhoulin/fef193f5e26533fc08c86ad30209646d&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;这里&lt;/a&gt;&lt;/p&gt;
 &lt;h3 id=&quot;3-2-调整OSD的weight&quot;&gt;&lt;a href=&quot;#3-2-调整OSD的weight&quot; class=&quot;headerlink&quot; title=&quot;3.2.调整OSD的weight&quot;&gt;&lt;/a&gt;3.2.调整OSD的weight&lt;/h3&gt;&lt;p&gt;对于只是少数OSD容量满的情况下，不管是上一小节中的调整crushmap还是pg_num的方法解决，最首先也还是需要集群能够进行正常读写操作，因此可以设置单个OSD的full和nearfull比例，也可以使用调整weight的方法。&lt;/p&gt;
 &lt;p&gt;关于一个OSD的weght，一共有两种：&lt;/p&gt;
@@ -224,19 +224,19 @@
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="排错" scheme="http://blog.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
+      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
     
-      <category term="full" scheme="http://blog.itzhoulin.com/tags/full/"/>
+      <category term="full" scheme="http://www.itzhoulin.com/tags/full/"/>
     
   </entry>
   
   <entry>
     <title>因为ceph波动导致kernel rbd挂起</title>
-    <link href="http://blog.itzhoulin.com/2016/04/18/kernel-rbd-hang-when-ceph-full/"/>
-    <id>http://blog.itzhoulin.com/2016/04/18/kernel-rbd-hang-when-ceph-full/</id>
+    <link href="http://www.itzhoulin.com/2016/04/18/kernel-rbd-hang-when-ceph-full/"/>
+    <id>http://www.itzhoulin.com/2016/04/18/kernel-rbd-hang-when-ceph-full/</id>
     <published>2016-04-18T02:44:27.000Z</published>
     <updated>2016-04-18T02:44:27.000Z</updated>
     
@@ -284,21 +284,21 @@
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="rbd" scheme="http://blog.itzhoulin.com/tags/rbd/"/>
+      <category term="rbd" scheme="http://www.itzhoulin.com/tags/rbd/"/>
     
-      <category term="排错" scheme="http://blog.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
+      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
     
-      <category term="kernel" scheme="http://blog.itzhoulin.com/tags/kernel/"/>
+      <category term="kernel" scheme="http://www.itzhoulin.com/tags/kernel/"/>
     
   </entry>
   
   <entry>
     <title>Ceph Jewel版功能预览---RBD mirroring</title>
-    <link href="http://blog.itzhoulin.com/2016/04/02/ceph-jewel-preview-rbd-mirroring/"/>
-    <id>http://blog.itzhoulin.com/2016/04/02/ceph-jewel-preview-rbd-mirroring/</id>
+    <link href="http://www.itzhoulin.com/2016/04/02/ceph-jewel-preview-rbd-mirroring/"/>
+    <id>http://www.itzhoulin.com/2016/04/02/ceph-jewel-preview-rbd-mirroring/</id>
     <published>2016-04-02T14:41:58.000Z</published>
     <updated>2016-04-02T14:41:58.000Z</updated>
     
@@ -357,21 +357,21 @@
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="翻译" scheme="http://blog.itzhoulin.com/tags/%E7%BF%BB%E8%AF%91/"/>
+      <category term="翻译" scheme="http://www.itzhoulin.com/tags/%E7%BF%BB%E8%AF%91/"/>
     
-      <category term="rbd" scheme="http://blog.itzhoulin.com/tags/rbd/"/>
+      <category term="rbd" scheme="http://www.itzhoulin.com/tags/rbd/"/>
     
-      <category term="jewel" scheme="http://blog.itzhoulin.com/tags/jewel/"/>
+      <category term="jewel" scheme="http://www.itzhoulin.com/tags/jewel/"/>
     
   </entry>
   
   <entry>
     <title>fio应用</title>
-    <link href="http://blog.itzhoulin.com/2016/04/01/fio-usage-example/"/>
-    <id>http://blog.itzhoulin.com/2016/04/01/fio-usage-example/</id>
+    <link href="http://www.itzhoulin.com/2016/04/01/fio-usage-example/"/>
+    <id>http://www.itzhoulin.com/2016/04/01/fio-usage-example/</id>
     <published>2016-04-01T06:13:24.000Z</published>
     <updated>2016-04-06T02:51:03.000Z</updated>
     
@@ -393,19 +393,19 @@
     
     </summary>
     
-      <category term="tool" scheme="http://blog.itzhoulin.com/categories/tool/"/>
+      <category term="tool" scheme="http://www.itzhoulin.com/categories/tool/"/>
     
     
-      <category term="linux" scheme="http://blog.itzhoulin.com/tags/linux/"/>
+      <category term="linux" scheme="http://www.itzhoulin.com/tags/linux/"/>
     
-      <category term="fio" scheme="http://blog.itzhoulin.com/tags/fio/"/>
+      <category term="fio" scheme="http://www.itzhoulin.com/tags/fio/"/>
     
   </entry>
   
   <entry>
     <title>CeTune抓取性能数据的代码段分析</title>
-    <link href="http://blog.itzhoulin.com/2016/03/04/cetune-performance-metric/"/>
-    <id>http://blog.itzhoulin.com/2016/03/04/cetune-performance-metric/</id>
+    <link href="http://www.itzhoulin.com/2016/03/04/cetune-performance-metric/"/>
+    <id>http://www.itzhoulin.com/2016/03/04/cetune-performance-metric/</id>
     <published>2016-03-04T03:58:06.000Z</published>
     <updated>2016-03-17T07:53:11.000Z</updated>
     
@@ -514,19 +514,19 @@
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="cetune" scheme="http://blog.itzhoulin.com/tags/cetune/"/>
+      <category term="cetune" scheme="http://www.itzhoulin.com/tags/cetune/"/>
     
-      <category term="performance" scheme="http://blog.itzhoulin.com/tags/performance/"/>
+      <category term="performance" scheme="http://www.itzhoulin.com/tags/performance/"/>
     
   </entry>
   
   <entry>
     <title>django项目利用apache2+mod_wsgi运行</title>
-    <link href="http://blog.itzhoulin.com/2016/03/02/using-apache2-and-wsgi-to-run-django/"/>
-    <id>http://blog.itzhoulin.com/2016/03/02/using-apache2-and-wsgi-to-run-django/</id>
+    <link href="http://www.itzhoulin.com/2016/03/02/using-apache2-and-wsgi-to-run-django/"/>
+    <id>http://www.itzhoulin.com/2016/03/02/using-apache2-and-wsgi-to-run-django/</id>
     <published>2016-03-02T03:44:59.000Z</published>
     <updated>2016-03-02T03:45:48.000Z</updated>
     
@@ -552,19 +552,19 @@
     
     </summary>
     
-      <category term="python" scheme="http://blog.itzhoulin.com/categories/python/"/>
+      <category term="python" scheme="http://www.itzhoulin.com/categories/python/"/>
     
     
-      <category term="django" scheme="http://blog.itzhoulin.com/tags/django/"/>
+      <category term="django" scheme="http://www.itzhoulin.com/tags/django/"/>
     
-      <category term="wsgi" scheme="http://blog.itzhoulin.com/tags/wsgi/"/>
+      <category term="wsgi" scheme="http://www.itzhoulin.com/tags/wsgi/"/>
     
   </entry>
   
   <entry>
     <title>ceph下查看使用rbd的客户端</title>
-    <link href="http://blog.itzhoulin.com/2016/02/03/get-ceph-rbd-watches/"/>
-    <id>http://blog.itzhoulin.com/2016/02/03/get-ceph-rbd-watches/</id>
+    <link href="http://www.itzhoulin.com/2016/02/03/get-ceph-rbd-watches/"/>
+    <id>http://www.itzhoulin.com/2016/02/03/get-ceph-rbd-watches/</id>
     <published>2016-02-03T06:51:33.000Z</published>
     <updated>2016-02-03T06:55:40.000Z</updated>
     
@@ -582,17 +582,17 @@
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="rbd" scheme="http://blog.itzhoulin.com/tags/rbd/"/>
+      <category term="rbd" scheme="http://www.itzhoulin.com/tags/rbd/"/>
     
   </entry>
   
   <entry>
     <title>MAC文本编辑时跳转快捷键</title>
-    <link href="http://blog.itzhoulin.com/2016/02/01/mac-text-edit-shortcuts/"/>
-    <id>http://blog.itzhoulin.com/2016/02/01/mac-text-edit-shortcuts/</id>
+    <link href="http://www.itzhoulin.com/2016/02/01/mac-text-edit-shortcuts/"/>
+    <id>http://www.itzhoulin.com/2016/02/01/mac-text-edit-shortcuts/</id>
     <published>2016-01-31T16:19:29.000Z</published>
     <updated>2016-02-01T01:20:20.000Z</updated>
     
@@ -628,17 +628,17 @@
     
     </summary>
     
-      <category term="mac" scheme="http://blog.itzhoulin.com/categories/mac/"/>
+      <category term="mac" scheme="http://www.itzhoulin.com/categories/mac/"/>
     
     
-      <category term="shortcut" scheme="http://blog.itzhoulin.com/tags/shortcut/"/>
+      <category term="shortcut" scheme="http://www.itzhoulin.com/tags/shortcut/"/>
     
   </entry>
   
   <entry>
     <title>calamari的监控页面没有集群和Pool信息</title>
-    <link href="http://blog.itzhoulin.com/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/"/>
-    <id>http://blog.itzhoulin.com/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/</id>
+    <link href="http://www.itzhoulin.com/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/"/>
+    <id>http://www.itzhoulin.com/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/</id>
     <published>2016-01-31T14:56:22.000Z</published>
     <updated>2016-01-31T16:06:41.000Z</updated>
     
@@ -661,17 +661,17 @@
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="calamari" scheme="http://blog.itzhoulin.com/tags/calamari/"/>
+      <category term="calamari" scheme="http://www.itzhoulin.com/tags/calamari/"/>
     
   </entry>
   
   <entry>
     <title>删除osd的正确姿势</title>
-    <link href="http://blog.itzhoulin.com/2016/01/12/right-steps-delete-ceph-osd/"/>
-    <id>http://blog.itzhoulin.com/2016/01/12/right-steps-delete-ceph-osd/</id>
+    <link href="http://www.itzhoulin.com/2016/01/12/right-steps-delete-ceph-osd/"/>
+    <id>http://www.itzhoulin.com/2016/01/12/right-steps-delete-ceph-osd/</id>
     <published>2016-01-12T05:46:35.000Z</published>
     <updated>2016-01-31T16:05:51.000Z</updated>
     
@@ -694,17 +694,17 @@
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="osd" scheme="http://blog.itzhoulin.com/tags/osd/"/>
+      <category term="osd" scheme="http://www.itzhoulin.com/tags/osd/"/>
     
   </entry>
   
   <entry>
     <title>调整pg数量的步骤</title>
-    <link href="http://blog.itzhoulin.com/2016/01/06/right-steps-adjusting-ceph-pg-num/"/>
-    <id>http://blog.itzhoulin.com/2016/01/06/right-steps-adjusting-ceph-pg-num/</id>
+    <link href="http://www.itzhoulin.com/2016/01/06/right-steps-adjusting-ceph-pg-num/"/>
+    <id>http://www.itzhoulin.com/2016/01/06/right-steps-adjusting-ceph-pg-num/</id>
     <published>2016-01-06T08:59:18.000Z</published>
     <updated>2016-03-26T03:18:06.000Z</updated>
     
@@ -735,19 +735,19 @@ osd recovery op priority = 1
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="排错" scheme="http://blog.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
+      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
     
-      <category term="pg" scheme="http://blog.itzhoulin.com/tags/pg/"/>
+      <category term="pg" scheme="http://www.itzhoulin.com/tags/pg/"/>
     
   </entry>
   
   <entry>
     <title>Ceph的IO模式分析</title>
-    <link href="http://blog.itzhoulin.com/2015/12/28/ceph-IO-pattern/"/>
-    <id>http://blog.itzhoulin.com/2015/12/28/ceph-IO-pattern/</id>
+    <link href="http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/"/>
+    <id>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</id>
     <published>2015-12-28T07:37:40.000Z</published>
     <updated>2016-01-31T16:05:54.000Z</updated>
     
@@ -864,17 +864,17 @@ actual 196334, ideal 122582, fragmentation factor 37.56%
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="翻译" scheme="http://blog.itzhoulin.com/tags/%E7%BF%BB%E8%AF%91/"/>
+      <category term="翻译" scheme="http://www.itzhoulin.com/tags/%E7%BF%BB%E8%AF%91/"/>
     
   </entry>
   
   <entry>
     <title>fio使用指南</title>
-    <link href="http://blog.itzhoulin.com/2015/12/24/fio-man-guide/"/>
-    <id>http://blog.itzhoulin.com/2015/12/24/fio-man-guide/</id>
+    <link href="http://www.itzhoulin.com/2015/12/24/fio-man-guide/"/>
+    <id>http://www.itzhoulin.com/2015/12/24/fio-man-guide/</id>
     <published>2015-12-24T07:52:48.000Z</published>
     <updated>2015-12-24T07:59:05.000Z</updated>
     
@@ -1217,17 +1217,17 @@ e.g.rate=500k, 限制读到500KB/s
     
     </summary>
     
-      <category term="tool" scheme="http://blog.itzhoulin.com/categories/tool/"/>
+      <category term="tool" scheme="http://www.itzhoulin.com/categories/tool/"/>
     
     
-      <category term="linux" scheme="http://blog.itzhoulin.com/tags/linux/"/>
+      <category term="linux" scheme="http://www.itzhoulin.com/tags/linux/"/>
     
   </entry>
   
   <entry>
     <title>文件目录树的python和shell生成方法</title>
-    <link href="http://blog.itzhoulin.com/2015/12/23/using-python-or-shell-create-file-tree/"/>
-    <id>http://blog.itzhoulin.com/2015/12/23/using-python-or-shell-create-file-tree/</id>
+    <link href="http://www.itzhoulin.com/2015/12/23/using-python-or-shell-create-file-tree/"/>
+    <id>http://www.itzhoulin.com/2015/12/23/using-python-or-shell-create-file-tree/</id>
     <published>2015-12-23T04:07:17.000Z</published>
     <updated>2015-12-23T04:09:45.000Z</updated>
     
@@ -1382,19 +1382,19 @@ ergodic $1 $2 $3[/bash]
     
     </summary>
     
-      <category term="program" scheme="http://blog.itzhoulin.com/categories/program/"/>
+      <category term="program" scheme="http://www.itzhoulin.com/categories/program/"/>
     
     
-      <category term="python" scheme="http://blog.itzhoulin.com/tags/python/"/>
+      <category term="python" scheme="http://www.itzhoulin.com/tags/python/"/>
     
-      <category term="shell" scheme="http://blog.itzhoulin.com/tags/shell/"/>
+      <category term="shell" scheme="http://www.itzhoulin.com/tags/shell/"/>
     
   </entry>
   
   <entry>
     <title>SQLAlchemy的ORM模型操作数据库</title>
-    <link href="http://blog.itzhoulin.com/2015/12/07/sqlalchemy-orm/"/>
-    <id>http://blog.itzhoulin.com/2015/12/07/sqlalchemy-orm/</id>
+    <link href="http://www.itzhoulin.com/2015/12/07/sqlalchemy-orm/"/>
+    <id>http://www.itzhoulin.com/2015/12/07/sqlalchemy-orm/</id>
     <published>2015-12-07T13:11:27.000Z</published>
     <updated>2016-03-12T01:56:49.000Z</updated>
     
@@ -1477,17 +1477,17 @@ Session.configure(bind=engine)
     
     </summary>
     
-      <category term="python" scheme="http://blog.itzhoulin.com/categories/python/"/>
+      <category term="python" scheme="http://www.itzhoulin.com/categories/python/"/>
     
     
-      <category term="sqlalchemy" scheme="http://blog.itzhoulin.com/tags/sqlalchemy/"/>
+      <category term="sqlalchemy" scheme="http://www.itzhoulin.com/tags/sqlalchemy/"/>
     
   </entry>
   
   <entry>
     <title>Ceph V9.2.0版本(代号INFERNALIS)已发布</title>
-    <link href="http://blog.itzhoulin.com/2015/11/24/ceph-release-infernalis/"/>
-    <id>http://blog.itzhoulin.com/2015/11/24/ceph-release-infernalis/</id>
+    <link href="http://www.itzhoulin.com/2015/11/24/ceph-release-infernalis/"/>
+    <id>http://www.itzhoulin.com/2015/11/24/ceph-release-infernalis/</id>
     <published>2015-11-24T05:05:15.000Z</published>
     <updated>2015-12-28T07:40:05.000Z</updated>
     
@@ -1597,19 +1597,19 @@ Session.configure(bind=engine)
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="infernalis" scheme="http://blog.itzhoulin.com/tags/infernalis/"/>
+      <category term="infernalis" scheme="http://www.itzhoulin.com/tags/infernalis/"/>
     
-      <category term="release" scheme="http://blog.itzhoulin.com/tags/release/"/>
+      <category term="release" scheme="http://www.itzhoulin.com/tags/release/"/>
     
   </entry>
   
   <entry>
     <title>ceph的infernalis版本的五个很实用的新功能</title>
-    <link href="http://blog.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/"/>
-    <id>http://blog.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</id>
+    <link href="http://www.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/"/>
+    <id>http://www.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</id>
     <published>2015-11-24T04:42:46.000Z</published>
     <updated>2016-01-31T16:05:54.000Z</updated>
     
@@ -1635,12 +1635,12 @@ Session.configure(bind=engine)
     
     </summary>
     
-      <category term="ceph" scheme="http://blog.itzhoulin.com/categories/ceph/"/>
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="infenalis" scheme="http://blog.itzhoulin.com/tags/infenalis/"/>
+      <category term="infenalis" scheme="http://www.itzhoulin.com/tags/infenalis/"/>
     
-      <category term="tool" scheme="http://blog.itzhoulin.com/tags/tool/"/>
+      <category term="tool" scheme="http://www.itzhoulin.com/tags/tool/"/>
     
   </entry>
   
