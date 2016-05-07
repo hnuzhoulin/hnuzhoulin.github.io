@@ -1,0 +1,1396 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  
+  
+    
+    <entry>
+      <title><![CDATA[博客更新]]></title>
+      <url>http://blog.itzhoulin.com/2016/04/24/blog-updates/</url>
+      <content type="html"><![CDATA[<h3 id="TODO-List"><a href="#TODO-List" class="headerlink" title="TODO List"></a>TODO List</h3><ol>
+<li>Yelee主题学习：</li>
+<li>实现CND加速</li>
+</ol>
+<h3 id="20160505"><a href="#20160505" class="headerlink" title="20160505"></a>20160505</h3><ol>
+<li>使用rsync这个deploy方法实现在vps上做镜像站点</li>
+<li>尝试添加站内搜索，使用swiftype，但是默认css，js与当前主题有部分冲突，导致首页右边文章部分空白</li>
+</ol>
+<h3 id="20160502"><a href="#20160502" class="headerlink" title="20160502"></a>20160502</h3><ol>
+<li>实现置顶</li>
+<li>导航底部链接加入github链接</li>
+<li>文章底部分享，实际是被adblock屏蔽了。</li>
+</ol>
+<h3 id="20160501"><a href="#20160501" class="headerlink" title="20160501"></a>20160501</h3><ol>
+<li>加入百度、谷歌统计</li>
+<li>迁移博客，标题跟leanote的同步，博客URL使用全英文，即 <code>hexo new post &quot;blog URL&quot;</code> ，在编辑对应md文件时，其中的title用中文</li>
+<li>博客改进记录改为使用博文而不是单页，这样能够生成目录</li>
+</ol>
+<h3 id="20160424"><a href="#20160424" class="headerlink" title="20160424"></a>20160424</h3><ol>
+<li>修改主题为Yelee，自动实现博文内容加入版权信息模块</li>
+</ol>
+<h3 id="20160423"><a href="#20160423" class="headerlink" title="20160423"></a>20160423</h3><ol>
+<li>在Mac上使用hexo和git利用github page实现本静态博客</li>
+<li>加入多说评论，需要在主题的 <code>_config.yaml</code> 文件中修改</li>
+<li>hexo有多个tag时： [tag1,tag2,—-]</li>
+<li>更换为jacman主题，</li>
+<li>打开首页时如何设置只预览部分内容，在需要预览的部分后加 <code>&lt;!--more--&gt;</code></li>
+</ol>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[记一次因为ceph日志分区所在SSD寿命到期导致的故障]]></title>
+      <url>http://blog.itzhoulin.com/2016/04/20/ceph-journal-ssd-lifetime-expire/</url>
+      <content type="html"><![CDATA[<h2 id="1-环境"><a href="#1-环境" class="headerlink" title="1.环境"></a>1.环境</h2><ul>
+<li>openstack加ceph，计算存储放在一起，管理节点独立。</li>
+<li>4个存储节点，每个节点12块3T的SATA硬盘，都做OSD</li>
+<li>sda是120G的Intel S3500既做操作系统分区又分出6个10G做日志</li>
+<li>sdb是120G的Intel S3500分6个10G分区只做日志</li>
+<li>虚拟机大多是UbuntuKylinDesktop1404，作为开发测试虚拟机</li>
+<li>ceph集群分public和cluster两个网段，都是万兆</li>
+<li>ceph是0.87.9</li>
+<li>3个mon分布在管理节点和2个存储节点</li>
+</ul>
+<h2 id="2-问题"><a href="#2-问题" class="headerlink" title="2.问题"></a>2.问题</h2><p>某一天管理节点网络无法连接，直连存储节点node-63正常。在机房管理员修复网络后，用户反映桌面无法卡顿，查看集群状态发现node-65节点有OSD状态是down，但是此时node-65已经无法通过ssh连接，处于输入用户名密码后挂起状态。</p>
+<h2 id="3-思考及处理流程"><a href="#3-思考及处理流程" class="headerlink" title="3.思考及处理流程"></a>3.思考及处理流程</h2><h3 id="3-1-IPMI远程查看node-65"><a href="#3-1-IPMI远程查看node-65" class="headerlink" title="3.1.IPMI远程查看node-65"></a>3.1.IPMI远程查看node-65</h3><p>有IPMI还是方便很多的，无需去机房就可以实现对服务器的所有操作。从IPMI上看到服务器报了一些错，同时点击鼠标键盘无反应，实地去机房接显示器和键盘输入用户名等待很久才提示输入密码，输入密码后一直卡在登陆界面。</p>
+<blockquote>
+<p>此时判断应该是服务器出现某种错误导致挂起不能正常提供服务</p>
+</blockquote>
+<h3 id="3-2-重启服务器"><a href="#3-2-重启服务器" class="headerlink" title="3.2.重启服务器"></a>3.2.重启服务器</h3><p>经过上面的判断，基本上只能重启了，为了防止数据进行大规模迁移，执行下面的命令禁止数据进行backfill和recover：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph osd <span class="built_in">set</span> nobackfill</span><br><span class="line">ceph osd <span class="built_in">set</span> norecover</span><br></pre></td></tr></table></figure>
+<p>重启服务器后能够正常登陆，但是负载很大。命令交互很大延迟。此时频繁出现某一个OSD重启的情况，查看所有OSD性能如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">root@node-67:~<span class="comment"># ceph osd perf</span></span><br><span class="line">osdid fs_commit_latency(ms) fs_apply_latency(ms)</span><br><span class="line">    0                  9819                10204</span><br><span class="line">    1                     1                    2</span><br><span class="line">    2                     1                    2</span><br><span class="line">    3                  9126                 9496</span><br><span class="line">    4                     2                    3</span><br><span class="line">    5                     2                    3</span><br><span class="line">    6                     0                    0</span><br><span class="line">    7                     0                    1</span><br><span class="line">    8                     1                    2</span><br><span class="line">    9                 32960                33953</span><br><span class="line">   10                     2                    3</span><br><span class="line">   11                     1                   31</span><br><span class="line">   12                 23450                24324</span><br><span class="line">   13                     0                    1</span><br><span class="line">   14                     1                    2</span><br><span class="line">   15                 18882                19622</span><br><span class="line">   16                     2                    4</span><br><span class="line">   17                     1                    2</span><br><span class="line">   18                     3                   46</span><br></pre></td></tr></table></figure>
+<p>其中ID为3，9，12，15的OSD都在node-65上。且此时osd.6一直处于down状态。</p>
+<blockquote>
+<p>此时感觉是node-65的负载问题拖累整个集群，但是由于osd.6又正常，因此尝试将延时太高的这4个节点的 <code>primary-affinity</code> 设为0。</p>
+</blockquote>
+<h3 id="3-3-修改primary-affinity为0-0"><a href="#3-3-修改primary-affinity为0-0" class="headerlink" title="3.3.修改primary-affinity为0.0"></a>3.3.修改primary-affinity为0.0</h3><p>通过下面的命令修改延时高的4个OSD的primary-affinity为0.0：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ceph osd primary-affinity 3 0.0</span><br><span class="line">ceph osd primary-affinity 9 0.0</span><br><span class="line">ceph osd primary-affinity 12 0.0</span><br><span class="line">ceph osd primary-affinity 15 0.0</span><br></pre></td></tr></table></figure>
+<p>但是实际上并没有什么效果，osd perf显示延时很大，看ceph日志写操作大都处于slow request状态。</p>
+<blockquote>
+<p>实际上这一步只是当时瞎投医。因此尝试将这几个OSD的reweight调为0</p>
+</blockquote>
+<h3 id="3-4-调整延时大的OSD的reweight为0"><a href="#3-4-调整延时大的OSD的reweight为0" class="headerlink" title="3.4.调整延时大的OSD的reweight为0"></a>3.4.调整延时大的OSD的reweight为0</h3><p>使用下面的命令将OSD的reweight设为0：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ceph osd crush reweight 3 0.0</span><br><span class="line">ceph osd crush reweight 15 0.0</span><br><span class="line">ceph osd crush reweight 9 0.0</span><br><span class="line">ceph osd crush reweight 12 0.0</span><br></pre></td></tr></table></figure>
+<p>由于此时虚拟机已经基本上都处于瘫痪状态，直接将backfill和recover的优先级、进程数调到最大。等到数据完全同步后，node-65的负载居然恢复正常了。（期间node-65上OSD.0也出现同样问题，再次调整reweight，等待同步）</p>
+<blockquote>
+<p>此时来看，应该是OSD服务导致node-65负载过高，此时可以登陆node-65仔细检查。</p>
+</blockquote>
+<h3 id="3-5-登陆node-65检查"><a href="#3-5-登陆node-65检查" class="headerlink" title="3.5.登陆node-65检查"></a>3.5.登陆node-65检查</h3><p>首先是通过smartctl、dmesg和syslog等查看上述OSD对应的硬盘，没有发现错误。其中OSD.6一直处于down是 <strong>leveldb损坏</strong> ，这个Sage说是目前基本无力回天，只能重建。</p>
+<blockquote>
+<p>实际通过调整OSD的reweight后能够正常同步数据来看，OSD所在硬盘应该是没问题的。</p>
+</blockquote>
+<p>通过atop发现node-65的sda一直处于 <strong>busy</strong> 状态，而此时sda仅仅是作为操作系统，因此使用smartctl查看sda的信息，找到了如下输出信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">smartctl <span class="_">-a</span> /dev/sda </span><br><span class="line">---</span><br><span class="line">233 Media_Wearout_Indicator 0x0032   001   001   000    Old_age   Always</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
+<p>根据CephNote的博客<a href="http://cephnotes.ksperis.com/blog/2015/05/19/intel-520-ssd-journal/" target="_blank" rel="external">intel-520-ssd-journal</a>知道这个值表示的是SSD的寿命，输出表示当前SSD可用寿命为1%。</p>
+<h3 id="3-6-SSD寿命将近的表现"><a href="#3-6-SSD寿命将近的表现" class="headerlink" title="3.6.SSD寿命将近的表现"></a>3.6.SSD寿命将近的表现</h3><p>对于smartctl的值还是有所怀疑，于是在sda上运行fio测试，结果如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">root@node-65:~<span class="comment"># fio -direct=1 -bs=4k -ramp_time=40 -runtime=100</span></span><br><span class="line">-size=20g -filename=./testfio.file -ioengine=libaio -iodepth=8</span><br><span class="line">-norandommap -randrepeat=0 -time_based -rw=randwrite -name <span class="string">"osd.0 4k</span><br><span class="line">randwrite test"</span></span><br><span class="line">osd.0 4k randwrite <span class="built_in">test</span>: (g=0): rw=randwrite, bs=4K-4K/4K-4K/4K-4K,</span><br><span class="line">ioengine=libaio, iodepth=8</span><br><span class="line">fio-2.1.10</span><br><span class="line">Starting 1 process</span><br><span class="line">osd.0 4k randwrite <span class="built_in">test</span>: Laying out IO file(s) (1 file(s) / 20480MB)</span><br><span class="line">Jobs: 1 (f=1): [w] [100.0% <span class="keyword">done</span>] [0KB/252KB/0KB /s] [0/63/0 iops] [eta 00m:00s]</span><br><span class="line">osd.0 4k randwrite <span class="built_in">test</span>: (groupid=0, <span class="built_in">jobs</span>=1): err= 0: pid=30071: Wed</span><br><span class="line">Mar 30 13:38:27 2016</span><br><span class="line">  write: io=79528KB, bw=814106B/s, iops=198, runt=100032msec</span><br><span class="line">    slat (usec): min=5, max=1031.3K, avg=363.76, stdev=13260.26</span><br><span class="line">    clat (usec): min=109, max=1325.7K, avg=39755.66, stdev=81798.27</span><br><span class="line">     lat (msec): min=3, max=1325, avg=40.25, stdev=83.48</span><br><span class="line">    clat percentiles (msec):</span><br><span class="line">     |  1.00th=[   30],  5.00th=[   30], 10.00th=[   30], 20.00th=[   31],</span><br><span class="line">     | 30.00th=[   31], 40.00th=[   31], 50.00th=[   31], 60.00th=[   36],</span><br><span class="line">     | 70.00th=[   36], 80.00th=[   36], 90.00th=[   36], 95.00th=[   36],</span><br><span class="line">     | 99.00th=[  165], 99.50th=[  799], 99.90th=[ 1221], 99.95th=[ 1237],</span><br><span class="line">     | 99.99th=[ 1319]</span><br><span class="line">    bw (KB  /s): min=    0, max= 1047, per=100.00%, avg=844.21, stdev=291.89</span><br><span class="line">    lat (usec) : 250=0.01%</span><br><span class="line">    lat (msec) : 4=0.02%, 10=0.14%, 20=0.31%, 50=98.13%, 100=0.25%</span><br><span class="line">    lat (msec) : 250=0.23%, 500=0.16%, 750=0.24%, 1000=0.22%, 2000=0.34%</span><br><span class="line">  cpu          : usr=0.18%, sys=1.27%, ctx=22838, majf=0, minf=27</span><br><span class="line">  IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=143.7%, 16=0.0%, 32=0.0%, &gt;=64=0.0%</span><br><span class="line">     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, &gt;=64=0.0%</span><br><span class="line">     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, &gt;=64=0.0%</span><br><span class="line">     issued    : total=r=0/w=19875/d=0, short=r=0/w=0/d=0</span><br><span class="line">     latency   : target=0, window=0, percentile=100.00%, depth=8</span><br><span class="line"></span><br><span class="line">Run status group 0 (all <span class="built_in">jobs</span>):</span><br><span class="line">  WRITE: io=79528KB, aggrb=795KB/s, minb=795KB/s, maxb=795KB/s,</span><br><span class="line">mint=100032msec, maxt=100032msec</span><br><span class="line"></span><br><span class="line">Disk stats (<span class="built_in">read</span>/write):</span><br><span class="line">  sda: ios=864/28988, merge=0/5738, ticks=31932/1061860,</span><br><span class="line"><span class="keyword">in</span>_queue=1093892, util=99.99%</span><br></pre></td></tr></table></figure>
+<p>看到这里的bw、iops和延时应该很清晰了，当然为了保险起见，我在其他节点运行类型测试，iops可以达到14223,也就是说SSD寿命在1%的时候跟普通SATA硬盘相当，而这样的性能对于既做操作系统又做6个OSD的日志来说负载肯定是相当大的。</p>
+<h3 id="3-7-替换sda"><a href="#3-7-替换sda" class="headerlink" title="3.7.替换sda"></a>3.7.替换sda</h3><p>现在问题已经很清晰了，解决方案也是唯一的：替换sda。这里的操作是使用一个新的SSD，利用dd将数据拷贝到这个新的SSD中，再直接插入node-65原来sda的位置即可。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[ceph full或者nearfull的解决方法探究]]></title>
+      <url>http://blog.itzhoulin.com/2016/04/20/deal_with_ceph_full/</url>
+      <content type="html"><![CDATA[<h2 id="1-问题"><a href="#1-问题" class="headerlink" title="1.问题"></a>1.问题</h2><p>昨晚在测试环境新建了7个rbd，然后在不同节点上向这些rbd执行fio，对rbd进行初始化。今早来发现fio没有按时完成，没有输出信息，一看集群状态如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@console:~/CeTune/benchmarking<span class="comment"># ceph health detail</span></span><br><span class="line">HEALTH_ERR 1 full osd(s); 3 near full osd(s)</span><br><span class="line">osd.4 is full at 95%</span><br><span class="line">osd.0 is near full at 87%</span><br><span class="line">osd.2 is near full at 90%</span><br><span class="line">osd.3 is near full at 90%</span><br></pre></td></tr></table></figure>
+<p>这个对于见过场面的我来说不是什么大事（PS：其实主要因为是测试环境），于是乎习惯性翻笔记，但是发现以前的操作处理记录没了，于是乎今天记录一下今天的解决步骤。</p>
+<h2 id="2-解决"><a href="#2-解决" class="headerlink" title="2.解决"></a>2.解决</h2><h3 id="2-0-根本之道"><a href="#2-0-根本之道" class="headerlink" title="2.0.根本之道"></a>2.0.根本之道</h3><p>集群满了，说明空间不够用，因此添加OSD才是最终的出路，但是一旦集群有OSD达到full的级别，及时添加OSD，集群也不会进行数据平衡操作，因此先要能让集群动起来在根据实际情况选择添加OSD还是删除数据。</p>
+<h3 id="2-1-调整OSD的full比例"><a href="#2-1-调整OSD的full比例" class="headerlink" title="2.1.调整OSD的full比例"></a>2.1.调整OSD的full比例</h3><p>执行下面的命令调整OSD的full和nearfull的比例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 98'</span></span><br><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 0.98'</span></span><br></pre></td></tr></table></figure>
+<p>上面两个是最容易想到的，但是实际上调整这两个后并不能很好的解决我的这个问题，这个时候及时选择删除rbd以腾出空间依然弹出错误如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@console:~/cluster<span class="comment"># rbd rm volume-b0d3175b-7e74-4f71-aae5-39a53eda11ad</span></span><br><span class="line">2016-04-08 08:56:27.911165 7f4cee0da7c0  0 client.104114.objecter  FULL, paused modify 0x1cc3a60 tid 2</span><br></pre></td></tr></table></figure>
+<p>在回看我的场景，基本是所有的OSD的数据都满了，也就是说整个集群（包括pg和OSD）都是full的状态，因此还需要设置一个pg的full比例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph pg <span class="built_in">set</span>_full_ratio 0.98</span><br></pre></td></tr></table></figure>
+<p>此时再次执行删除rbd操作就会开始工作了，删除可能会比较慢</p>
+<p>PS：<strong>不推荐的删除方式</strong>，先解挂所有rbd，再删除所有rbd，最后直接删除OSD数据目录下current目录下的所有文件。即使是这样，由于我的集群整个满了，删除都消耗了十几分钟。</p>
+<h2 id="3-扩展"><a href="#3-扩展" class="headerlink" title="3.扩展"></a>3.扩展</h2><p>对于只有部分OSD用量满的情况跟前面的处理方式有很大不同。当然，<strong>让集群能够动起来是最开始要做的事</strong> ，这里的情况跟前面第二节介绍的方法还是要所有区别，尤其是对于线上环境，因为一旦调整这个全局的比例，可能整个集群的数据都会动起来，可能会有更多的数据迁移。因此另一种解决方法是临时调整、单个调整。但是，但是，但是，最最重要也是最先要解决的就是找到为什么只有少数OSD空间用量会满。</p>
+<h3 id="3-1-数据分布不均匀的原因"><a href="#3-1-数据分布不均匀的原因" class="headerlink" title="3.1.数据分布不均匀的原因"></a>3.1.数据分布不均匀的原因</h3><h4 id="3-1-1-crushmap问题"><a href="#3-1-1-crushmap问题" class="headerlink" title="3.1.1.crushmap问题"></a>3.1.1.crushmap问题</h4><p>出现这种问题的原因可能是你手动修改过crushmap，将某些OSD划到了单独的组；或者是数据分布规则设定有误等。这种情况就只能自己到处crushmap分析一下了。不好举例，有问题的欢迎沟通。</p>
+<p>####3.1.2.pg数设置不合理<br>这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 <strong>file-&gt;object-&gt;pg-&gt;OSD-&gt;physics disk</strong> 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 <strong>pg_num</strong> 和 <strong>pgp_num</strong> 。有关调整这部分的工作和注意事项等见我的另一篇博文：<a href="http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num" target="_blank" rel="external">调整pg数量的步骤</a></p>
+<p>有一个python程序可以看各个pool在各个OSD上的pg分布，由此可以判断一下pg是否分布均匀。进而使用上面的方法调整该pool的pg_num和pgp_num。脚本点击<a href="https://gist.github.com/hnuzhoulin/fef193f5e26533fc08c86ad30209646d" target="_blank" rel="external">这里</a></p>
+<h3 id="3-2-调整OSD的weight"><a href="#3-2-调整OSD的weight" class="headerlink" title="3.2.调整OSD的weight"></a>3.2.调整OSD的weight</h3><p>对于只是少数OSD容量满的情况下，不管是上一小节中的调整crushmap还是pg_num的方法解决，最首先也还是需要集群能够进行正常读写操作，因此可以设置单个OSD的full和nearfull比例，也可以使用调整weight的方法。</p>
+<p>关于一个OSD的weght，一共有两种：</p>
+<ul>
+<li>一种就是在crush自动设置的weight，这个值是根据OSD所在硬盘空间大小算出来的，1T的硬盘可用空间，这个值为1.</li>
+<li>另一种就是人为添加的用以表示数据分布权重值的 reweight，这个值介于0-1之间，越小表示分布权重越低。</li>
+</ul>
+<p>两种weoght都可以在命令 <code>ceph osd ree</code> 中看到，如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">root@node1:~<span class="comment"># ceph osd tree</span></span><br><span class="line"><span class="comment"># id    weight  type name       up/down reweight</span></span><br><span class="line">-1      13.65   root default</span><br><span class="line">-2      2.73            host node1</span><br><span class="line">0       2.73                    osd.0   up      1</span><br><span class="line">-3      2.73            host node2</span><br><span class="line">1       2.73                    osd.1   up      1</span><br><span class="line">-4      2.73            host node3</span><br><span class="line">2       2.73                    osd.2   up      1</span><br><span class="line">-5      2.73            host node4</span><br><span class="line">3       2.73                    osd.3   up      1</span><br><span class="line">-6      2.73            host node5</span><br><span class="line">4       2.73                    osd.4   up      1</span><br></pre></td></tr></table></figure>
+<p>从上面的额输出来看，第二列的weight就是crush根据硬盘可用容量计算出来的，最后一列的reweight就是这个OSD的数据分布权重。这里我们应对某一个OSD满的另一种方法就是调整reweight，以降低数据在该OSD上的分布，调整的效果可以看看这个<a href="http://cephnotes.ksperis.com/blog/2013/12/09/ceph-osd-reweight/" target="_blank" rel="external">博文</a>，此文ceph中国论坛有<a href="http://bbs.ceph.org.cn/article/38" target="_blank" rel="external">翻译稿</a></p>
+<p>ceph提供有自动调节reweight的工具：<code>ceph osd reweight-by-utilization</code></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[记一次日志所在SSD故障导致的object unfound]]></title>
+      <url>http://blog.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</url>
+      <content type="html"><![CDATA[<h2 id="1-问题"><a href="#1-问题" class="headerlink" title="1.问题"></a>1.问题</h2><p>节点node-65因为其中一个既做系统又做日志分区的SSD寿命到期性能急剧下降导致对应OSD延时超级大，且有OSD无法启动，同时，整个过程依然有虚拟机在对集群进行读写。</p>
+<p>在成功通过先调整reweight为0给SSD减压最后替换这个SSD再恢复reweight之后，有一个object 处于unfound状态，同时导致其所在的pg整个处于backfilling状态</p>
+<h2 id="2-处理流程及总结"><a href="#2-处理流程及总结" class="headerlink" title="2.处理流程及总结"></a>2.处理流程及总结</h2><h3 id="2-1-pg以及object相关信息"><a href="#2-1-pg以及object相关信息" class="headerlink" title="2.1.pg以及object相关信息"></a>2.1.pg以及object相关信息</h3><p>该pg的信息如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line">ceph pg map 4.438</span><br><span class="line">osdmap e42522 pg 4.438 (4.438) -&gt; up [34,20,30] acting [7,11]</span><br><span class="line"></span><br><span class="line">ceph pg 4.438 query</span><br><span class="line">&#123; <span class="string">"state"</span>: <span class="string">"active+recovering+degraded+remapped"</span>,</span><br><span class="line">  <span class="string">"epoch"</span>: 42479,</span><br><span class="line">  <span class="string">"up"</span>: [</span><br><span class="line">        34,</span><br><span class="line">        20,</span><br><span class="line">        30],</span><br><span class="line">  <span class="string">"acting"</span>: [</span><br><span class="line">        7,</span><br><span class="line">        11],</span><br><span class="line">  <span class="string">"backfill_targets"</span>: [</span><br><span class="line">        <span class="string">"20"</span>,</span><br><span class="line">        <span class="string">"30"</span>,</span><br><span class="line">        <span class="string">"34"</span>],</span><br><span class="line">  <span class="string">"actingbackfill"</span>: [</span><br><span class="line">        <span class="string">"7"</span>,</span><br><span class="line">        <span class="string">"11"</span>,</span><br><span class="line">        <span class="string">"20"</span>,</span><br><span class="line">        <span class="string">"30"</span>,</span><br><span class="line">        <span class="string">"34"</span>],</span><br><span class="line">---</span><br><span class="line"><span class="string">"recovery_state"</span>: [</span><br><span class="line">        &#123; <span class="string">"name"</span>: <span class="string">"Started\/Primary\/Active"</span>,</span><br><span class="line">          <span class="string">"enter_time"</span>: <span class="string">"2016-03-19 10:24:50.186833"</span>,</span><br><span class="line">          <span class="string">"might_have_unfound"</span>: [</span><br><span class="line">                &#123; <span class="string">"osd"</span>: <span class="string">"6"</span>,</span><br><span class="line">                  <span class="string">"status"</span>: <span class="string">"osd is down"</span>&#125;,</span><br><span class="line">                &#123; <span class="string">"osd"</span>: <span class="string">"11"</span>,</span><br><span class="line">                  <span class="string">"status"</span>: <span class="string">"already probed"</span>&#125;,</span><br><span class="line">                &#123; <span class="string">"osd"</span>: <span class="string">"20"</span>,</span><br><span class="line">                  <span class="string">"status"</span>: <span class="string">"already probed"</span>&#125;,</span><br><span class="line">                &#123; <span class="string">"osd"</span>: <span class="string">"30"</span>,</span><br><span class="line">                  <span class="string">"status"</span>: <span class="string">"already probed"</span>&#125;,</span><br><span class="line">                &#123; <span class="string">"osd"</span>: <span class="string">"31"</span>,</span><br><span class="line">                  <span class="string">"status"</span>: <span class="string">"already probed"</span>&#125;,</span><br><span class="line">                &#123; <span class="string">"osd"</span>: <span class="string">"34"</span>,</span><br><span class="line">                  <span class="string">"status"</span>: <span class="string">"already probed"</span>&#125;],</span><br><span class="line">          <span class="string">"recovery_progress"</span>: &#123; <span class="string">"backfill_targets"</span>: [</span><br><span class="line">                    <span class="string">"20"</span>,</span><br><span class="line">                    <span class="string">"30"</span>,</span><br><span class="line">                    <span class="string">"34"</span>],</span><br><span class="line">              <span class="string">"waiting_on_backfill"</span>: [],</span><br><span class="line">              <span class="string">"last_backfill_started"</span>: <span class="string">"0\/\/0\/\/-1"</span>,</span><br><span class="line">              <span class="string">"backfill_info"</span>: &#123; <span class="string">"begin"</span>: <span class="string">"0\/\/0\/\/-1"</span>,</span><br><span class="line">                  <span class="string">"end"</span>: <span class="string">"0\/\/0\/\/-1"</span>,</span><br><span class="line">                  <span class="string">"objects"</span>: []&#125;,</span><br><span class="line">              <span class="string">"peer_backfill_info"</span>: [],</span><br><span class="line">              <span class="string">"backfills_in_flight"</span>: [],</span><br><span class="line">              <span class="string">"recovering"</span>: [],</span><br><span class="line">              <span class="string">"pg_backend"</span>: &#123; <span class="string">"pull_from_peer"</span>: [],</span><br><span class="line">                  <span class="string">"pushing"</span>: []&#125;&#125;,</span><br><span class="line">          <span class="string">"scrub"</span>: &#123; <span class="string">"scrubber.epoch_start"</span>: <span class="string">"0"</span>,</span><br><span class="line">              <span class="string">"scrubber.active"</span>: 0,</span><br><span class="line">              <span class="string">"scrubber.block_writes"</span>: 0,</span><br><span class="line">              <span class="string">"scrubber.finalizing"</span>: 0,</span><br><span class="line">              <span class="string">"scrubber.waiting_on"</span>: 0,</span><br><span class="line">              <span class="string">"scrubber.waiting_on_whom"</span>: []&#125;&#125;,</span><br><span class="line">        &#123; <span class="string">"name"</span>: <span class="string">"Started"</span>,</span><br><span class="line">          <span class="string">"enter_time"</span>: <span class="string">"2016-03-19 10:24:49.182580"</span>&#125;],</span><br><span class="line">  <span class="string">"agent_state"</span>: &#123;&#125;&#125;</span><br></pre></td></tr></table></figure>
+<p>居然up和scting 不一致，应该是调整了osd 的crush reweight导致的。</p>
+<p>ubfound object的信息如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">ceph pg 4.438 list_missing</span><br><span class="line">&#123; <span class="string">"offset"</span>: &#123; <span class="string">"oid"</span>: <span class="string">""</span>,</span><br><span class="line">      <span class="string">"key"</span>: <span class="string">""</span>,</span><br><span class="line">      <span class="string">"snapid"</span>: 0,</span><br><span class="line">      <span class="string">"hash"</span>: 0,</span><br><span class="line">      <span class="string">"max"</span>: 0,</span><br><span class="line">      <span class="string">"pool"</span>: -1,</span><br><span class="line">      <span class="string">"namespace"</span>: <span class="string">""</span>&#125;,</span><br><span class="line">  <span class="string">"num_missing"</span>: 1,</span><br><span class="line">  <span class="string">"num_unfound"</span>: 1,</span><br><span class="line">  <span class="string">"objects"</span>: [</span><br><span class="line">        &#123; <span class="string">"oid"</span>: &#123; <span class="string">"oid"</span>: <span class="string">"rbd_data.188b9163c78e9.00000000000015f2"</span>,</span><br><span class="line">              <span class="string">"key"</span>: <span class="string">""</span>,</span><br><span class="line">              <span class="string">"snapid"</span>: -2,</span><br><span class="line">              <span class="string">"hash"</span>: 2427198520,</span><br><span class="line">              <span class="string">"max"</span>: 0,</span><br><span class="line">              <span class="string">"pool"</span>: 4,</span><br><span class="line">              <span class="string">"namespace"</span>: <span class="string">""</span>&#125;,</span><br><span class="line">          <span class="string">"need"</span>: <span class="string">"39188'2314230"</span>,</span><br><span class="line">          <span class="string">"have"</span>: <span class="string">"39174'2314229"</span>,</span><br><span class="line">          <span class="string">"locations"</span>: []&#125;],</span><br></pre></td></tr></table></figure>
+<h3 id="2-2-使用旧版或者直接删除该object"><a href="#2-2-使用旧版或者直接删除该object" class="headerlink" title="2.2.使用旧版或者直接删除该object"></a>2.2.使用旧版或者直接删除该object</h3><p>按照ceph官网的troubleshoot手册，对于这种问题，可以直接告诉ceph使用已有的旧版本或者直接删除：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root at node-67:~<span class="comment"># ceph pg 4.438 mark_unfound_lost revert</span></span><br><span class="line">Error EINVAL: pg has 1 unfound objects but we haven<span class="string">'t probed all sources,not marking lost</span><br><span class="line"></span><br><span class="line">root at node-67:~# ceph pg 4.438 mark_unfound_lost delete</span><br><span class="line">Error EINVAL: pg has 1 unfound objects but we haven'</span>t probed all sources,not marking lost</span><br></pre></td></tr></table></figure>
+<p>看信息貌似是该object的一个副本没有准备好且不处于lost状态，但是实际情况是osd.6因为leveldb故障已经被踢出集群。</p>
+<blockquote>
+<p><strong>注意：</strong> 从这里得到的经验是只有在确认该osd没有用之后再使用删除操作，要实现 <strong>迁移数据和该osd不对外提供服务</strong> 的方法最好是使用调整crush reweight的方法。</p>
+</blockquote>
+<h3 id="2-3-尝试使用ceph-objectstore-tool"><a href="#2-3-尝试使用ceph-objectstore-tool" class="headerlink" title="2.3.尝试使用ceph-objectstore-tool"></a>2.3.尝试使用ceph-objectstore-tool</h3><p>在邮件列表上看到使用ceph-objectstore-tool可以将pg数据导出来在导入集群，因为osd.6的数据分区是依然保存完好的。但是目前使用的ceph版本的ceph-objectstore-tool不支持pg导入导出，F版必须是0.80.11版才有，单独下载ceph-test安装包也因为依赖无法完成安装。（目前集群状态不正常，不敢直接升级到0.80.11）</p>
+<p>期间将osd.6的硬盘插入别的服务器中，使用0.80.11版本的ceph-test包中的ceph-objectstore-tool工具成功将gaipg数据导出，但是不能导入也没用。</p>
+<h3 id="2-4-重建osd-6"><a href="#2-4-重建osd-6" class="headerlink" title="2.4.重建osd.6"></a>2.4.重建osd.6</h3><p>仔细检查前面的所有输出，发现之所以不能通过<code>ceph pg 4.438 mark_unfound_lost revert</code>恢复object是因为还有osd.6不处于可用状态或者标记为lost状态。因此想到一个折中的方法，我重新加入一个osd.6是不是可行呢？</p>
+<p>根据这个思路，为了保证原来的osd.6的数据以备不时之需，换一个新硬盘插到osd.6的位置作为新的osd.6，使用新下面的步骤操作：</p>
+<ul>
+<li>使用ceph-deploy添加osd，会自动使用目前缺失的6作为序号</li>
+<li>会进行数据同步，查看ceph -w日志</li>
+<li>在处理到pg4.438时，日志报告有object丢失，但是不影响该pg其他数据同步</li>
+<li>执行 <code>ceph pg 4.438 mark_unfound_lost revert</code> </li>
+<li>再次同步</li>
+<li>集群OK</li>
+</ul>
+<h2 id="3-总结"><a href="#3-总结" class="headerlink" title="3.总结"></a>3.总结</h2><p>从最近的几次集群故障来看，ceph还是比较健壮的，可能遇到的问题和故障都已经有相应的解决工具（这个应该得益于社区活跃）和方法，我们只需要为这些工具和方法准备所需的前提条件就可以。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[因为ceph波动导致kernel rbd挂起]]></title>
+      <url>http://blog.itzhoulin.com/2016/04/18/kernel-rbd-hang-when-ceph-full/</url>
+      <content type="html"><![CDATA[<h2 id="1-问题"><a href="#1-问题" class="headerlink" title="1.问题"></a>1.问题</h2><p>有一个ceph环境的使用方式如下：</p>
+<ul>
+<li>在某一个ceph节点上map rbd</li>
+<li>格式化该rbd</li>
+<li>mount该rbd到本地目录A</li>
+<li>通过samba共享该目录A</li>
+</ul>
+<p>因为集群少数OSD达到full状态，所有通过samba共享出去的目录在客户端节点上都出现不同程度的问题：某些目录可以访问以前的数据，最新的数据无法访问；某些客户端df看不到挂载的samba共享；有些可以看到共享目录但是cd进去提示设备不存在。。。。</p>
+<h2 id="2-解决过程"><a href="#2-解决过程" class="headerlink" title="2.解决过程"></a>2.解决过程</h2><h3 id="2-1-解决OSD-full问题"><a href="#2-1-解决OSD-full问题" class="headerlink" title="2.1.解决OSD full问题"></a>2.1.解决OSD full问题</h3><p>这是首当其冲需要解决的问题，关于这个的 解决我不再赘述，参见我以前的博文。这里只记录一下解决过程：</p>
+<ul>
+<li>首先使用 <code>ceph osd reweight-by-utilization</code> 自动调节，将用量85%以上的3歌osd进行了调整</li>
+<li>上述调整数据同步完成后，又有新的osd达到87%，再次调整 <code>ceph osd reweight-by-utilization 115</code> ,注意这里加了一个参数115，又再次调整了两个osd</li>
+<li>同步完成后又有一个osd用量达到83%，虽然这个值还没有达到ceph的默认告警值，但是我还是手动通过 <code>ceph osd reweight 39 0.95</code> 调整了一下 </li>
+</ul>
+<p>到此集群恢复正常，但是此时samba共享依然无法访问</p>
+<h3 id="2-2-查找共享不能读取原因"><a href="#2-2-查找共享不能读取原因" class="headerlink" title="2.2.查找共享不能读取原因"></a>2.2.查找共享不能读取原因</h3><p>目前客户那边反馈的情况在第一小节中有提到。而我同样在ceph节点进行了下面的测试：</p>
+<ul>
+<li>直接进入rbd挂载的本地目录，检查是否能够正常查看文件</li>
+<li>在其他节点再次mount samba共享验证samba通道是否正常</li>
+</ul>
+<p>仅仅针对客户反馈过来的几个共享进行检查，发现结果都是历史数据是可以获取到的，但是要想获取实时数据比如使用quota查看限额信息等都是直接挂起不响应，命令无法通过 <code>Ctrl+C</code> 取消。于是通过 <code>ps aux|grep quota</code> 命令检查发现进程状态处于 <strong>D</strong> ，进一步查看samba进程的状态，天啦噜，居然绝大部分都是处于D状态。然后通过 <code>sambastatus -u testuser</code> 查看testuser用户的samba状态，发现有差不多522个进程处于D状态。</p>
+<p>因此问题应该就是因为存储full后停止写导致rbd挂起，进一步的导致samba进程一直处于同步等待IO资源深度睡眠的状态（即ps中显示的D状态）。进一步了解这个D状态发现最好的方法就是重启。</p>
+<h3 id="2-3-解决rbd-hang"><a href="#2-3-解决rbd-hang" class="headerlink" title="2.3.解决rbd hang"></a>2.3.解决rbd hang</h3><p>对于线上环境来说，重启是最终不得已的方法，但是业务无法使用又是等不起的。嘴周只能一边协调准备重启事宜，一边在疯狂搜索ceph的邮件列表。当然由于搜索所用关键词不准确，并没有搜到有用的。（本文标题的几个词是后面根据邮件列表的标题重新整理的关键词）无奈之下只能直接发问了。好在有一个国外的网友及时回复，在他的指导下找到了根本解决办法。</p>
+<ul>
+<li>在rbd挂载的节点上执行：<code>/sys/kernel/debug/ceph -type f -print -exec cat {} \;</code></li>
+<li>文件 <code>/sys/kernel/debug/ceph/***/osdc</code> 是否为空，不为空的话多次查看是否内容不变</li>
+<li>使用 <code>ceph osd down 37</code> 重启上述osdc文件中列到的osd</li>
+<li>观察集群状态，osd恢复后再同样的方法重启下一个，直到所有的都完成。</li>
+</ul>
+<p>这里的目录 <code>/sys/kernel/debug/ceph</code> 的具体作用的话可以看seb的博客：<a href="http://www.sebastien-han.fr/blog/2015/07/08/see-what-the-ceph-client-sees/" target="_blank" rel="external">See What the Ceph Client Sees</a></p>
+<p><strong>说明：</strong> 这里的这个目录只有通过kernel rbd模块挂载rbd才会生成。</p>
+<h2 id="3-参考文档"><a href="#3-参考文档" class="headerlink" title="3.参考文档"></a>3.参考文档</h2><ul>
+<li>关于我提交到邮件列表的提问：<a href="https://www.mail-archive.com/ceph-users%40lists.ceph.com/msg28454.html" target="_blank" rel="external">directory hang which mount from a mapped rbd</a></li>
+<li>Seb的博文：<a href="http://www.sebastien-han.fr/blog/2015/07/08/see-what-the-ceph-client-sees/" target="_blank" rel="external">See What the Ceph Client Sees</a></li>
+<li><a href="https://www.mail-archive.com/ceph-users%40lists.ceph.com/msg25418.html" target="_blank" rel="external">Kernel RBD hang on OSD Failure</a></li>
+</ul>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Ceph Jewel版功能预览---RBD mirroring]]></title>
+      <url>http://blog.itzhoulin.com/2016/04/02/ceph-jewel-preview-rbd-mirroring/</url>
+      <content type="html"><![CDATA[<p><em>由Ceph中国社区-半天河翻译，XXXX 校稿。</em></p>
+<p>英文出处：<a href="http://www.sebastien-han.fr/blog/2016/03/28/ceph-jewel-preview-ceph-rbd-mirroring/" target="_blank" rel="external">Sébastien Han</a> 欢迎加入<a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">翻译组</a></p>
+<p><img src="http://sebastien-han.fr/images/ceph-rbd-mirroring.jpg" alt=""></p>
+<p>RBD的镜像特性将在Ceph的下一个稳定版（Jewel）中可用。</p>
+<h2 id="I-原因"><a href="#I-原因" class="headerlink" title="I. 原因"></a>I. 原因</h2><p>这里我们想解决的或者说克服的问题就是同步应该是Ceph的一个自然属性。这也暗示了目前Ceph块存储解决方案（俗称RBD）还不能很好的跨地域。这里需要提醒一下，Ceph只在<strong>所有副本</strong>都写入的时候才认为一个写操作完成。这就是为什么建立一个跨很长距离地域的集群通常都不是一个好主意，因为这种情况延时一般都很高。集群必须等到所有的写操作都完成，所以客户端可能需要大量的时间来进行确认。</p>
+<p>因此，我们需要一种机制来允许我们在不同地域的集群之间复制块设备。这种方法将帮助我们实现下面两个不同的目的:</p>
+<ul>
+<li>灾难恢复</li>
+<li>全局块设备分布</li>
+</ul>
+<p><img src="http://sebastien-han.fr/images/ceph-rbd-mirror.png" alt="ceph-rbd-mirror"></p>
+<h2 id="II-具体实现"><a href="#II-具体实现" class="headerlink" title="II. 具体实现"></a>II. 具体实现</h2><h2 id="II-1-一个新的守护进程"><a href="#II-1-一个新的守护进程" class="headerlink" title="II.1. 一个新的守护进程"></a>II.1. 一个新的守护进程</h2><p>一个新的守护进程：<code>rbd-mirror</code>将负责把一个集群的镜像同步到另一个集群。在这两集群中都需要配置守护进程，它会同时连接本地和远程集群。在当前Jewel版本中，主要是实现两个守护进程之间一对一的关系，而在未来将会扩展到1对N。这样，在Jewel以后的版本中，你将能够配置一个集群备份到多个目标备份集群中。</p>
+<p>作为一个起点，它将通过一个配置文件、一个用户和一个密钥来连接到其他Ceph集群(找到monitors)。使用admin用户也是可以的。<code>rbd-mirror</code>的守护进程使用cephx机制与monitors进行身份验证，这是常用也是默认的方法。</p>
+<p>为了能够彼此连接，每个守护进程必须注册另一个守护进程，更准确地说另一个集群。这是在pool级别设置的，命令是：<code>rbd mirror pool peer add</code>。连接信息可以这样获取:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ rbd mirror pool info</span><br><span class="line">Enabled: true</span><br><span class="line">Peers:</span><br><span class="line">  UUID                                 NAME        CLIENT</span><br><span class="line">    786b42ea-97eb-4b16-95f4-867f02b67289 ceph-remote client.admin</span><br></pre></td></tr></table></figure>
+<h3 id="II-2-镜像"><a href="#II-2-镜像" class="headerlink" title="II.2. 镜像"></a>II.2. 镜像</h3><p><img src="http://sebastien-han.fr/images/ceph-rbd-mirror-inside.png" alt="ceph-rbd-mirror-inside"></p>
+<p>RBD镜像的实现依赖于RBD镜像的两个新特性:</p>
+<ul>
+<li>日志特性: 为作用在镜像上的每一个事务启用日志</li>
+<li>镜像特性: 通过这个明确的告诉 <code>rbd-mirror</code> 进程复制这个镜像</li>
+</ul>
+<p>后续还会有命令和librbd接口来为一个特定的镜像启用/禁用镜像功能。日志维护着这个镜像上的所有事务的操作记录列表。它可以被视为存在于集群中的另一个RBD镜像(一系列RADOS对象)。一般来说，一个写操作首先到达日志，再返回到客户端，然后被写入底层rbd镜像中。由于性能的原因，这个日志可以存放在跟执行日志化的镜像不同的资源池中。目前，每一个RBD镜像都有一个日志。在我们为Ceph实现一致性组（consistency group）之前，可能会一直保持这种结构。对于不熟悉这些概念的人而言，可以这样理解：一致性组是一个实体，它管理着可以被视为是一个的一堆卷(如:RBD镜像)。这样，你就可以针对这个组内的所有卷执行一些操作，比如快照。有了一致性组，就可以保证所有卷在同一个一致的状态上。所以当一致性组在Ceph中实现后，我们将使用一个日志来记录所有的RBD镜像，同时作为这个组的一部分。</p>
+<p>所以现在，我知道你们中的一些人已经在思考这个问题了：“我能够在已经存在的镜像上启用日志功能吗？“ 是的，可以！Ceph将简单地给你的镜像做一个快照，针对这个快照做一个RBD复制操作，然后在复制得到的镜像上开始记录日志。它只是一个后台任务。</p>
+<p>镜像功能的启用和禁用可以作用在整个资源池或者一个镜像上。如果在资源池级别启用了镜像功能，这样资源池中的每一个启用了日志特性的镜像将会被镜像代理复制。可以使用这个命令启用：<code>rbd mirror pool enable</code>。</p>
+<p>使用下面的命令配置一个镜像：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ rbd create rbd/leseb --image-feature exclusive-lock,journaling</span><br></pre></td></tr></table></figure>
+<p>这个特性也可以通过下面的方式动态激活：</p>
+<p><code>rbd feature enable rbd/leseb exclusive-lock &amp;&amp; rbd feature enable rbd/leseb journaling</code></p>
+<h2 id="III-灾难恢复"><a href="#III-灾难恢复" class="headerlink" title="III. 灾难恢复"></a>III. 灾难恢复</h2><p>做cross-sync复制是可能的，甚至着是默认的实现方式。这意味着<strong>在两个不同位置的资源池的名字必须相同</strong>。因此镜像会在其他集群中得到相同的名字，这带来了两个挑战:</p>
+<ol>
+<li>使用同一个资源池既存放你的主数据又存放备份数据（来自于其他集群）会影响性能</li>
+<li>然而，拥有完全相同的资源池名称肯定是更容易执行恢复的。从OpenStack的角度来看，你只需要用卷ID来填充数据库记录。</li>
+</ol>
+<p>每个镜像都有一个<code>mirroring_directory</code>对象，它包含有主镜像所在位置的标记。本地的镜像会被晋升为<code>primary</code>(使用命令<code>rbd mirror image promote</code>)，并且是可写的，而远端的备份镜像则会持有一个锁。锁意味着这个镜像在被晋升为主且原来的主降级（<code>rbd mirror image demote</code>）之前是不能写的(只读模式)。因此这也是晋升和降级功能的由来。一旦备份镜像晋升为主，原来的主镜像将被降级为副。这意味着同步将会以相反的方式进行(副变成主，同时向原来是主而现在是副的镜像执行同步操作)。</p>
+<p>如果平台受脑裂情况的影响，<code>rbd-mirror</code>守护进程不会尝试任何同步，所以你必须自己找到正确的镜像。意味着你将不得不手动强制同步您认为的最新版本的镜像。这种情况你可以运行命令<code>rbd mirror image resync</code>。</p>
+<p>IV. OpenStack集成<br>目前，镜像功能需要两个环境运行在相同的L2层网络上。这样两个集群才可以彼此访问。后续还会实现一个新的守护进程，它可能被称为<code>mirroring-proxy</code>。它将负责转发镜像请求。同样的在这里我们将面临两个挑战:</p>
+<ol>
+<li>在一个守护进程的帮助下使用转发机制将允许我们只对外公开这个守护进程</li>
+<li>这里使用一个守护进程的方式可能会引发更多的讨论</li>
+</ol>
+<p>因此，这是在安全性和性能方面的一点平衡。</p>
+<p>就实现而言，这个守护进程可能会需要一个专用的服务器来运行，因为它需要大量的带宽。所以一个拥有多个网卡的服务器是理想配置。不幸的是，当前初始版本的rbd-mirroring守护进程<strong>没有任何高可用</strong>。因此这个守护进程只能运行一个。所以当考虑这个守护进程的高可用性时，在不同的服务器上运行多个进程以提供HA和卸载的能力将会在后续的Jewel版本中提供。</p>
+<p>在试图为OpenStack提供灾难恢复的场景下，RBD镜像功能是非常有用的。下图是一个设计的例子:</p>
+<p><img src="http://sebastien-han.fr/images/openstack-multisite-ceph-no-regions.png" alt="openstack-multisite-ceph-no-regions"></p>
+<blockquote>
+<p>如果你想了解更多关于RBD镜像功能的设计细节，你可以阅读 <a href="http://www.spinics.net/lists/ceph-devel/msg24169.html" target="_blank" rel="external">Josh Durgin’s design draft discussion</a> 和 <a href="http://pad.ceph.com/p/rbd_mirror_daemon" target="_blank" rel="external">pad from the Ceph Online Summit</a>.</p>
+</blockquote>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[fio应用]]></title>
+      <url>http://blog.itzhoulin.com/2016/04/01/fio-usage-example/</url>
+      <content type="html"><![CDATA[<h2 id="1-输出bw，lat和iops数据并画图"><a href="#1-输出bw，lat和iops数据并画图" class="headerlink" title="1.输出bw，lat和iops数据并画图"></a>1.输出bw，lat和iops数据并画图</h2><p>fio安装完后自带有一个高级脚本<code>fio_generate_plots</code>能够根据fio输出的数据进行画图。操作流程如下：</p>
+<h3 id="1-1设置fio输出详细日志"><a href="#1-1设置fio输出详细日志" class="headerlink" title="1.1设置fio输出详细日志"></a>1.1设置fio输出详细日志</h3><p>fio的输出日志主要包含三种：<strong>bw</strong>，<strong>lat</strong>和<strong>iops</strong>，设置这三种的参数如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">write_bw_<span class="built_in">log</span>=rw</span><br><span class="line">write_lat_<span class="built_in">log</span>=rw</span><br><span class="line">write_iops_<span class="built_in">log</span>=rw</span><br></pre></td></tr></table></figure>
+<p>这里需要强调的一点是，后面接的参数<strong>rw</strong>，是输出日志文件名的<strong>prefix</strong>，如最终会生成的日志文件如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">rw_iops.log</span><br><span class="line">rw_clat.log</span><br><span class="line">rw_slat.log</span><br><span class="line">rw_lat.log</span><br><span class="line">rw_bw.log</span><br></pre></td></tr></table></figure>
+<p>这个参数在后面画图的时候也要用到。</p>
+<h3 id="1-2-画图"><a href="#1-2-画图" class="headerlink" title="1.2 画图"></a>1.2 画图</h3><p>前提是还需要安装好<code>gnuplot</code>，然后使用下面的命令即可自动画图：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:/tmp&gt; fio_generate_plots bw</span><br></pre></td></tr></table></figure>
+<p>发现没有，<code>fio_generate_plots</code>接受的唯一参数就是这个日志文件名的prefix。</p>
+<p>本例中生成的图片文件有：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">bw-bw.svg  </span><br><span class="line">bw-clat.svg  </span><br><span class="line">bw-iops.svg  </span><br><span class="line">bw-lat.svg  </span><br><span class="line">bw-slat.svg</span><br></pre></td></tr></table></figure>]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[CeTune抓取性能数据的代码段分析]]></title>
+      <url>http://blog.itzhoulin.com/2016/03/04/cetune-performance-metric/</url>
+      <content type="html"><![CDATA[<h2 id="1-sar数据"><a href="#1-sar数据" class="headerlink" title="1.sar数据"></a>1.sar数据</h2><h3 id="1-1-抓取命令为："><a href="#1-1-抓取命令为：" class="headerlink" title="1.1 抓取命令为："></a>1.1 抓取命令为：</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">common.pdsh(user, nodes, <span class="string">"sar -A %s &gt; %s/`hostname`_sar.txt &amp; echo `date +%s`' sar start' &gt;&gt; %s/`hostname`_process_log.txt"</span> % (monitor_interval, dest_dir, <span class="string">'%s'</span>, dest_dir))</span><br></pre></td></tr></table></figure>
+<p>数据写入<code>node1_sar.txt</code>文件，<code>node1_process_log.txt</code>文件记录开始时间</p>
+<h3 id="1-2-停止命令"><a href="#1-2-停止命令" class="headerlink" title="1.2 停止命令"></a>1.2 停止命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">common.pdsh(user, nodes, <span class="string">"killall -9 sar; echo `date +%s`' sar stop' &gt;&gt; %s/`hostname`_process_log.txt"</span> % (<span class="string">'%s'</span>, dest_dir), option = <span class="string">"check_return"</span>)</span><br></pre></td></tr></table></figure>
+<p>这里只是记录停止时间。</p>
+<h3 id="1-3数据作用"><a href="#1-3数据作用" class="headerlink" title="1.3数据作用"></a>1.3数据作用</h3><p>在文件<code>/analyzer/analyzer.py</code>的127行：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">phase_name_map = &#123;<span class="string">"cpu"</span>: <span class="string">"sar"</span>, <span class="string">"memory"</span>: <span class="string">"sar"</span>, <span class="string">"nic"</span>: <span class="string">"sar"</span>, <span class="string">"osd"</span>: <span class="string">"iostat"</span>, <span class="string">"journal"</span>: <span class="string">"iostat"</span>, <span class="string">"vdisk"</span>: <span class="string">"iostat"</span> &#125;</span><br></pre></td></tr></table></figure></p>
+<p>表明cpu、memory和nic的数据来自于sar</p>
+<h3 id="1-4-数据处理"><a href="#1-4-数据处理" class="headerlink" title="1.4 数据处理"></a>1.4 数据处理</h3><h4 id="1-4-1-CPU数据"><a href="#1-4-1-CPU数据" class="headerlink" title="1.4.1 CPU数据"></a>1.4.1 CPU数据</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">stdout = common.bash( <span class="string">"grep ' *CPU *%' -m 1 "</span>+path+<span class="string">" | awk -F\"CPU\" '&#123;print <span class="variable">$2</span>&#125;'; cat "</span>+path+<span class="string">" | grep ' *CPU *%' -A 1 | awk '&#123;flag=0;if(NF&lt;=3)next;for(i=1;i&lt;=NF;i++)&#123;if(flag==1)&#123;printf <span class="variable">$i</span>\"\"FS&#125;if(<span class="variable">$i</span>==\"all\")flag=1&#125;;if(flag==1)print \"\"&#125;'"</span> )</span><br></pre></td></tr></table></figure>
+<p>CPU数据的获取是从node1_sar.txt文件中取出<code>*CPU *%</code>所在行及其下一行再利用awk逐行处理，获取all字段后面部分的数据。</p>
+<h4 id="1-4-2-内存数据"><a href="#1-4-2-内存数据" class="headerlink" title="1.4.2 内存数据"></a>1.4.2 内存数据</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">stdout = common.bash( <span class="string">"grep 'kbmemfree' -m 1 "</span>+path+<span class="string">" | awk -Fkbmemfree '&#123;printf \"kbmenfree  \";print <span class="variable">$2</span>&#125;'; grep \"kbmemfree\" -A 1 "</span>+path+<span class="string">" | awk 'BEGIN&#123;find=0;&#125;&#123;for(i=1;i&lt;=NF;i++)&#123;if(<span class="variable">$i</span>==\"kbmemfree\")&#123;find=i;next;&#125;&#125;if(find!=0)&#123;for(j=find;j&lt;=NF;j++)printf <span class="variable">$j</span>\"\"FS;find=0;print \"\"&#125;&#125;'"</span> )</span><br></pre></td></tr></table></figure>
+<p>这里学习到的awk的<code>BEGIN</code>是设置起始全局变量，接收输入前设置，找到kbmemfree是第几列，真正的数据就从第几列开始输出。</p>
+<h4 id="1-4-3-网卡数据"><a href="#1-4-3-网卡数据" class="headerlink" title="1.4.3 网卡数据"></a>1.4.3 网卡数据</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">stdout = common.bash( <span class="string">"grep 'IFACE' -m 1 "</span>+path+<span class="string">" | awk -FIFACE '&#123;print <span class="variable">$2</span>&#125;'; cat "</span>+path+<span class="string">" | awk 'BEGIN&#123;find=0;&#125;&#123;for(i=1;i&lt;=NF;i++)&#123;if(<span class="variable">$i</span>==\"IFACE\")&#123;j=i+1;if(<span class="variable">$j</span>==\"rxpck/s\")&#123;find=1;start_col=j;col=NF;for(k=1;k&lt;=col;k++)&#123;res_arr[k]=0;&#125;next&#125;;if(<span class="variable">$j</span>==\"rxerr/s\")&#123;find=0;for(k=start_col;k&lt;=col;k++)printf res_arr[k]\"\"FS; print \"\";next&#125;&#125;if(<span class="variable">$i</span>==\"lo\")next;if(find)&#123;res_arr[i]+=<span class="variable">$i</span>&#125;&#125;&#125;'"</span> )</span><br></pre></td></tr></table></figure>
+<p>这里的处理更加巧妙，值得学习，将awk的处理语句展开如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(i=1;i&lt;=NF;i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span>(<span class="variable">$i</span>==<span class="string">"IFACE"</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            j=i+1;</span><br><span class="line">            <span class="keyword">if</span>(<span class="variable">$j</span>==<span class="string">"rxpck/s"</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                find=1;</span><br><span class="line">                start_col=j;</span><br><span class="line">                col=NF;</span><br><span class="line">                <span class="keyword">for</span>(k=1;k&lt;=col;k++)</span><br><span class="line">                &#123;</span><br><span class="line">                    res_arr[k]=0;</span><br><span class="line">                &#125;</span><br><span class="line">                next</span><br><span class="line">             &#125;;</span><br><span class="line">             <span class="keyword">if</span>(<span class="variable">$j</span>==<span class="string">"rxerr/s"</span>)</span><br><span class="line">             &#123;</span><br><span class="line">                find=0;</span><br><span class="line">                <span class="keyword">for</span>(k=start_col;k&lt;=col;k++)</span><br><span class="line">                    <span class="built_in">printf</span> res_arr[k]<span class="string">""</span>FS; </span><br><span class="line">                <span class="built_in">print</span> <span class="string">""</span>;</span><br><span class="line">                next</span><br><span class="line">             &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span>(<span class="variable">$i</span>==<span class="string">"lo"</span>)</span><br><span class="line">            next;</span><br><span class="line">        <span class="keyword">if</span>(find)</span><br><span class="line">        &#123;</span><br><span class="line">            res_arr[i]+=<span class="variable">$i</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>先是找到合适的数据行，即包含<code>IFACE</code>且其后字段是<code>rxpck/s</code>；然后初始化一个数组为0，立马处理下一行，求取所有网卡对应字段值的和；等到<code>IFACE</code>后的字段是<code>rxerr/s</code>时开始输出结果，并置标志位为0.</p>
+<p><strong>说明：</strong>下面说明各字段的大概含义：</p>
+<ul>
+<li><strong>rxpck/s</strong> ： 每秒接收的数据包大小</li>
+<li><strong>txpck/s</strong> ：每秒发送的数据包大小</li>
+<li><strong>rxkB/s</strong> ： 每秒接受的字节数</li>
+<li><strong>txkB/s</strong> ： 每秒发送的字节数</li>
+<li><strong>rxcmp/s</strong> ： 每秒接受的压缩数据包</li>
+<li><strong>txcmp/s</strong> ： 每秒发送的压缩数据包</li>
+<li><strong>rxmcst/s</strong> ： 每秒接受的多播数据包</li>
+</ul>
+<h2 id="2-fio数据"><a href="#2-fio数据" class="headerlink" title="2. fio数据"></a>2. fio数据</h2><p>数据来源主要是fio输出的两行：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">stdout, stderr = common.bash(<span class="string">"grep \" *io=.*bw=.*iops=.*runt=.*\|^ *lat.*min=.*max=.*avg=.*stdev=.*\" "</span>+path, True)</span><br></pre></td></tr></table></figure></p>
+<p>将所有数据求和即可。</p>
+<h2 id="3-iostat数据"><a href="#3-iostat数据" class="headerlink" title="3. iostat数据"></a>3. iostat数据</h2><h3 id="3-1抓取命令"><a href="#3-1抓取命令" class="headerlink" title="3.1抓取命令"></a>3.1抓取命令</h3><p>在run函数中iostat的命令为：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">common.pdsh(user, nodes, <span class="string">"iostat -p ALL -dxm %s &gt; %s/`hostname`_iostat.txt &amp; echo `date +%s`' iostat start' &gt;&gt; %s/`hostname`_process_log.txt"</span> % (monitor_interval, dest_dir, <span class="string">'%s'</span>, dest_dir))</span><br></pre></td></tr></table></figure>
+<h3 id="3-2数据处理"><a href="#3-2数据处理" class="headerlink" title="3.2数据处理"></a>3.2数据处理</h3><p>首先是获取osd、journal以及vdisk的列表，然后分别使用下面的数据处理脚本处理：</p>
+<p>数据处理的awk函数如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">BEGIN</span><br><span class="line">&#123;</span><br><span class="line">    split(dev,dev_arr,\<span class="string">" \");</span><br><span class="line">    dev_count=0;  #设备总数</span><br><span class="line">    for(k in dev_arr)</span><br><span class="line">    &#123;</span><br><span class="line">        count[k]=0;  #某一个设备的行数</span><br><span class="line">        dev_count+=1</span><br><span class="line">    &#125;;</span><br><span class="line">    for(i=1;i&lt;=line;i++)</span><br><span class="line">        for(j=1;j&lt;=NF;j++)</span><br><span class="line">        &#123;</span><br><span class="line">            res_arr[i,j]=0</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#123;</span><br><span class="line">    for(k in dev_arr)</span><br><span class="line">        if(dev_arr[k]==<span class="variable">$1</span>) #如果第一列的值等于我们要求的设备名</span><br><span class="line">        &#123;</span><br><span class="line">            cur_line=count[k];   #设置一个行数指针指向某一个设备的行数</span><br><span class="line">            for(j=2;j&lt;=NF;j++)</span><br><span class="line">            &#123;</span><br><span class="line">                res_arr[cur_line,j]+=<span class="variable">$j</span>;  #从第二列开始赋值给二维数组</span><br><span class="line">            &#125;</span><br><span class="line">            count[k]+=1; #行数加1</span><br><span class="line">            col=NF  #列数</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">END</span><br><span class="line">&#123;</span><br><span class="line">    for(i=1;i&lt;=line;i++)</span><br><span class="line">    &#123;</span><br><span class="line">        for(j=2;j&lt;=col;j++)</span><br><span class="line">            printf (res_arr[i,j]/dev_count)\"\"FS; </span><br><span class="line">            print \"\"</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>其中的dev和line是通过-v命令传入的参数，dev是所有osd或者journal磁盘以空格分隔。是生成一个二维数组存储，是总行数和列数。</p>
+<p><strong>注意:</strong>巧妙的是利用设备行数和行数指针实现，同一次的数据所有osd或者journal的数据求和。<strong>建议最后的结果不除以设备数</strong></p>
+<h2 id="4-运行时间"><a href="#4-运行时间" class="headerlink" title="4.运行时间"></a>4.运行时间</h2><p>处理文件<code>node1_process_log.txt</code>获取各个工具的开始和结束时间，并计算其和fio/cosbench测试的时间差，已确保fio等运行前，性能收集工具已经运行。</p>
+<h2 id="5-perfcounter数据收集"><a href="#5-perfcounter数据收集" class="headerlink" title="5.perfcounter数据收集"></a>5.perfcounter数据收集</h2><p>关于ceph自己的perf数据，各个项所代表的实际含义还有待深入探索，这里只是检查CeTune收集了哪些数据。</p>
+<h3 id="5-1抓取命令"><a href="#5-1抓取命令" class="headerlink" title="5.1抓取命令"></a>5.1抓取命令</h3><p>在run函数中对启动perf数据收集的语句进行分割：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> `date +%s`<span class="string">' perfcounter start'</span> &gt;&gt; %s/`hostname`_process_log.txt; </span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> `seq 1 %d`; <span class="keyword">do</span> </span><br><span class="line">    find /var/run/ceph -name <span class="string">'*osd*asok'</span> | <span class="keyword">while</span> <span class="built_in">read</span> path; <span class="keyword">do</span> </span><br><span class="line">        filename=`<span class="built_in">echo</span> <span class="variable">$path</span> | awk -F/ <span class="string">'&#123;print $NF&#125;'</span>`;</span><br><span class="line">        res_file=%s/`hostname`_<span class="variable">$&#123;filename&#125;</span>.txt;</span><br><span class="line">    <span class="built_in">echo</span> `ceph --admin-daemon <span class="variable">$path</span> perf dump`, &gt;&gt; <span class="variable">$&#123;res_file&#125;</span> &amp; </span><br><span class="line">        <span class="keyword">done</span>; </span><br><span class="line">    sleep %s; </span><br><span class="line"><span class="keyword">done</span>; </span><br><span class="line"><span class="built_in">echo</span> `date +%s`<span class="string">' perfcounter stop'</span> &gt;&gt; %s/`hostname`_process_log.txt;<span class="string">"</span></span><br></pre></td></tr></table></figure>
+<p>这路第一个for循环是<code>time = int(self.benchmark[&quot;runtime&quot;]) + int(self.benchmark[&quot;rampup&quot;]) + self.cluster[&quot;run_time_extend&quot;]</code>；而sleep时间为设置的监控间隔 <code>monitor_interval = self.cluster[&quot;monitoring_interval&quot;]</code>。<strong>注意：这里每次取完数据还加了一个逗号作为分隔符</strong></p>
+<h3 id="5-2数据处理"><a href="#5-2数据处理" class="headerlink" title="5.2数据处理"></a>5.2数据处理</h3><ul>
+<li>先将搜集到的所有数据项的实际数据由数值变为列表，以osd的op_latency为例举例如下：</li>
+</ul>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(u'op_latency', OrderedDict([(u'avgcount', [1913, 1915, 1915, 1918, 1919, 1920, 1923, 1924, 1925, 1929, 1930, 1932, 1937, 1939, 1941, 1945, 1949, 1954, 1958, 1960, 1968, 1973, 1977, 1980, 1981, 1984, 1992, 1998, 2004, 2010, 2016, 2019, 2024, 2027, 2030, 2037, 2047, 2050, 2053, 2060, 2064, 2073, 2076, 2082, 2086, 2091, 2097, 2104, 2108, 2113, 2117, 2124, 2130, 2132, 2141, 2145, 2147, 2148, 2151, 2154, 2158, 2165, 2168, 2171, 2177, 2180, 2183, 2189, 2195, 2199, 2206, 2206, 2211, 2217, 2222, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223, 2223]), (u'sum', [163.617276, 163.678138, 163.678138, 163.716475, 163.733006, 163.749852, 163.827178, 163.830007, 163.843426, 163.956236, 163.976961, 164.012076, 164.071066, 164.094675, 164.098881, 164.220935, 164.290138, 164.366159, 164.410334, 164.453903, 164.609118, 164.697958, 164.747356, 164.799038, 164.823, 164.87076, 165.010713, 165.116875, 165.240544, 165.324972, 165.389481, 165.395939, 165.434573, 165.46386, 165.505794, 165.606881, 165.6955, 165.725082, 165.762864, 165.847311, 165.897523, 166.001776, 166.054834, 166.144204, 166.170836, 166.240923, 166.350937, 166.436625, 166.493355, 166.521452, 166.593893, 166.647407, 166.7904, 166.828572, 167.009988, 167.051504, 167.056824, 167.087444, 167.121147, 167.155003, 167.197488, 167.35159, 167.410595, 167.439328, 167.499467, 167.530351, 167.539261, 167.555903, 167.605426, 167.634956, 167.735829, 167.735829, 167.761924, 167.823874, 167.882077, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737, 167.913737])])),</span><br></pre></td></tr></table></figure>
+<ul>
+<li>对于这种有avgcount和sum的数据，实际的op_latency值应该是<code>data[&#39;sum&#39;][i]-last_sum)/(data[&#39;avgcount&#39;][i]-last_avgcount</code>，即两个相邻值的差再做除法。对于avgcount不变的，最终值设为0。如果没有avgcount和sum则无需此运算。</li>
+<li>再将上述运算后的值作为列表作为最终数据中op_latency索引的值。</li>
+</ul>
+<h3 id="5-3-filestore收集参数列表"><a href="#5-3-filestore收集参数列表" class="headerlink" title="5.3 filestore收集参数列表"></a>5.3 filestore收集参数列表</h3><p>主要是源码文件：<code>src/os/filestore/FileStore.cc</code>中有说明</p>
+<ul>
+<li>queue_transaction_latency_avg:Store operation queue latency,</li>
+<li>bytes:Data written to store</li>
+<li>ops:Operations written to store</li>
+<li>op_queue_bytes:Size of writing to FS queue</li>
+<li>op_queue_ops:Operations in writing to FS queue</li>
+<li>journal_bytes:Total operations size in journal</li>
+<li>journal_latency:Average journal queue completing latency</li>
+<li>journal_wr:Journal write IOs</li>
+<li>journal_wr_bytes:Journal data written</li>
+<li>journal_ops:Total journal entries written</li>
+<li>apply_latency:Apply latency</li>
+<li>commitcycle:Commit cycles</li>
+<li>commitcycle_latency:Average latency of commit</li>
+<li>commitcycle_interval:Average interval between commits</li>
+<li>committing:Is currently committing</li>
+</ul>
+<h3 id="5-4-OSD收集的参数列表"><a href="#5-4-OSD收集的参数列表" class="headerlink" title="5.4 OSD收集的参数列表"></a>5.4 OSD收集的参数列表</h3><ul>
+<li>op:Client operations,ops</li>
+<li>op_latency:Latency of client operations (including queue time)</li>
+<li>op_in_bytes:Client operations total write size</li>
+<li>op_out_bytes:Client operations total read size</li>
+<li>op_process_latency:Latency of client operations (excluding queue time)</li>
+<li>op_wip:Replication operations currently being processed (primary)</li>
+<li>op_r:Client read operations</li>
+<li>op_r_out_bytes:client read out bytes</li>
+<li>op_r_latency:Latency of read operation (including queue time) // client read latency</li>
+<li>op_r_process_latency:Latency of read operation (excluding queue time  // client read process latency</li>
+<li>op_w:Client write operations // client writes</li>
+<li>op_w_in_bytes:Client data written// client write in bytes</li>
+<li>op_w_latency:Latency of write operation (including queue time  // client write latency</li>
+<li>op_w_rlat:Client write operation readable/applied latency  // client write readable/applied latency</li>
+<li>op_w_process_latency:Latency of write operation (excluding queue time // client write process latency</li>
+<li>subop:Suboperations</li>
+<li>subop_in_bytes:Suboperations total size  // subop in bytes</li>
+<li>subop_latency:Suboperations latency</li>
+<li>subop_w_in_bytes:Replicated written data size // replicated write in bytes</li>
+<li>subop_w_latency:Replicated writes latency // replicated write latency</li>
+<li>loadavg:CPU load</li>
+<li>stat_bytes_used:stat_bytes_used,”Used space”</li>
+<li>stat_bytes_avail:stat_bytes_avail, “Available space”</li>
+</ul>
+<h2 id="6-汇总"><a href="#6-汇总" class="headerlink" title="6.汇总"></a>6.汇总</h2><p>上述所有数据搜集完成后存入result中交给Visualizer去画图以及生成最终的展示页面：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">view = visualizer.Visualizer(result, dest_dir)</span><br><span class="line">output = view.generate_summary_page()</span><br></pre></td></tr></table></figure>
+<p><strong>重要：</strong>最后的报告首页summary中有几个<strong>SN开头的参数</strong> 解释如下：</p>
+<ol>
+<li>SN_IOPS：先求某一个节点所有OSD在runtime期间底层iostat抓取的IOPS数据的平均值，再把所有节点的这个平均值相加，求得实际底层OSD的总IOPS；</li>
+<li>SN_BW(MB/s)：计算方法同上，先求某一个节点所有OSD的速度的平均值，再求所有节点的和，得到实际底层OSD的速度；</li>
+<li>SN_Latency(ms)： 这个值的计算先是求某一个节点所有OSD的延时的平均值，在求所有节点的延时平均值，以反映整个集群的平均值。</li>
+</ol>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[django项目利用apache2+mod_wsgi运行]]></title>
+      <url>http://blog.itzhoulin.com/2016/03/02/using-apache2-and-wsgi-to-run-django/</url>
+      <content type="html"><![CDATA[<h2 id="1-前提"><a href="#1-前提" class="headerlink" title="1.前提"></a>1.前提</h2><p>假设django项目名为<code>myproject</code>,为了便于处理权限，将项目目录置于<code>/var/www</code>目录下。</p>
+<h2 id="2-安装"><a href="#2-安装" class="headerlink" title="2.安装"></a>2.安装</h2><p>安装apache和mod_wsgi：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install apache2 libapache2-mod-wsgi</span><br></pre></td></tr></table></figure></p>
+<h2 id="3-配置"><a href="#3-配置" class="headerlink" title="3.配置"></a>3.配置</h2><p>编辑文件<code>/etc/apache2/sites-enabled/000-default</code>，替换为下面的内容：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&lt;VirtualHost *:80&gt;</span><br><span class="line">    . . .</span><br><span class="line">    Alias /static /var/www/myproject/static</span><br><span class="line">    &lt;Directory /home/user/myproject/static&gt;</span><br><span class="line">        Require all granted</span><br><span class="line">    &lt;/Directory&gt;</span><br><span class="line"></span><br><span class="line">    &lt;Directory /var/www/myproject/myproject&gt;</span><br><span class="line">        &lt;Files wsgi.py&gt;</span><br><span class="line">            Require all granted</span><br><span class="line">        &lt;/Files&gt;</span><br><span class="line">    &lt;/Directory&gt;</span><br><span class="line"></span><br><span class="line">    WSGIDaemonProcess myproject python-path=/var/www/myproject:/usr/lib/python2.7/site-packages:/usr/local/lib/python2.7/site-packages</span><br><span class="line">    WSGIProcessGroup myproject</span><br><span class="line">    WSGIScriptAlias / /var/www/myproject/myproject/wsgi.py</span><br><span class="line"></span><br><span class="line">&lt;/VirtualHost&gt;</span><br></pre></td></tr></table></figure></p>
+<p>这里需要说明一下:</p>
+<ol>
+<li>第一个alias是将静态文件重定向到指定目录，如果是简单项目不需要的话可以删除</li>
+<li>后面的一个<code>Directory</code>是针对static的权限的，如果不需要也可以对应删除。</li>
+<li>第二个<code>Directory</code>就是关键，注意目录结构，文件<code>wsgi.py</code>在新建django项目的时候会自动生成。</li>
+<li>在WSGIDaemonProcess里面我把python的两个系统库目录加进去了，如果你用的env，就加自己env的地址。</li>
+</ol>
+<h2 id="4-部分可能的权限问题"><a href="#4-部分可能的权限问题" class="headerlink" title="4.部分可能的权限问题"></a>4.部分可能的权限问题</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">chmod 664 ~/myproject/db.sqlite3</span><br><span class="line">chown :www-data ~/myproject/db.sqlite3</span><br><span class="line">chown :www-data ~/myproject</span><br></pre></td></tr></table></figure>
+<p>如果遇到服务器403的错误，那么可能是你的”/“目录被禁止访问（默认）<br>修改一下apache2.conf文件（位于/etc/apache2/）</p>
+<p>把<code>Require all denied</code>改为<code>Allow from all</code>就可以了</p>
+<h2 id="5-重启apache2服务即可"><a href="#5-重启apache2服务即可" class="headerlink" title="5.重启apache2服务即可"></a>5.重启apache2服务即可</h2><p>收工</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[ceph下查看使用rbd的客户端]]></title>
+      <url>http://blog.itzhoulin.com/2016/02/03/get-ceph-rbd-watches/</url>
+      <content type="html"><![CDATA[<h2 id="一-背景"><a href="#一-背景" class="headerlink" title="一.背景"></a>一.背景</h2><p>不知道挂载点这个表述是否准确。真实的需求是有个时候删除rbd块会提示当前rbd正在使用中，如法删除。对于linux下是文件或者目录可以通过<code>lsof</code>查看当前文件或目录的使用进程。对于ceph也希望有一个合适的方式查看当前rbd块在哪个主机上被使用。</p>
+<h2 id="二-解决方法"><a href="#二-解决方法" class="headerlink" title="二.解决方法"></a>二.解决方法</h2><p>对于rbd块的使用，目前主要有两种形式：内核模块map后再mount和通过libvirt等供给虚拟机使用。两种方式不太一样。</p>
+<h3 id="2-1-内核模块map"><a href="#2-1-内核模块map" class="headerlink" title="2.1 内核模块map"></a>2.1 内核模块map</h3><p>查看方法如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">##查看rbd池下的rbd</span><br><span class="line">root@node-62:~# rbd ls</span><br><span class="line">gci</span><br><span class="line"></span><br><span class="line">##查看gci的挂载点</span><br><span class="line">root@node-62:~# rados -p rbd listwatchers gci.rbd</span><br><span class="line">watcher=10.1.41.205:0/1642395845 client.5493237 cookie=2</span><br><span class="line"></span><br><span class="line">##去挂载点检查</span><br><span class="line">root@node-67:~# rbd showmapped |grep gci</span><br><span class="line">2  rbd  gci          -    /dev/rbd2</span><br></pre></td></tr></table></figure>
+<h3 id="2-1-虚拟机通过libvirt使用rbd"><a href="#2-1-虚拟机通过libvirt使用rbd" class="headerlink" title="2.1 虚拟机通过libvirt使用rbd"></a>2.1 虚拟机通过libvirt使用rbd</h3><p>查看方法如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">##查看该虚拟机卷的信息</span><br><span class="line">root@node-67:~# rbd info volume-997d91e8-40f3-4ede-affb-8b61775fccde -p volumes</span><br><span class="line">rbd image &apos;volume-997d91e8-40f3-4ede-affb-8b61775fccde&apos;:</span><br><span class="line">        size 300 GB in 76800 objects</span><br><span class="line">        order 22 (4096 kB objects)</span><br><span class="line">        block_name_prefix: rbd_data.10475c6f9a52</span><br><span class="line">        format: 2</span><br><span class="line">        features: layering</span><br><span class="line">        parent: volumes/volume-4461e760-8c3d-4e7f-9537-c27b301a74c2@snapshot-d17bc874-c589-4118-b6af-058f1c6e3a02</span><br><span class="line">        overlap: 300 GB</span><br><span class="line">        </span><br><span class="line">##查看该卷的挂载点</span><br><span class="line">root@node-67:~# rados -p volumes listwatchers rbd_header.10475c6f9a52</span><br><span class="line">watcher=10.1.41.201:0/1001261 client.4449991 cookie=1</span><br><span class="line"></span><br><span class="line">## 通过nova show验证该卷是否在物理机10.1.41.201(node-63)上</span><br><span class="line">root@node-67:~# nova show zhoulin_UbuntuKylin_0824</span><br><span class="line">+--------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+</span><br><span class="line">| Property                             | Value                                                                                                                                            |</span><br><span class="line">+--------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+</span><br><span class="line">| OS-DCF:diskConfig                    | AUTO                                                                                                                                             |</span><br><span class="line">| OS-EXT-AZ:availability_zone          | nova                                                                                                                                             |</span><br><span class="line">| OS-EXT-SRV-ATTR:host                 | node-63                                                                                                                                          |</span><br><span class="line">| OS-EXT-SRV-ATTR:hypervisor_hostname  | node-63                                                                                                                                          |</span><br><span class="line">| OS-EXT-SRV-ATTR:instance_name        | instance-00000086                                                                                                                                |</span><br><span class="line">| OS-EXT-STS:power_state               | 1                                                                                                                                                |</span><br><span class="line">| OS-EXT-STS:task_state                | -                                                                                                                                                |</span><br><span class="line">| OS-EXT-STS:vm_state                  | active                                                                                                                                           |</span><br><span class="line">| OS-SRV-USG:launched_at               | 2015-08-24T02:14:34.000000                                                                                                                       |</span><br><span class="line">| OS-SRV-USG:terminated_at             | -                                                                                                                                                |</span><br><span class="line">| accessIPv4                           |                                                                                                                                                  |</span><br><span class="line">| accessIPv6                           |                                                                                                                                                  |</span><br><span class="line">| config_drive                         |                                                                                                                                                  |</span><br><span class="line">| created                              | 2015-08-24T02:14:28Z                                                                                                                             |</span><br><span class="line">| flavor                               | m1.large (903620b6-e4e2-49a7-bcca-38139b9d4e30)                                                                                                  |</span><br><span class="line">| hostId                               | 73f6a8472a61da98b5ecbf7a5b7a94791991bdc69a94f3fe984f58dc                                                                                         |</span><br><span class="line">| id                                   | 3b5a16f5-b2a3-4e74-95c0-bd3e2114016a                                                                                                             |</span><br><span class="line">| image                                | Attempt to boot from volume - no image supplied                                                                                                  |</span><br><span class="line">| key_name                             | ubuntu                                                                                                                                           |</span><br><span class="line">| metadata                             | &#123;&#125;                                                                                                                                               |</span><br><span class="line">| name                                 | zhoulin_UbuntuKylin_0824                                                                                                                         |</span><br><span class="line">| novanetwork network                  |                                                                                                                                                  |</span><br><span class="line">| os-extended-volumes:volumes_attached | [&#123;&quot;id&quot;: &quot;997d91e8-40f3-4ede-affb-8b61775fccde&quot;&#125;, &#123;&quot;id&quot;: &quot;5f9ba54a-c7e1-441a-b28c-180995accec1&quot;&#125;, &#123;&quot;id&quot;: &quot;8256288a-fca8-4d70-9d8e-f1a0a7821a1a&quot;&#125;] |</span><br><span class="line">| progress                             | 0                                                                                                                                                |</span><br><span class="line">| security_groups                      | default                                                                                                                                          |</span><br><span class="line">| status                               | ACTIVE                                                                                                                                           |</span><br><span class="line">| tenant_id                            | 26d260968b1e4a8caa9356aafff090e6                                                                                                                 |</span><br><span class="line">| updated                              | 2016-01-31T01:51:12Z                                                                                                                             |</span><br><span class="line">| user_id                              | c18a490fffb846fc9d52aa62b4d07ae2                                                                                                                 |</span><br><span class="line">+--------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+</span><br></pre></td></tr></table></figure></p>
+<h2 id="三-总结"><a href="#三-总结" class="headerlink" title="三.总结"></a>三.总结</h2><p>基本都是利用<code>rados listwatchers</code>去查看，只是两种方式需要读取的文件不一样。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[MAC文本编辑时跳转快捷键]]></title>
+      <url>http://blog.itzhoulin.com/2016/02/01/mac-text-edit-shortcuts/</url>
+      <content type="html"><![CDATA[<p>在电脑上码字的时候，经常会遇到需要对某段文字进行修改或者操作的情况，大家通常的做法是用鼠标去移动光标快速定位，但是右手（或者左手）反复的在鼠标和键盘之前来回切换其实是很浪费时间的一件事，有时候，通过键盘移动光标比拖动鼠标来的更快。<br><br><br>今天我就教大家三招，让你在最短的时间内把光标移动到你想要的位置，提高在电脑上码字的效率。</p>
+<h2 id="1-全文-amp-段落定位"><a href="#1-全文-amp-段落定位" class="headerlink" title="1. 全文 &amp; 段落定位"></a>1. 全文 &amp; 段落定位</h2><p>目标位置比较远的时候，需要对光标远程定位，下面的组合键可以帮到我们。</p>
+<h3 id="1-1-Command-方向键上-下"><a href="#1-1-Command-方向键上-下" class="headerlink" title="1.1 Command + 方向键上/下"></a>1.1 Command + 方向键上/下</h3><p>「Command + 方向键上」将光标快速移动到整篇文本开头，类似的，「Command + 方向键下」快速移动到文章结尾。</p>
+<p><img src="http://cdn.sspai.com/attachment/origin/2016/01/26/308461.gif" alt=""></p>
+<h3 id="1-2-Option-方向键上-下"><a href="#1-2-Option-方向键上-下" class="headerlink" title="1.2 Option + 方向键上/下"></a>1.2 Option + 方向键上/下</h3><p>「Option + 方向键上」将光标移动到当前段落的开头，「Option + 方向键下」移动到当前段落的末尾。<br><br><br>需要注意，如果光标在段落的开头，「Option + 方向键上」可以将光标移动到上一段落的开头，而光标在段落结尾时，「Option + 方向键下」则将光标移动到下一段落的结尾。</p>
+<p><img src="http://cdn.sspai.com/attachment/origin/2016/01/26/308462.gif" alt=""></p>
+<ol>
+<li>句子 &amp; 单词定位</li>
+</ol>
+<p>下面的组合键，可以在单词与单词、句子与句子间移动光标，从而更加精确得移动光标。</p>
+<h3 id="2-1-Command-方向键左-右"><a href="#2-1-Command-方向键左-右" class="headerlink" title="2.1 Command + 方向键左/右"></a>2.1 Command + 方向键左/右</h3><p>「Command + 方向键左」，将光标移动到句子的开头，「Command + 方向键右」，则是移动到句子的末尾。</p>
+<p><img src="http://cdn.sspai.com/attachment/origin/2016/01/26/308463.gif" alt=""></p>
+<h3 id="2-2-Option-方向键左-右"><a href="#2-2-Option-方向键左-右" class="headerlink" title="2.2 Option + 方向键左/右"></a>2.2 Option + 方向键左/右</h3><p>「Option + 方向键左」，将光标移动到前一个单词，「Option + 方向键右」，将光标移动到单词。这里有几点要注意一下：</p>
+<ul>
+<li>如果光标的初始位置在单词的开头，向前移动时，自动移动到前一个单词的开头。</li>
+<li>如果光标的初始位置在单词的结尾，向后移动时，自动移动到后一个单词的结尾。</li>
+<li>如果光标的初始位置在单词中间，则光标向前移动时，移动到当前单词的开头，向后移动时，移动到当前单词的结尾。</li>
+</ul>
+<p><img src="http://cdn.sspai.com/attachment/origin/2016/01/26/308464.gif" alt=""></p>
+<h2 id="3-快速选中文本"><a href="#3-快速选中文本" class="headerlink" title="3. 快速选中文本"></a>3. 快速选中文本</h2><p>除了快速移动光标之外，配合「Shift」键，我们还可以快速得选中我们想要的文本。<br><img src="http://cdn.sspai.com/attachment/origin/2016/01/26/308465.gif" alt=""></p>
+<h3 id="3-1-Option-Shift-方向键上-下"><a href="#3-1-Option-Shift-方向键上-下" class="headerlink" title="3.1 Option + Shift + 方向键上/下"></a>3.1 Option + Shift + 方向键上/下</h3><p>以之前提到的「Option + 方向键上」为例，按下组合键「Option + Shift + 方向键上」，即可选中光标所在位置到段落开头的所有文本。按下「Option + Shift + 方向键下」，则是选中光标所在位置到段落结尾的所有文本。</p>
+<h3 id="3-2-Option-Shift-方向键左-右"><a href="#3-2-Option-Shift-方向键左-右" class="headerlink" title="3.2 Option + Shift + 方向键左/右"></a>3.2 Option + Shift + 方向键左/右</h3><p>类似的，「Option + Shift + 方向键左/右」可以选中一个单词，「Command + Shift +左/右」可以选中一句话。</p>
+<h2 id="4-总结"><a href="#4-总结" class="headerlink" title="4. 总结"></a>4. 总结</h2><p>这些快捷键看起来好像不太好记，但是只要你多用几次就可以轻松掌握，熟练之后你就能明显感受到在文本编辑时候效率的提升，尤其是有些网站的文本框非常的小，这种情况下使用快捷键会比鼠标定位更加精准。</p>
+<p>图片来自：<a href="http://sspai.com/32769" target="_blank" rel="external">少数派</a></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[calamari的监控页面没有集群和Pool信息]]></title>
+      <url>http://blog.itzhoulin.com/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/</url>
+      <content type="html"><![CDATA[<h2 id="一-问题："><a href="#一-问题：" class="headerlink" title="一.问题："></a>一.问题：</h2><h3 id="1-dashboard没有IOPS和Usage信息"><a href="#1-dashboard没有IOPS和Usage信息" class="headerlink" title="1.dashboard没有IOPS和Usage信息"></a>1.dashboard没有IOPS和Usage信息</h3><p>在calamari的dashboard页面，IOPS和Usage两项没有数据，如下图：<br><img src="https://cloud.githubusercontent.com/assets/4092006/12389397/95791f32-be2c-11e5-8f08-14a3c7967376.png" alt=""></p>
+<h3 id="2-监控页面没有集群和Pools信息"><a href="#2-监控页面没有集群和Pools信息" class="headerlink" title="2.监控页面没有集群和Pools信息"></a>2.监控页面没有集群和Pools信息</h3><p>在监控页面，能够看到节点的监控信息，但是cluster和Pools两大类里面没有监控数据，如下图：<br><img src="https://cloud.githubusercontent.com/assets/4092006/12389269/c7afbeda-be2b-11e5-8e79-7e2eb6ab0691.png" alt=""></p>
+<h3 id="3-日志信息"><a href="#3-日志信息" class="headerlink" title="3.日志信息"></a>3.日志信息</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">2016-01-30 21:00:20,166 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.72.num_bytes</span><br><span class="line">2016-01-30 21:00:20,179 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.73.num_objects</span><br><span class="line">2016-01-30 21:00:20,190 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.73.num_bytes</span><br><span class="line">2016-01-30 21:00:35,155 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.df.total_used</span><br><span class="line">2016-01-30 21:00:35,167 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.df.total_space</span><br><span class="line">2016-01-30 21:00:35,177 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.df.total_avail</span><br><span class="line">2016-01-30 21:00:39,503 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.df.total_used</span><br><span class="line">2016-01-30 21:00:39,522 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.0.num_objects</span><br><span class="line">2016-01-30 21:00:39,526 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.df.total_space</span><br><span class="line">2016-01-30 21:00:39,549 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.df.total_avail</span><br><span class="line">2016-01-30 21:00:39,558 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.0.num_bytes</span><br><span class="line">2016-01-30 21:00:39,579 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.1.num_objects</span><br><span class="line">2016-01-30 21:00:39,601 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.1.num_bytes</span><br><span class="line">2016-01-30 21:00:39,621 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.2.num_objects</span><br><span class="line">2016-01-30 21:00:39,640 - metric_access - django.request No graphite data for ceph.cluster.52ae92c8-fd8e-47d8-9404-26051b344c23.pool.2.num_bytes</span><br></pre></td></tr></table></figure>
+<h2 id="二-解决"><a href="#二-解决" class="headerlink" title="二.解决"></a>二.解决</h2><p>有节点信息，但是没有集群的信息，如集群用量和pool信息等，以前是有的，经过和正常工作的环境对比，代码没有问题，查看源码，所看文件为<code>/usr/share/diamond/collectors/ceph/ceph.py</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">def _collect_cluster_stats(self, path):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    If this service is a mon and it is the leader of a quorum, then</span><br><span class="line">    publish statistics about the cluster.</span><br><span class="line">    cluster_name, service_type, service_id = self._parse_socket_name(path)</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    if service_type != &apos;mon&apos;:</span><br><span class="line">        return</span><br><span class="line"></span><br><span class="line">    # We have a mon, see if it is the leader</span><br><span class="line">    mon_status = self._admin_command(path, [&apos;mon_status&apos;])</span><br><span class="line">    if mon_status[&apos;state&apos;] != &apos;leader&apos;:</span><br><span class="line">        return</span><br><span class="line">    fsid = mon_status[&apos;monmap&apos;][&apos;fsid&apos;]</span><br><span class="line">    # We are the leader, gather cluster-wide statistics</span><br><span class="line"></span><br><span class="line">    self.log.debug(&quot;mon leader found, gathering cluster stats for cluster &apos;%s&apos;&quot; % cluster_name)</span><br><span class="line"></span><br><span class="line">    def publish_pool_stats(pool_id, stats):</span><br><span class="line">        # Some of these guys we treat as counters, some as gauges</span><br><span class="line">        delta_fields = [&apos;num_read&apos;, &apos;num_read_kb&apos;, &apos;num_write&apos;, &apos;num_write_kb&apos;, &apos;num_objects_recovered&apos;,&apos;num_bytes_recovered&apos;, &apos;num_keys_recovered&apos;]</span><br><span class="line"></span><br><span class="line">        for k, v in stats.items():</span><br><span class="line">            self._publish_cluster_stats(cluster_name, fsid, &quot;pool.&#123;0&#125;&quot;.format(pool_id), &#123;k: v&#125;,counter=k in delta_fields)</span><br><span class="line"></span><br><span class="line">    # Gather &quot;ceph pg dump pools&quot; and file the stats by pool</span><br><span class="line">    for pool in self._mon_command(cluster_name, [&apos;pg&apos;, &apos;dump&apos;, &apos;pools&apos;]):</span><br><span class="line">        publish_pool_stats(pool[&apos;poolid&apos;], pool[&apos;stat_sum&apos;])</span><br><span class="line">    all_pools_stats = self._mon_command(cluster_name, [&apos;pg&apos;, &apos;dump&apos;, &apos;summary&apos;])[&apos;pg_stats_sum&apos;][&apos;stat_sum&apos;]</span><br><span class="line"></span><br><span class="line">    publish_pool_stats(&apos;all&apos;, all_pools_stats)  </span><br><span class="line">    # Gather &quot;ceph df&quot;</span><br><span class="line">    df = self._mon_command(cluster_name, [&apos;df&apos;])</span><br><span class="line">    self._publish_cluster_stats(cluster_name, fsid, &quot;df&quot;, df[&apos;stats&apos;])</span><br></pre></td></tr></table></figure>
+<p>由上可知，集群的信息是通过 <code>leader mon</code> 获取的，尝试在存储节点上执行上述mon_status命令发现，集群的三个mon节点都没有asok文件，于是乎<strong>kill调原mon进程，使用service命令重启mon</strong>.</p>
+<blockquote>
+<p>这里直接重启服务不一定会生效</p>
+</blockquote>
+<hr>
+<p><strong>备注：</strong> 图片引用自calamari的这个<a href="https://github.com/ceph/calamari/issues/384" target="_blank" rel="external">issue</a></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[删除osd的正确姿势]]></title>
+      <url>http://blog.itzhoulin.com/2016/01/12/right-steps-delete-ceph-osd/</url>
+      <content type="html"><![CDATA[<p>最近邮件列表又有关于删除osd正确姿势的讨论，按照官网的步骤走的话，在 <code>标记osd为out</code> 和 <code>从crushmap删除osd</code> 这两步都会触发数据再平衡。</p>
+<p>根据邮件列表的指示，总结删除osd的正确姿势如下：</p>
+<ol>
+<li>ceph osd crush reweight osd.X 0.0<br>… wait for rebalance to finish….</li>
+<li>ceph osd out X</li>
+<li>service ceph-osd stop id=X</li>
+<li>ceph osd crush remove osd.X</li>
+<li>ceph auth del osd.X</li>
+<li>ceph osd rm X</li>
+</ol>
+<p>参考链接<a href="http://permalink.gmane.org/gmane.comp.file-systems.ceph.user/25629" target="_blank" rel="external">http://permalink.gmane.org/gmane.comp.file-systems.ceph.user/25629</a></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[调整pg数量的步骤]]></title>
+      <url>http://blog.itzhoulin.com/2016/01/06/right-steps-adjusting-ceph-pg-num/</url>
+      <content type="html"><![CDATA[<h1 id="1-计算合适的pg数"><a href="#1-计算合适的pg数" class="headerlink" title="1.计算合适的pg数"></a>1.计算合适的pg数</h1><p>关于pg数值的合理值的计算参考 <code>http://ceph.com/pgcalc/</code> 。但是请谨记，在你真正还是调整pg前，请确保集群状态是健康的。 </p>
+<h1 id="2-调整前确保状态ok"><a href="#2-调整前确保状态ok" class="headerlink" title="2.调整前确保状态ok"></a>2.调整前确保状态ok</h1><p>如果 <code>ceph -s</code> 命令显示的集群状态是OK的，此时就可以动态的增大pg的值。</p>
+<p><strong>注意：</strong> 增大pg有几个步骤，同时必须比较平滑的增大，不能一次性调的太猛。对于生产环境格外注意。</p>
+<p>一次性的将pg跳到一个很大的值会导致集群大规模的数据平衡，因而可能导致集群出现问题而临时不可用。</p>
+<h1 id="3-调整数据同步参数，减少数据同步时对业务的影响"><a href="#3-调整数据同步参数，减少数据同步时对业务的影响" class="headerlink" title="3.调整数据同步参数，减少数据同步时对业务的影响"></a>3.调整数据同步参数，减少数据同步时对业务的影响</h1><p>当调整 PG/PGP 的值时，会引发ceph集群的 <code>backfill</code> 操作，数据会以最快的数据进行平衡，因此可能导致集群不稳定。 因此首先设置 backfill ratio 到一个比较小的值，通过下面的命令设置：</p>
+<pre><code>ceph tell osd.* injectargs &apos;--osd-max-backfills 1&apos;
+ceph tell osd.* injectargs &apos;--osd-recovery-max-active 1&apos;
+</code></pre><p>还包括下面这些：</p>
+<pre><code>osd_backfill_scan_min = 4 
+osd_backfill_scan_max = 32 
+osd recovery threads = 1 
+osd recovery op priority = 1 
+</code></pre><h1 id="4-首先调整pg"><a href="#4-首先调整pg" class="headerlink" title="4.首先调整pg"></a>4.首先调整pg</h1><p>然后，先增长pg的值，我们推荐的增长幅度是按照 <strong>2的幂</strong> 进行增长，如原来是 <strong>64</strong>个，第一次调整先增加到<strong>128</strong>个， 设置命令如下：    </p>
+<pre><code>ceph osd pool set &lt;poolname&gt; pg_num &lt;new_pgnum&gt;
+</code></pre><p>你可以通过 <code>ceph -w</code> 查看集群的变化。</p>
+<h1 id="5-等到状态再次恢复正常再调整pgp"><a href="#5-等到状态再次恢复正常再调整pgp" class="headerlink" title="5.等到状态再次恢复正常再调整pgp"></a>5.等到状态再次恢复正常再调整pgp</h1><p>在pg增长之后，通过下面的命令增加pgp，pgp的值需要与pg的值一致： </p>
+<pre><code>ceph osd pool set &lt;poolname&gt; pgp_num &lt;new_pgnum&gt;
+</code></pre><p>此时，通过 <code>ceph -w</code> 可以看到集群状态的详细信息，可以看到数据的再平衡过程。</p>
+<h1 id="6-关于pg和pgp的区别在另外的文章中再详述"><a href="#6-关于pg和pgp的区别在另外的文章中再详述" class="headerlink" title="6.关于pg和pgp的区别在另外的文章中再详述"></a>6.关于pg和pgp的区别在另外的文章中再详述</h1><h1 id="7-关于pg分裂的详细讲解见有云官方博客"><a href="#7-关于pg分裂的详细讲解见有云官方博客" class="headerlink" title="7.关于pg分裂的详细讲解见有云官方博客"></a>7.关于pg分裂的详细讲解见有云官方博客</h1><p><a href="https://www.ustack.com/blog/ceph-pg-fenlie/" target="_blank" rel="external">Ceph pg分裂流程及可行性分析</a></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Ceph的IO模式分析]]></title>
+      <url>http://blog.itzhoulin.com/2015/12/28/ceph-IO-pattern/</url>
+      <content type="html"><![CDATA[<p>本文主要是翻译sebastien-han的三篇博客：<a href="http://www.sebastien-han.fr/blog/2014/02/10/ceph-io-patterns-the-good/" target="_blank" rel="external">ceph-io-patterns-the-good</a> 、<a href="http://www.sebastien-han.fr/blog/2014/02/17/ceph-io-patterns-the-bad/" target="_blank" rel="external">ceph-io-patterns-the-bad</a>、<a href="http://www.sebastien-han.fr/blog/2014/02/24/ceph-io-patterns-the-ugly/" target="_blank" rel="external">ceph-io-patterns-the-ugly</a>  欢迎加入 <a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">翻译组</a></p>
+<blockquote>
+<p>一切都是为了性能。基准测试是非常复杂的，得到的测试结果总是难以预测、分析和解释。有时你得到了测试数据，但你不知道它们的意思，也不知道这个结果到底是好呢还是坏呢？好又好在哪里，不好又哪里是瓶颈。在这篇文章中，我将尽力详细的讲解以帮助你理解内部Ceph是如何工作的。</p>
+</blockquote>
+<h2 id="1-The-good"><a href="#1-The-good" class="headerlink" title="1. The good"></a>1. The good</h2><h3 id="1-1-确定的对象位置"><a href="#1-1-确定的对象位置" class="headerlink" title="1.1 确定的对象位置"></a>1.1 确定的对象位置</h3><p><img src="http://sebastien-han.fr/images/ceph-pgs.png" alt="ceph-pgs"></p>
+<p>关于这一点我相信大家已经熟知了，但是在这里我还是要再次解释一下。Ceph用以确定对象位置的方法是独一无二的：</p>
+<p>客户端写入顺序(位置和从属关系见上图):</p>
+<ul>
+<li>=&gt; 一个确定的资源池(包含对象的逻辑概念)</li>
+<li>=&gt; 这个资源池包含有placement groups (可以看做是资源池的分片)</li>
+<li>=&gt; 这个PG 包含对象</li>
+<li>=&gt; 这些对象只属于一个placement group</li>
+</ul>
+<p>上面几个过程都是通过计算实现的， 这使得整个过程具备可重复性和确定性。所以没有哈希表查找，只有公式和计算。这个公式就是我们通常所说的RADOS算法，它决定了对象在集群内的具体位置。</p>
+<h3 id="1-2-整合-集群层面"><a href="#1-2-整合-集群层面" class="headerlink" title="1.2 整合: 集群层面"></a>1.2 整合: 集群层面</h3><blockquote>
+<p>一旦有数据写入Ceph，所有对象在整个集群的节点和磁盘内均匀分布。</p>
+</blockquote>
+<p><img src="http://sebastien-han.fr/images/random-io-one-client.png" alt="random-io-one-client"></p>
+<p>上图阐述了RBD块设备的一个常用使用场景：映射到一个物理机或者一个虚拟机。这两种情况对于存储集群而言是相同的行为，因而无需单独讨论。在这种场景下，客户端产生大量的4K随机操作。显然，在此图中OSD代表一个磁盘。</p>
+<p>正如在前一节中阐述的那样，客户端每次执行一个IO操作都需要计算位置。也多亏了RADOS算法，所有的4K IOs能够充分利用整个集群的网络、磁盘和带宽来将其均匀分布到整个集群。</p>
+<p>注意: 这里的瓶颈可能是交换机的背板带宽，因此需要确保它能够很好的支撑每一个链路的最高速度。</p>
+<h3 id="1-3-整合-OSD层面"><a href="#1-3-整合-OSD层面" class="headerlink" title="1.3 整合: OSD层面"></a>1.3 整合: OSD层面</h3><blockquote>
+<p>一旦有IO到达OSD，不管原来的模式是什么，此时都是连续的。</p>
+</blockquote>
+<p><img src="http://sebastien-han.fr/images/ceph-io-into-journal.png" alt="ceph-io-into-journal"></p>
+<p>上图描述了这样一种场景：不同客户端计算对象位置的时候最终落到了同一个OSD上面。这是相当普遍的一种场景，而且这是一直在发生的事。不同客户端计算它们的对象的位置，最终会落到一个特定的OSD上面。</p>
+<p>这样做的好处是进入到日志的写请求都被序列化了。基本上，客户端的写都是排队进入日志，再等待被flush到后端存储，就像进入到FIFO。</p>
+<p>注意: 这样做的真正好处是能够使用专门的磁盘来存储日志，一般是指SSD。</p>
+<p>确认有效: 主副本OSD在将数据写入日志的同时也将它们发送给其他副本。</p>
+<h2 id="2-The-bad"><a href="#2-The-bad" class="headerlink" title="2. The bad"></a>2. The bad</h2><h3 id="2-1-日志化"><a href="#2-1-日志化" class="headerlink" title="2.1  日志化"></a>2.1  日志化</h3><blockquote>
+<p>每当有IO请求到达OSD的时候，它都会需要两次写操作。</p>
+</blockquote>
+<p>这个表述只关注了日志层面，详情见下图：</p>
+<p><img src="http://sebastien-han.fr/images/ceph-a-single-io.png" alt="Ceph single IO"></p>
+<h4 id="2-1-1-单次写"><a href="#2-1-1-单次写" class="headerlink" title="2.1.1 单次写"></a>2.1.1 单次写</h4><p>Ceph是软件定义存储，这意味着数据的副本和可用性都是由软件智能实现。我认为理解Ceph内部是如何工作的相当重要(默认的逻辑架构)。本文的重点是向你们展示当执行一个写操作的时候底层究竟发生了什么。那么，我们举一个副本数是2的单个对象写的实例来详细阐述。这个写会导致4个IO:</p>
+<ul>
+<li>客户端发送请求到主副本OSD</li>
+<li>第一个IO写入该OSD的日志中</li>
+<li>日志使用libaio，使用 <code>O_DIRECT</code> 和 <code>O_DSYNC</code> 来进行写操作。使用<code>writev()</code>来处理这个写操作</li>
+<li>第二个IO是使用 <code>buffered_io</code> 将数据写入到后端文件系统中，使用 <code>writev()</code>处理写操作</li>
+<li>filestore在达到 <code>filestore_max_sync_interval</code> 设定的时间间隔后，调用 <code>syncfs</code> 并删除日志中对应的条目，并等待 <code>syncfs</code> 结束再释放锁。</li>
+</ul>
+<p>采用同样的操作将数据复制到第二副本OSD。</p>
+<h4 id="2-1-2-关于日志"><a href="#2-1-2-关于日志" class="headerlink" title="2.1.2. 关于日志"></a>2.1.2. 关于日志</h4><p>在前面一幅图中，我提到了日志，但是它到底是干什么的呢？其中几个主要的操作如下：</p>
+<ul>
+<li>保证数据和操作的一致性。正如传统的文件系统日志一样，因此它可以在发生错误的时候进行回滚</li>
+<li>提供原子操作。它保持对已经提交和即将提交的操作的跟踪。</li>
+<li>在日志中的写是连续的</li>
+<li>工作模式是FIFO</li>
+</ul>
+<p>Ceph OSD守护进程在合适的时候停止写操作，然后同步日志到文件系统，同时允许Ceph OSD守护进程从日志中删除已经写入后端存储的数据以便实现空间重复利用。</p>
+<p>上面的表述对于OSD的文件系统是Btrfs或ZFS的情况是不适用的。一般而言，我们建议OSD使用XFS或ext4做文件系统，它们的日志模式是writeahead：先写日志再写到后端文件系统。这跟COW(Copy On Write)文件系统是一个不同的方法，因为它使用的是writeparallel模式即同时写日志和后端文件系统。</p>
+<h4 id="2-1-3-设计的副作用-Design-penalty"><a href="#2-1-3-设计的副作用-Design-penalty" class="headerlink" title="2.1.3. 设计的副作用(Design penalty)"></a>2.1.3. 设计的副作用(Design penalty)</h4><p>显然，你已经注意到了，在writeahead模式下使用日志在写对象的时候会有比较大的性能损耗这一副作用。因为我们写了两次，对于日志跟后端文件系统在同一个磁盘的情况，会导致如下结果：</p>
+<pre><code>Device:             wMB/s
+sdb1 - journal      50.11
+sdb2 - osd_data     40.25
+</code></pre><p>传统的企业级SATA盘在顺序写IO模式下可以提供大约110MB/S的速度。是的，基本上说我们将其分成两个IOs。</p>
+<p>为了避免(或隐藏)这种影响，实现日志有以下几种方法。</p>
+<p>通常，Ceph日志是文件系统上的一个文件(位置在 <code>/var/lib/ceph/osd/&lt;osd-id&gt;/journal</code> )。首先因为文件系统的开销因而这种方式这是非常低效的，其次我们无法确定的知道日志在物理磁盘上的确切位置。(文件和块之间的相关性)。</p>
+<p>实现它的另一种方法是使用OSD数据磁盘的起始裸分区。基本上，你只需要使用最开始的一部分扇区新建一个小的分区来存储日志。由于我们使用的是磁盘的最开始的部分，我们确信这是磁盘上最快的部分。磁盘的外部总是更快的，当磁头越接近中心，性能开始下降(这是一个众所周知的问题)。如果你不想为了日志单独使用一个磁盘的话，这是最好的方法。</p>
+<p>如果你需要更高的性能，可以使用一个独立的磁盘。不幸的是，因为有大量并发日志写而导致磁盘需要花费大量时间进行寻道。</p>
+<p>最后，实现日志的最好方法是使用一个单独的SSD盘。多亏了它，你能够使用SSD的诸多有点：无需寻道，快速顺序写和快速访问时间。</p>
+<h3 id="2-2-文件系统碎片"><a href="#2-2-文件系统碎片" class="headerlink" title="2.2. 文件系统碎片"></a>2.2. 文件系统碎片</h3><p>存储在Ceph中的每个对象在后端文件系统上实际是以文件的形式存在。默认情况下，这些对象存放在 <code>/var/lib/ceph/osd/&lt;osd.id&gt;/current/&lt;pg.id&gt;/</code> 下。由于Ceph作为动态集群而天生具备的分布式特性，Ceph总是针对对象（此处理解为文件）在执行写和更新操作。这样的负载对于传统文件系统而言是很重的，同时如此密集的操作可能导致大量的碎片。很明显，这会导致时延加剧，现而今，文件系统已经具备了诸如精简制备等机制能够有效地控制文件系统碎片。如果你使用RBD，它能够很好的作为虚拟机的块设备和机器的裸设备工作，对象块大小是4MB(默认开启条带)。然而，Ceph集群中的每一个镜像都可以有自己的条带和方法。</p>
+<p>注意：文件系统碎片很少会被考虑，因为文件系统老化很难模拟。</p>
+<p>在Ceph环境中，我们都公开承认：随着时间的推移性能会慢慢下降。对于使用一年的老集群系统而言，可以使用下面的方法应对：</p>
+<pre><code>$ sudo xfs_db -c frag -r /dev/sdd
+actual 196334, ideal 122582, fragmentation factor 37.56%
+</code></pre><p>幸运的是，Ceph核心开发人员最近发起了一个针对这个问题的项目。这个新功能叫做RADOS IO hints。它将执行类似 <code>fadvise(2)</code> 的操作。 <code>fadvise(2)</code> 是一个系统调用，可以用来提示Linux如何缓存文件。这样，内核就可以选择合适的read-ahead和缓存技术来访问到相应的文件。对于更详细的实现方式，请看邮件列表讨论。</p>
+<h3 id="2-3-没有并行读"><a href="#2-3-没有并行读" class="headerlink" title="2.3. 没有并行读"></a>2.3. 没有并行读</h3><p>目前，Ceph不提供任何并行读功能，这意味着Ceph总是从主副本OSD提供读服务。因为我们通常有2个或更多的副本，因此读性能应该可以大大改善。我记得在Ceph邮件列表中有过讨论，但是现在找不到任何资料了。但是我相信它已经是Ceph的一部分开发人员的待办事项。</p>
+<h3 id="2-4-深度清洗消耗IOs"><a href="#2-4-深度清洗消耗IOs" class="headerlink" title="2.4. 深度清洗消耗IOs"></a>2.4. 深度清洗消耗IOs</h3><p>清洗是对对象的一种fsck。它在PG层级检查对象一致性，并且比较对象的主副本和其他副本的版本。</p>
+<p>目前有两种清洗类型：</p>
+<ul>
+<li>轻度清洗（每天）检查对象大小和属性</li>
+<li>深度清洗（每周）读取数据并使用校验值来确保数据一致性</li>
+</ul>
+<p>目前很多用户反馈，深度清洗会对集群产生重大影响。应对这个IO开销的方法很有限，你也可以禁用它，但是你需要使用你自己的方式来实现清洗并使用合适的参数控制它的行为。</p>
+<blockquote>
+<p>Ceph希望尽可能的保证事务和数据的安全。显然，这是要付出代价的，这就是性能。然而，我们看到已经有一些技术来解决Ceph这种设计带来的副作用。</p>
+</blockquote>
+<h2 id="3-The-ugly"><a href="#3-The-ugly" class="headerlink" title="3. The ugly"></a>3. The ugly</h2><blockquote>
+<p>在此之前，我想稍微扯点别的。这里我想公开阐述的问题不仅仅是Ceph存在，其他的分布式存储系统也存在。所以，请牢记一点，下面要讲述的问题不仅仅是Ceph才有。</p>
+</blockquote>
+<h3 id="3-1-RBD的IO模式"><a href="#3-1-RBD的IO模式" class="headerlink" title="3.1. RBD的IO模式"></a>3.1. RBD的IO模式</h3><blockquote>
+<p>一个IO进入到Ceph后会有两次写，第二次写性能更糟：</p>
+</blockquote>
+<p>原理:</p>
+<p><img src="http://sebastien-han.fr/images/ceph-io-random-osd.png" alt="IO patterns on RBD"></p>
+<p>在我最后一次基准测试期间，我们有一个类似的假设，然而我们没有得到机会来证实这个事实。幸运的是英特尔的研究人员将这种假设证实为现实。这种现象很容易理解。基本上，由于其分布式特性以及Ceph的确定性存储对象。因此,对象(来自不同客户端)映射到相同的OSD磁盘。最终顺序流混合在一起。下面是Ceph的IO操作队列的一个实例：</p>
+<ul>
+<li>object1 points to pg1.1</li>
+<li>object2 points to pg1.2</li>
+<li>object3 points to pg1.3</li>
+<li>object4 points to pg1.4</li>
+<li>object5 points to pg1.5</li>
+</ul>
+<p>OSD 1负责这5个PG。然而没人知道这5个目录在文件系统的哪里(<code>/var/lib/ceph/osd/osd.1/current/pg1.{1,2,3,4,5}</code>)。如图所示，PG在块设备上有一个确定的位置（文件系统）。最后，磁盘消耗大部分的时间从一个轨道跳到另一个，因此整体性能下降了。</p>
+<p>由于我讨厌复述，我将引导你们找到来自Intel的那篇详细解释这种现象的杰出博客。<a href="http://software.intel.com/en-us/blogs/2013/11/20/measure-ceph-rbd-performance-in-a-quantitative-way-part-ii" target="_blank" rel="external">点击这里</a></p>
+<h3 id="3-2-如果使用erasure-coding情况会更糟"><a href="#3-2-如果使用erasure-coding情况会更糟" class="headerlink" title="3.2. 如果使用erasure coding情况会更糟"></a>3.2. 如果使用erasure coding情况会更糟</h3><p>借用一下 <a href="http://dachary.org/?p=2171" target="_blank" rel="external">Loic Dachary’s</a> 的图片：</p>
+<p><img src="http://sebastien-han.fr/images/erasure-vs-replication.png" alt="Erasure VS replication"></p>
+<p>这只是一个假设。由于erasure code会给块再分块，因此前面的现象可能会被放大。如图所示，这里不是写3份对象，这里写13份对象：10 x 1M(分块)+ 3(奇偶校验)。我相信erasure code能够为你节省空间，但同时也会降低性能。</p>
+<p>你必须亲自验证。</p>
+<p>最后两个小节有一点偏离IO模式的主题，但是我相信它们很重要，值得认真考虑。</p>
+<h2 id="4-内存位损坏-Memory-bit-corruption"><a href="#4-内存位损坏-Memory-bit-corruption" class="headerlink" title="4. 内存位损坏(Memory bit corruption)"></a>4. 内存位损坏(Memory bit corruption)</h2><p>内存位损坏大多是因为从某一个位置上发生了移位。在分布式副本环境中比如Ceph，这可能导致大规模的数据损坏，因为损坏会在整个集群中扩散。如果发生了移位，一般是很难检测到的，因为客户端文件写入一个文件，而就在其进入Ceph集群的时候就直接损坏了。使用ECC内存针对这种问题的是一个通用的实践方案。</p>
+<p>了解详情见 <a href="http://en.wikipedia.org/wiki/ECC_memory#Problem_background" target="_blank" rel="external">Wikipedia</a></p>
+<h2 id="5-软件定义存储"><a href="#5-软件定义存储" class="headerlink" title="5. 软件定义存储"></a>5. 软件定义存储</h2><p>Ceph是一种软件定义存储，这意味着你所有的IO的计算、存储和平衡都是在程序员写的软件程序的帮助下实现的。因此由于某种原因导致的软件故障可能摧毁你的所有数据。我们已经看到在Ceph中过去的一些特性或标志可能导致数据损坏，不幸的是，一旦你发现它已经太迟了。据我所知，这是有史以来最糟糕的场景但这里的概率是比较低的。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[fio使用指南]]></title>
+      <url>http://blog.itzhoulin.com/2015/12/24/fio-man-guide/</url>
+      <content type="html"><![CDATA[<p>这个文档是对fio-2.0.9 HOWTO文档的翻译，fio的参数太多了，翻译这个文档时并没有测试每一个参数的功能和使用方法，只有少量参数做了试验，大部分的参数采用的是根据字面翻译或是个人理解的翻译，必然有些出入，先发出来，以后有使用的时候再被充和修改。在另一个文档中会对fio自带的实例进行分析，可能会更为清晰一些。</p>
+<p>fio这个工具实在太强大了，列举一下他的NB之处吧</p>
+<ul>
+<li>支持十几种存储引擎，可以自定义</li>
+<li>自带做图工具，调用gnuplot做图</li>
+<li>支持几乎所有的存储描述参数</li>
+<li>大量对CPU，内存，进程/线程，文件，IO特性的配置</li>
+<li>压缩，trace回放，。。。这些都包含，灵活的配置</li>
+</ul>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>fio最初是用来节省为特定负载写专门测试程序，或是进行性能测试，或是找到和重现bug的时间。写这么一个测试应用是非常浪费时间的。因此需要一个工具来模拟给定的io负载，而不用重复的写一个又一个的特定的测试程序。但是test负载很难定义。因为可能会产生很多进程或线程，他们每一个都用他们自己的方式产生io。fio需要足够灵活得来模拟这些case。</p>
+<p>典型的fio的工作过程:</p>
+<ul>
+<li>写一个job文件来描述要访真的io负载。一个job文件可以控制产生任意数目的线程和文件。典型的job文件有一个global段（定义共享参数），一个或多少job段（描述具体要产生的job）。</li>
+<li>运行时，fio从文件读这些参数，做处理，并根据这些参数描述，启动这些访真线程/进程</li>
+</ul>
+<h2 id="运行fio"><a href="#运行fio" class="headerlink" title="运行fio"></a>运行fio</h2><h3 id="运行方式："><a href="#运行方式：" class="headerlink" title="运行方式："></a>运行方式：</h3><pre><code>$fio job_file
+</code></pre><p>它会根据job_file的内容来运行。你可以在命令行中指定多个job file，fio进串行化运行这些文件。相当于在同一个job file不同的section之间使用了stonewall参数。</p>
+<p>如果某个job file只包含一个job,可以在命令行中给出参数，来直接运行，不再需要读取job file。命令行参数同job file参数的格式是一样的。比如，在job file中的参数iodepth=2，在命令行中可以写为 <code>-iodepth 2 或是 --iodepth=2</code></p>
+<p>fio不需要使用root来支行，除非使用到的文件或是设备需要root权限。一些选项可能会被限制，比如内存锁，io调度器切换，或是nice value降级。</p>
+<h3 id="job文件格式"><a href="#job文件格式" class="headerlink" title="job文件格式"></a>job文件格式</h3><p>job file格式采用经典的ini文件，[]中的值表示job name，可以采用任意的ASCII字符，‘global’除外，global有特殊的意义。Global section描述了job file中各个job的默认配置值。一个job section可以覆盖global section中的参数，一个job file可以包含几个global section.一个job只会受到它上面的global section的影响。<code>;</code>和<code>#</code>可以用作注释.</p>
+<p>两个进程，分别从一个从128MB文件中，随机读的job file.</p>
+<pre><code>;–start job file–
+[global]
+rw=randread
+size=128m
+[job1]
+[job2]
+;–end job file–
+</code></pre><p>job1和job2 section是空的，因为所有的描述参数是共享的。没有给出filename=选项，fio会为每一个job创建一个文件名，如果用命令写，则是：</p>
+<pre><code>$fio –name=global –rw=randread –size=128m –name=job1 –name=job2
+</code></pre><p>多个进程随机写文件的实例</p>
+<pre><code>;–start job file –
+[random-writers]
+ioengine=libaio
+iodepth=4
+rw=randwrite
+bs=32k
+direct=0
+size=64m
+numjobs=4
+;–end job file–
+</code></pre><p>没有global section,只有一个job section.</p>
+<p>上一个实例的说明：采用async,每一个文件的队列长度为4，采用随机写，采用32k的块，采用非direct io，共有4个进程，每个进程随机写64M的文件。也可以采用下面的命令</p>
+<pre><code>$fio –name=random-writers –ioengine=libaio –iodepth=4 –rw=randwrite –bs=32k –direct=0 –size=64m –numjobs=4
+</code></pre><h3 id="环境变量"><a href="#环境变量" class="headerlink" title="环境变量"></a>环境变量</h3><p>在job file中支持环境变量扩展。类似于${VARNAME}可以作为选项的值（在=号右边）。<br>实例：</p>
+<pre><code>$SIZE=64m NUMJOBS=4 fio jobfile,fio
+;–start job files–
+[random-writers]
+rw=randwrite
+size=${SIZE}
+numjobs=${NUMJOBS}
+;–end job file–
+</code></pre><p>将被扩展为</p>
+<pre><code>；–start job file–
+[random-writers]
+rw=randwrite
+size=64m
+numjobs=4
+;–end job file–
+</code></pre><h3 id="保留keywords"><a href="#保留keywords" class="headerlink" title="保留keywords"></a>保留keywords</h3><p>fio有一些保留keywords，在内部将其替换成合适的值，这些keywords是：</p>
+<ul>
+<li>$pagesize 当前系统的页大小</li>
+<li>$mb_memory 系统的总内存的大小，以MB为单位</li>
+<li>$ncpus 在线有效的cpu数</li>
+</ul>
+<p>在命令行中和job file中都可以用，当job运行的时候，会自动的用当前系统的徝进行替换。支持简单的数学计算，如：<code>size=8*$mb_memory</code></p>
+<p>###类型</p>
+<ul>
+<li>str 字符串</li>
+<li>time时间（int)</li>
+<li>int 整数</li>
+<li>bool</li>
+<li>irange 整数范围</li>
+<li>float_list 符点数列</li>
+</ul>
+<h3 id="一个job包含的基本的参数"><a href="#一个job包含的基本的参数" class="headerlink" title="一个job包含的基本的参数"></a>一个job包含的基本的参数</h3><h4 id="IO类型"><a href="#IO类型" class="headerlink" title="IO类型"></a>IO类型</h4><p>向文件发起的IO类型。</p>
+<h5 id="readwrite-str-rw-str"><a href="#readwrite-str-rw-str" class="headerlink" title="readwrite=str,rw=str"></a>readwrite=str,rw=str</h5><ul>
+<li>read 顺序读</li>
+<li>write 顺序写</li>
+<li>randwrite 随机写</li>
+<li>randread 随机读</li>
+<li>rw,readwrite 顺序混合读写</li>
+<li>randrw 随机混合读写</li>
+</ul>
+<p>[参数备注]<br>对于混合io类型，混认是50%的读，50%的写，对于特定的io类型，因为速度可能不同，结果可能会有稍有偏差.<br>通过在在str之后加“:”可以配置在执行一下获取offset操作之前要执行的IO次数。For a random read, it would lik ’rw=randread:8′ for passing in an offset modifier with a value of 8.如果后缀用于顺序IO类型的话，，那么将在每次IO之后，将这个值加到产生的offset之后。e.g. rw=write:4k每次写之后将会跳过4K。它将顺序的IO转化为带有洞的顺序IO。参考‘rw_sequencer’选项。</p>
+<h5 id="rw-sequencer-str"><a href="#rw-sequencer-str" class="headerlink" title="rw_sequencer=str"></a>rw_sequencer=str</h5><p>如果rw=后有offset修饰的话，这个选项可以控制这个数字如何修饰产生的IO offset.可以接收的值是：</p>
+<ul>
+<li>sequential 产生顺序的offset</li>
+<li>identical 产生相同的offset</li>
+</ul>
+<p>[参数备注]<br>‘sequential’仅用于随机IO。通常情况下，fio在每次IO之后，将会生成一个新的随机IO。e.g.rw=randread:8，将会在每8次IO之后执行seek，而不是每次IO之后。顺序IO已经是顺序的，再设置为‘sequential’将不会产生任何不同。‘identical’会产生同‘sequential’相似的行为，只是它会连续产生8次相同的offset，然后生成一个新的offset.</p>
+<h4 id="block-size"><a href="#block-size" class="headerlink" title="block size"></a>block size</h4><p>产生的IO单元的大小，可以是一个孤立的值，也可以是一个范围。</p>
+<h5 id="blocksize-int-bs-int"><a href="#blocksize-int-bs-int" class="headerlink" title="blocksize=int,bs=int"></a>blocksize=int,bs=int</h5><p>单次IO的block size,默认为4k。如果是单个值的话，将会对读写都生效。如果是一个逗号，再跟一个int值的话，则是仅对于写有效。也就是说，格式可以是bs=read_end_write或是bs=read,write。e.g. bs=4k,8k读使用4k的块，写使用8k的块。e.g.bs=,8k将使得写采用8k的块，读采用默认的值。</p>
+<h4 id="IO-size"><a href="#IO-size" class="headerlink" title="IO size"></a>IO size</h4><p>将会读/写多少数据</p>
+<h5 id="size-int"><a href="#size-int" class="headerlink" title="size=int"></a>size=int</h5><p>这个job IO总共要传输的数据的大小。FIO将会执行到所有的数据传输完成，除非设定了运行时间（‘runtime’选项）。除非有特定的‘nrfiles’选项和‘filesize’选项被设置，fio将会在job定义的文件中平分这个大小。如果这个值不设置的话，fio将会使用这个文件或设备的总大小。如果这些文件不存在的话，size选项一定要给出。也可以给出一个1到100的百分比。e.g. size=20%，fio将会使用给定的文件或设备的20%的空间。</p>
+<h4 id="IO引擎"><a href="#IO引擎" class="headerlink" title="IO引擎"></a>IO引擎</h4><p>发起IO的方式。</p>
+<h5 id="ioengine-str"><a href="#ioengine-str" class="headerlink" title="ioengine=str"></a>ioengine=str</h5><p>定义job向文件发起IO的方式</p>
+<ul>
+<li>sync 基本的read,write.lseek用来作定位</li>
+<li>psync 基本的pread,pwrite</li>
+<li>vsync 基本的readv,writev</li>
+<li>libaio Linux专有的异步IO。Linux仅支持非buffered IO的队列行为。</li>
+<li>posixaio glibc posix异步IO</li>
+<li>solarisaio solaris独有的异步IO<br>w- indowsaio windows独有的异步IO</li>
+<li>mmap 文件通过内存映射到用户空间，使用memcpy写入和读出数据</li>
+<li>splice 使用splice和vmsplice在用户空间和内核之间传输数据</li>
+<li>syslet-rw 使用syslet 系统调用来构造普通的read/write异步IO</li>
+<li>sg SCSI generic sg v3 io.可以是使用SG_IO ioctl来同步，或是目标是一个sg字符设备，我们使用read和write执行异步IO</li>
+<li>null 不传输任何数据，只是伪装成这样。主要用于训练使用fio，或是基本debug/test的目的。</li>
+<li>net 根据给定的host:port通过网络传输数据。根据具体的协议，hostname,port,listen,filename这些选项将被用来说明建立哪种连接，协议选项将决定哪种协议被使用。</li>
+<li>netsplice 像net，但是使用splic/vmsplice来映射数据和发送/接收数据。</li>
+<li>cpuio 不传输任何的数据，但是要根据cpuload=和cpucycle=选项占用CPU周期.e.g. - - cpuload=85将使用job不做任何的实际IO，但要占用85%的CPU周期。在SMP机器上，使用numjobs=来获取需要的CPU，因为cpuload仅会载入单个CPU，然后占用需要的比例。</li>
+<li>guasi GUASI IO引擎是一般的用于异步IO的用户空间异步系统调用接口</li>
+<li>rdma RDMA I/O引擎支持RDMA内存语义（RDMA_WRITE/RDMA_READ）和通道主义(Send/Recv）用于InfiniBand,RoCE和iWARP协议</li>
+<li>external 指明要调用一个外部的IO引擎（二进制文件）。e.g. ioengine=external:/tmp/foo.o将载入/tmp下的foo.o这个IO引擎</li>
+</ul>
+<h4 id="IO-depth"><a href="#IO-depth" class="headerlink" title="IO depth"></a>IO depth</h4><p>如果IO引擎是异步的，这个指定我们需要保持的队列深度</p>
+<h5 id="iodepth-int"><a href="#iodepth-int" class="headerlink" title="iodepth=int"></a>iodepth=int</h5><p>加于文件之上的保持的IO单元。默认对于每个文件来说是1，可以设置一个更大的值来提供并发度。iodepth大于1不会影响同步IO引擎（除非verify_async这个选项被设置）。even async engines may impose OS restrictions causing the desired depth not to be achieved.这会在Linux使用libaio并且设置direct=1的时候发生，因为buffered io在OS中不是异步的。在外部通过类似于iostat这些工具来观察队列深度来保证这个IO队列深度是我们想要的。这个可以参考褚霸的博客<a href="http://blog.yufeng.info/archives/2104" target="_blank" rel="external">http://blog.yufeng.info/archives/2104</a></p>
+<h4 id="IO-type"><a href="#IO-type" class="headerlink" title="IO type"></a>IO type</h4><h5 id="direct-bool"><a href="#direct-bool" class="headerlink" title="direct=bool"></a>direct=bool</h5><p>true,则标明采用non-buffered io.同O_DIRECT效果一样。ZFS和Solaris不支持direct io，在windows同步IO引擎不支持direct io</p>
+<h6 id="buffered-bool"><a href="#buffered-bool" class="headerlink" title="buffered=bool"></a>buffered=bool</h6><p>true,则标明采用buffered io。是direct的反义词，默认是true</p>
+<h4 id="Num-files"><a href="#Num-files" class="headerlink" title="Num files"></a>Num files</h4><p>负载将分发到几个文件之中</p>
+<h5 id="nrfiles-int"><a href="#nrfiles-int" class="headerlink" title="nrfiles=int"></a>nrfiles=int</h5><p>用于这个job的文件数目,默认为1</p>
+<h5 id="openfiles-int"><a href="#openfiles-int" class="headerlink" title="openfiles=int"></a>openfiles=int</h5><p>在同一时间可以同时打开的文件数目，默认同nrfiles相等，可以设置小一些，来限制同时打开的文件数目。</p>
+<h4 id="Num-threads"><a href="#Num-threads" class="headerlink" title="Num threads"></a>Num threads</h4><p>numjobs=int<br>创建特定数目的job副本。可能是创建大量的线程/进程来执行同一件事。我们将这样一系列的job，看作一个特定的group</p>
+<h2 id="详细参数："><a href="#详细参数：" class="headerlink" title="详细参数："></a>详细参数：</h2><h3 id="1-name-str"><a href="#1-name-str" class="headerlink" title="1.name=str"></a>1.name=str</h3><p>job名，用于输出信息用的名字。如果不设置的话，fio输出信息时将采用job name，如果设置的话，将用设置的名字。在命令行中，这个参数有特殊的作用，标明一个新job的开始。</p>
+<h3 id="2-description-str"><a href="#2-description-str" class="headerlink" title="2.description=str"></a>2.description=str</h3><p>job的说明信息,在job运行的时候不起作用，只是在输出文件描述信息的时候才起作用。</p>
+<h3 id="3-directory-str"><a href="#3-directory-str" class="headerlink" title="3.directory=str"></a>3.directory=str</h3><p>使用的文件的路径前缀，默认是./</p>
+<h3 id="4-filename-str"><a href="#4-filename-str" class="headerlink" title="4.filename=str"></a>4.filename=str</h3><p>一般情况下，fio会根据job名，线程号，文件名来产生一个文件名。如果，想在多个job之间共享同一个文件的话，可以设定一个名字来代替默认的名字.如果ioengine是‘net’的话，文件名则是以这种格式=host,port,protocol.如果ioengine是基于文件的话，可以通过‘:’分割来设定一系列的文件。e.g. filename=/dev/sda:/dev/sdb 希望job打开/dev/sda和/dev/sdb作为两个工作文件。</p>
+<h3 id="5-opendir-str"><a href="#5-opendir-str" class="headerlink" title="5.opendir=str"></a>5.opendir=str</h3><p>让fio递归的添加目录下和子目录下的所有文件。</p>
+<h3 id="6-lockfile-str"><a href="#6-lockfile-str" class="headerlink" title="6.lockfile=str"></a>6.lockfile=str</h3><p>fio在文件上执行IO之前默认是不锁文件的，这样的话，当有多个线程在此文件上执行IO的话，会造成结果的不一致。这个选项可以用来共享文件的负载，支持的锁类型：<br>none 默认不使用锁<br>exclusive 排它锁<br>readwrite 读写锁<br>在后面可以加一个数字后缀，如果设置的话，每一个线程将会执行这个数字指定的IO后才会放弃锁，因为锁的开销是比较大的，所以这种方式可以加速IO。</p>
+<h3 id="7-kb-base-int"><a href="#7-kb-base-int" class="headerlink" title="7.kb_base=int"></a>7.kb_base=int</h3><p>size换算单位，1000/1024,默认为1024</p>
+<h3 id="8-randrepeat-bool"><a href="#8-randrepeat-bool" class="headerlink" title="8.randrepeat=bool"></a>8.randrepeat=bool</h3><p>对于随机IO负载，配置生成器的种子，使得路径是可以预估的，使得每次重复执行生成的序列是一样的。</p>
+<h3 id="9-use-os-rand-bool"><a href="#9-use-os-rand-bool" class="headerlink" title="9.use_os_rand=bool"></a>9.use_os_rand=bool</h3><p>fio可以使用操作系统的随机数产生器，也可以使用fio内部的随机数产生器（基于tausworthe），默认是采用fio内部的产生器,质量更数，速度更快。</p>
+<h3 id="7-fallocate-str"><a href="#7-fallocate-str" class="headerlink" title="7.fallocate=str"></a>7.fallocate=str</h3><p>如何准备测试文件</p>
+<ul>
+<li>none 不执行预分配空间</li>
+<li>posix 通过posix_fallocate()预分配空间</li>
+<li>keep 通过fallocate()（设置FALLOC_FL_KEEP_SIZE）预分配空间</li>
+<li>0 none的别名,出于兼容性</li>
+<li>1 posix的别名，出于兼容性</li>
+</ul>
+<p>并不是在所有的平台上都有效，<code>keep</code>在linux上有效，ZFS不支持。默认为 <code>posix</code></p>
+<h3 id="8-fadvise-hint-bool"><a href="#8-fadvise-hint-bool" class="headerlink" title="8.fadvise_hint=bool"></a>8.fadvise_hint=bool</h3><p>默认fio将使用fadvise()来告知内核fio要产生的IO类型，如果不想告诉kernel来执行一些特定的IO类型的话，可行关闭这个选项。如果设置的话，fio将使用POSIX_FADV_SEWUENTIAL来作顺序IO，使用POSIX_FADV_RANDOM来做随机IO</p>
+<h3 id="9-filesize-int"><a href="#9-filesize-int" class="headerlink" title="9.filesize=int"></a>9.filesize=int</h3><p>单个文件的大小，可以是一个范围，在这种情况下，fio将会在一个范围内选择一个大小来决定单个文件大小，如果没有设置的话，所有的文件将会是同样的大小。</p>
+<h3 id="10-fill-device-bool-fill-fs-bool"><a href="#10-fill-device-bool-fill-fs-bool" class="headerlink" title="10.fill_device=bool,fill_fs=bool"></a>10.fill_device=bool,fill_fs=bool</h3><p>填满空间直到达到终止条件ENOSPC，只对顺序写有意义。对于读负载，首行要填满挂载点，然后再启动IO，对于裸设备结点，这个设置则没有什么意义，因为，它的大小已被被文件系统知道了，此外写的超出文件将不会返回ENOSPC.</p>
+<h3 id="11-blockalign-int-ba-int"><a href="#11-blockalign-int-ba-int" class="headerlink" title="11.blockalign=int,ba=int"></a>11.blockalign=int,ba=int</h3><p>配置随机io的对齐边界。默认是与blocksize的配置一致，对于direct_io，最小为512b,因为它与依赖的硬件块大小，对于使用文件的随机map来说，这个选项不起作用。</p>
+<h3 id="14-blocksize-range-irange-bsrange-irange"><a href="#14-blocksize-range-irange-bsrange-irange" class="headerlink" title="14.blocksize_range=irange,bsrange=irange"></a>14.blocksize_range=irange,bsrange=irange</h3><p>不再采用单一的块大小，而是定义一个范围，fio将采用混合io块大小.IO单元大小一般是给定最小值的备数。同时应用于读写，当然也可以通过‘,’来隔开分别配置读写。</p>
+<h3 id="15-bssplit-str"><a href="#15-bssplit-str" class="headerlink" title="15.bssplit=str"></a>15.bssplit=str</h3><p>可以更为精确的控制产生的block size.这个选项可以用来定义各个块大小所占的权重.格式是:</p>
+<pre><code>bssplit=blocksize/percentage;blocksize/percentage
+bssplit=4k/10:64k/50;32k/40
+产生的这样的负载：50% 64k的块，10% 4k的块, 40% 32k的块
+</code></pre><p>可以分别为读和写来设置</p>
+<pre><code>e.g. bssplit=2k/50:4k/50,4k/90:8k/10
+产生这样的负载：读（50% 64k的块，50% 4k的块），写（90% 4k的块, 10% 8k的块）
+</code></pre><h3 id="16-blocksize-unaligned-bs-unaligned"><a href="#16-blocksize-unaligned-bs-unaligned" class="headerlink" title="16.blocksize_unaligned,bs_unaligned"></a>16.blocksize_unaligned,bs_unaligned</h3><p>如果这个选项被设置的，在bsrange范围内的大小都可以产生，这个选项对于direct io没有作用，因为对于direct io至少需要扇区对齐</p>
+<h3 id="17-zero-buffers"><a href="#17-zero-buffers" class="headerlink" title="17.zero_buffers"></a>17.zero_buffers</h3><p>如果这个选项设置的话，IO buffer全部位将被初始为0,如果没有置位的话，将会是随机数.</p>
+<h3 id="18-refill-buffers"><a href="#18-refill-buffers" class="headerlink" title="18.refill_buffers"></a>18.refill_buffers</h3><p>如果这个选项设置的话，fio将在每次submit之后都会将重新填满IO buffer,默认都会在初始是填满，以后重复利用。这个选项只有在zero_buffers没有设置的话，这个选项才有作用。</p>
+<h3 id="19-scramble-buffer-bool"><a href="#19-scramble-buffer-bool" class="headerlink" title="19.scramble_buffer=bool"></a>19.scramble_buffer=bool</h3><p>如果refilee_buffers成本太高的话，但是负载要求不使用重复数据块，设置这个选项的话，可以轻微的改动IO buffer内容，这种方法骗不过聪明的块压缩算法，但是可以骗过一些简单的算法。</p>
+<h3 id="20-buffer-compress-percentage-int"><a href="#20-buffer-compress-percentage-int" class="headerlink" title="20.buffer_compress_percentage=int"></a>20.buffer_compress_percentage=int</h3><p>如果这个设置的话，fio将会尝试提供可以压缩到特定级别的Buffer内容。FIO是能完提供混合的0和随机数来实现的。Note that this is per block size unit, for file/disk wide compression level that matches this setting, you’ll also want to set refill_buffers.</p>
+<h3 id="21-buffer-compress-chunk-int"><a href="#21-buffer-compress-chunk-int" class="headerlink" title="21.buffer_compress_chunk=int"></a>21.buffer_compress_chunk=int</h3><p>See buffer_compress_percentage. This setting allows fio to manage how big the ranges of random data and zeroed data is. Without this set, fio will provide buffer_compress_percentage of blocksize random data, followed by the remaining zeroed. With this set to some chunk size smaller than the block size, fio can alternate random and zeroed data throughout the IO buffer.</p>
+<h3 id="22-file-service-type-str"><a href="#22-file-service-type-str" class="headerlink" title="22.file_service_type=str"></a>22.file_service_type=str</h3><p>fio切换job时，如何选择文件，支持下面的选项:</p>
+<ul>
+<li>random 随机选择一个文件</li>
+<li>roundrobin 循环使用打开的文件，默认</li>
+<li>sequential 完成一个文件后，再移动到下一个文件</li>
+</ul>
+<p>这个选项可以加后缀数字，标明切换到下一个新的频繁程度。</p>
+<p>e.g. random:4 每4次IO后，将会切换到一下随机的文件</p>
+<h3 id="23-iodepth-batch-submit-int-iodepth-batch-int"><a href="#23-iodepth-batch-submit-int-iodepth-batch-int" class="headerlink" title="23.iodepth_batch_submit=int,iodepth_batch=int"></a>23.iodepth_batch_submit=int,iodepth_batch=int</h3><p>这个定义了一次性提交几个IO，默认是1，意味着一旦准备好就提交IO，这个选项可以用来一次性批量提交IO</p>
+<h3 id="24-iodepth-batch-complete-int"><a href="#24-iodepth-batch-complete-int" class="headerlink" title="24.iodepth_batch_complete=int"></a>24.iodepth_batch_complete=int</h3><p>这个选项定义了一次取回多少个IO，如果定义为1的话，意味着我们将向内核请求最小为1个IO.The IO retrieval will go on until we hit the limit set by iodetph_low.If this variable is set to 0, then fi will always check for completed events before quuing more IO.This helps reduce IO latency, at the cost of more retrieval sysstem calls.</p>
+<h3 id="25-iodepth-low-int"><a href="#25-iodepth-low-int" class="headerlink" title="25.iodepth_low=int"></a>25.iodepth_low=int</h3><p>这个水位标志标明什么时候开始重新填充这个队列，默认是同iodepth是一样的，意味着，每时每刻都在尝试填满这个队列。如果iodepth设置为16，而iodepth设置为4的话，那么fio将等到depth下降到4才开始重新填充</p>
+<h3 id="26-offset-int"><a href="#26-offset-int" class="headerlink" title="26.offset=int"></a>26.offset=int</h3><p>在文件特定的偏移开始读数据,在这个offset之前的数据将不会被使用，有效的文件大小=real_size-offset</p>
+<h3 id="27-offset-increment-int"><a href="#27-offset-increment-int" class="headerlink" title="27.offset_increment=int"></a>27.offset_increment=int</h3><p>如果这个选项被设置的话，实际的offset=offset+offset_increment * thread_number,线程号是从0开始的一个计数器，对于每一个job来说是递增的。这个选项对于几个job同时并行在不交界的地方操作一个文件是有用的。</p>
+<h3 id="28-fsync-int"><a href="#28-fsync-int" class="headerlink" title="28.fsync=int"></a>28.fsync=int</h3><p>如果写一个文件的话，每n次IO传输完block后，都会进行一次同步脏数据的操作。<br>e.g. fsync=int<br>fio每32次写之后，同步一次文件。如果采用non-buffered io，不需要使用sync同步文件<br>对于sg io引擎的话，可以在任何情况下同步磁盘cache.</p>
+<h3 id="29-fdatasync-int"><a href="#29-fdatasync-int" class="headerlink" title="29.fdatasync=int"></a>29.fdatasync=int</h3><p>同fsync，但是采用fdatasync()来同步数据，但不同步元数据</p>
+<h3 id="30-sync-file-range-str-val"><a href="#30-sync-file-range-str-val" class="headerlink" title="30.sync_file_range=str:val"></a>30.sync_file_range=str:val</h3><p>对于每<code>val</code>个写操作，将执行sync_file_range()。FIO将跟踪从上次sync_file_range()调用之扣的写范围，<code>str</code>可以是以下的选择:</p>
+<ul>
+<li>wait_before SYNC_FILE_RANGE_WAIT_BEFORE</li>
+<li>write SYNC_FILE_RANGE_WRITE</li>
+<li>wait_after SYNC_FILE_RANGE_WAIT_AFTER</li>
+</ul>
+<p>e.g.sync_file_range=wait_before,write:8,fio将在每8次写后使用SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE</p>
+<h3 id="31-overwrite-bool"><a href="#31-overwrite-bool" class="headerlink" title="31.overwrite=bool"></a>31.overwrite=bool</h3><p>如果是true的话，写一个文件的话，将会覆盖已经存在的数据。如果文件不存在的话，它将会在写阶段开始的时候创建这个文件。</p>
+<h3 id="32-end-fsync-bool"><a href="#32-end-fsync-bool" class="headerlink" title="32.end_fsync=bool"></a>32.end_fsync=bool</h3><p>如果是true的话，当job退出的话，fsync将会同步文件内容</p>
+<h3 id="33-fsync-on-close-bool"><a href="#33-fsync-on-close-bool" class="headerlink" title="33.fsync_on_close=bool"></a>33.fsync_on_close=bool</h3><p>如果是true的话，关闭时，fio将会同步脏文件，不同于end_fsync的时，它将会在每个文件关闭时都会发生，而不是只在job结束时。</p>
+<h3 id="34-rwmixread-int"><a href="#34-rwmixread-int" class="headerlink" title="34.rwmixread=int"></a>34.rwmixread=int</h3><p>混合读写中，读占的百分比</p>
+<h3 id="35-rwmixwrite-int"><a href="#35-rwmixwrite-int" class="headerlink" title="35.rwmixwrite=int"></a>35.rwmixwrite=int</h3><p>混合读写中，写占的百分比；如果rwmixread=int和rwmixwrite=int同时使用的话并且相加不等于100%的话，第二个值将会覆盖第一个值。这可能要干扰比例的设定,如果要求fio来限制读和写到一定的比率。在果在这种情况下，那么分布会的有点的不同。</p>
+<h3 id="36-norandommap"><a href="#36-norandommap" class="headerlink" title="36.norandommap"></a>36.norandommap</h3><p>一般情况下，fio在做随机IO时，将会覆盖文件的每一个block.如果这个选项设置的话，fio将只是获取一个新的随机offset,而不会查询过去的历史。这意味着一些块可能没有读或写，一些块可能要读/写很多次。在个选项与verify=互斥，并只有多个块大小（bsrange=）正在使用，因为fio只会记录完整的块的重写。</p>
+<h3 id="37-softrandommap-bool"><a href="#37-softrandommap-bool" class="headerlink" title="37.softrandommap=bool"></a>37.softrandommap=bool</h3><p>See norandommap. If fio runs with the random block map enabled and it fails to allocate the map, if this option is set it will continue without a random block map. As coverage will not be as complete as with random maps, this option is disabled by default.</p>
+<h3 id="38-nice-int"><a href="#38-nice-int" class="headerlink" title="38.nice=int"></a>38.nice=int</h3><p>根据给定的nice值来运行这个job</p>
+<h3 id="39-prio-int"><a href="#39-prio-int" class="headerlink" title="39.prio=int"></a>39.prio=int</h3><p>设置job的优先级，linux将这个值限制在0-7之间，0是最高的。</p>
+<h3 id="40-prioclass-int"><a href="#40-prioclass-int" class="headerlink" title="40.prioclass=int"></a>40.prioclass=int</h3><p>设置优先级等级。</p>
+<h3 id="41-thinktime-int"><a href="#41-thinktime-int" class="headerlink" title="41.thinktime=int"></a>41.thinktime=int</h3><p>上一个IO完成之后，拖延x毫秒，然后跳到下一个。可以用来访真应用进行的处理。</p>
+<h3 id="42-thinktime-spin-int"><a href="#42-thinktime-spin-int" class="headerlink" title="42.thinktime_spin=int"></a>42.thinktime_spin=int</h3><p>只有在thinktime设置时才有效，在为了sleep完thinktime规定的时间之前，假装花费CPU时间来做一些与数据接收有关的事情。</p>
+<h3 id="43-thinktime-blocks"><a href="#43-thinktime-blocks" class="headerlink" title="43.thinktime_blocks"></a>43.thinktime_blocks</h3><p>只有在thinktime设置时才有效，控制在等等‘thinktime’的时间内产生多少个block，如果没有设置的话，这个值将是1，每次block后，都会将等待‘thinktime’us。</p>
+<h3 id="44-rate-int"><a href="#44-rate-int" class="headerlink" title="44.rate=int"></a>44.rate=int</h3><p>限制job的带宽。</p>
+<pre><code>e.g.rate=500k,限制读和写到500k/s
+e.g.rate=1m,500k,限制读到1MB/s，限制写到500KB/s
+e.g.rate=,500k , 限制写到500kb/s
+e.g.rate=500k, 限制读到500KB/s
+</code></pre><h3 id="45-ratemin-int"><a href="#45-ratemin-int" class="headerlink" title="45.ratemin=int"></a>45.ratemin=int</h3><p>告诉fio尽最在能力来保证这个最小的带宽，如果不能满足这个需要，将会导致程序退出。</p>
+<h3 id="46-rate-iops-int"><a href="#46-rate-iops-int" class="headerlink" title="46.rate_iops=int"></a>46.rate_iops=int</h3><p>将带宽限制到固定数目的IOPS，基本上同rate一样，只是独立于带宽，如果job是指定了一个block size范围，而不是一个固定的值的话，最小blocksize将会作为标准。</p>
+<h3 id="47-rate-iops-min-int"><a href="#47-rate-iops-min-int" class="headerlink" title="47.rate_iops_min=int"></a>47.rate_iops_min=int</h3><p>如果fio达不到这个IOPS的话，将会导致job退出。</p>
+<h3 id="48-ratecycle-int"><a href="#48-ratecycle-int" class="headerlink" title="48.ratecycle=int"></a>48.ratecycle=int</h3><p>几个毫秒内的平均带宽。用于‘rate’和‘ratemin’</p>
+<h3 id="49-cpumask-int"><a href="#49-cpumask-int" class="headerlink" title="49.cpumask=int"></a>49.cpumask=int</h3><p>设置job使用的CPU.给出的参数是一个掩码来设置job可以运行的CPU。所以，如果要允许CPU在1和5上的话，可以通过10进制数来设置（1&lt;&lt;1 | 1&lt;&lt;5），或是34。查看sched_setaffinity的man page。它可能并不是支持所有的操作系统和kernel版本。This option doesn’t work well for a higher CPU count than what you can store in an integer mask, so it can only control cpus 1-32. For boxes with larger CPU counts, use cpus_allowed.</p>
+<h3 id="50-cpus-allowed-str"><a href="#50-cpus-allowed-str" class="headerlink" title="50.cpus_allowed=str"></a>50.cpus_allowed=str</h3><p>功能同cpumask一样，但是允许通过一段文本来设置允许的CPU。e.g.上面的例子可是这样写cpus_allowed=1,5。这个选项允许设置一个CPU范围，如cpus_allowed=1,5,8-15</p>
+<h3 id="51-startdelay-time"><a href="#51-startdelay-time" class="headerlink" title="51.startdelay=time"></a>51.startdelay=time</h3><p>fio启动几秒后再启动job。只有在job文件包含几个jobs时才有效，是为了将某个job延时几秒后执行。</p>
+<h3 id="52-runtime-time"><a href="#52-runtime-time" class="headerlink" title="52.runtime=time"></a>52.runtime=time</h3><p>控制fio在执行设定的时间后退出执行。很难来控制单个job的运行时间，所以这个参数是用来控制总的运行时间。</p>
+<h3 id="53-time-based"><a href="#53-time-based" class="headerlink" title="53.time_based"></a>53.time_based</h3><p>如果设置的话，即使file已被完全读写或写完，也要执行完runtime规定的时间。它是通过循环执行相同的负载来实现的。</p>
+<h3 id="54-ramp-tim-time"><a href="#54-ramp-tim-time" class="headerlink" title="54.ramp_tim=time"></a>54.ramp_tim=time</h3><p>设定在记录任何性能信息之前要运行特定负载的时间。这个用来等性能稳定后，再记录日志结果，因此可以减少生成稳定的结果需要的运行时间。Note that the ramp_time is considered lead in time for a job, thus it will increase the total runtime if a special timeout or runtime is specified.</p>
+<h3 id="55-invalidate-bool"><a href="#55-invalidate-bool" class="headerlink" title="55.invalidate=bool"></a>55.invalidate=bool</h3><p>Invalidate the buffer/page cache parts for this file prior to starting io. Defaults to true.</p>
+<h3 id="56-sync-bool"><a href="#56-sync-bool" class="headerlink" title="56.sync=bool"></a>56.sync=bool</h3><p>使用sync来进行buffered写。对于多数引擎，这意味着使用O_SYNC</p>
+<h3 id="57-iomem-str-mem-str"><a href="#57-iomem-str-mem-str" class="headerlink" title="57.iomem=str,mem=str"></a>57.iomem=str,mem=str</h3><p>fio可以使用各种各样的类型的内存用来io单元buffer:</p>
+<ul>
+<li>malloc 使用malloc()<br>-shm 使用共享内存.通过shmget()分配<br>-shmhuge 同shm一样，可以使用huge pages<br>-mmap 使用mmap。可以是匿名内存，或是支持的文件，如果一个文件名在选项后面设置的话，格式是mem=mmap:/path/to/file<br>-mmaphuge 使用mmapped huge file.在mmaphuge扣面添加文件名，alamem=mmaphuge:/hugetlbfs/file</li>
+</ul>
+<p>分配的区域是由job允许的最大block size * io 队列的长度。对于shmhuge和mmaphuge，系统应该有空闲的页来分配。这个可以通过检测和设置reading/writing /proc/sys/vm/nr_hugepages来实现（linux）。FIO假设一个huge page是4MB。所以要计算对于一个JOB文件需要的Huge page数量，加上所有jobs的队列长度再乘以最大块大小，然后除以每个huge page的大小。可以通过查看/proc/meminfo来看huge pages的大小。如果通过设置nr_hugepages=0来使得不允许分配huge pages，使用mmaphug或是shmhuge将会失败。</p>
+<p>mmaphuge需要挂载hugelbfs而且要指定文件的位置，所以如果要挂载在/huge下的话，可以使用mem=mmaphuge:/huge/somefile</p>
+<h3 id="58-iomem-align-int"><a href="#58-iomem-align-int" class="headerlink" title="58.iomem_align=int"></a>58.iomem_align=int</h3><p>标明IO内存缓冲的内存对齐方式。Note that the given alignment is applied to the first IO unit buffer, if using iodepth the alignment of the following buffers are given by the bs used. In other words, if using a bs that is a multiple of the page sized in the system, all buffers will be aligned to this value. If using a bs that is not page aligned, the alignment of subsequent IO memory buffers is the sum of the iomem_align and bs used.</p>
+<h3 id="59-hugepage-size-int"><a href="#59-hugepage-size-int" class="headerlink" title="59.hugepage-size=int"></a>59.hugepage-size=int</h3><p>设置huge page的大小。至少要与系统的设定相等。默认是4MB，必然是MB的倍数，所以用hugepage-size=Xm是用来避免出现不是2的整数次方的情况。</p>
+<h3 id="60-exitall"><a href="#60-exitall" class="headerlink" title="60.exitall"></a>60.exitall</h3><p>当一个job退出时，会终止运行其它的job，默认是等待所有的job都完成，FIO才退出，但有时候这并不是我们想要的。</p>
+<h3 id="61-bwavgtime-int"><a href="#61-bwavgtime-int" class="headerlink" title="61.bwavgtime=int"></a>61.bwavgtime=int</h3><p>在给定时间内的平均带宽。值是以毫秒为单位的</p>
+<h3 id="62-iopsavgtime-int"><a href="#62-iopsavgtime-int" class="headerlink" title="62.iopsavgtime=int"></a>62.iopsavgtime=int</h3><p>在给定时间内的平均IOPS，值是以毫秒为单位的</p>
+<h3 id="63-create-serialize-bool"><a href="#63-create-serialize-bool" class="headerlink" title="63.create_serialize=bool"></a>63.create_serialize=bool</h3><p>job将会串行化创建job,这将会用来避免数据文件的交叉，这依赖于文件系统和系统的CPU数</p>
+<h3 id="64-create-fsync-bool"><a href="#64-create-fsync-bool" class="headerlink" title="64.create_fsync=bool"></a>64.create_fsync=bool</h3><p>创建后同步数据文件，这是默认的值</p>
+<h3 id="65-create-on-open-bool"><a href="#65-create-on-open-bool" class="headerlink" title="65.create_on_open=bool"></a>65.create_on_open=bool</h3><p>不会为IO预先创建文件，只是在要向文件发起IO的时候，才创建open()</p>
+<h3 id="66-create-only-bool"><a href="#66-create-only-bool" class="headerlink" title="66.create_only=bool"></a>66.create_only=bool</h3><p>如果设置为true的话，fio将只运行到job的配置阶段。如果文件需要部署或是更新的磁盘的话，只有上面的事才会做，实际的文件内容并没有执行。</p>
+<h3 id="67-pre-read-bool"><a href="#67-pre-read-bool" class="headerlink" title="67.pre_read=bool"></a>67.pre_read=bool</h3><p>如果这个选项被设置的话，在执行IO操作之前，文件将会被预读到内存.这会删除‘invalidate’标志，因为预读数据，然后丢弃cache中的数据的话，是没有意义的。这只是对可以seek的IO引擎有效，因为这允许读相同的数据多次。因此对于network和splice不起作用。</p>
+<h3 id="68-unlink-bool"><a href="#68-unlink-bool" class="headerlink" title="68.unlink=bool"></a>68.unlink=bool</h3><p>完成后将删除job产生的文件。默认是not,如果设置为true的话，将会花很多时间重复创建这些文件。</p>
+<h3 id="69-loops-int"><a href="#69-loops-int" class="headerlink" title="69.loops=int"></a>69.loops=int</h3><p>重复运行某个job多次，默认是1</p>
+<h3 id="70-do-verify-bool"><a href="#70-do-verify-bool" class="headerlink" title="70.do_verify=bool"></a>70.do_verify=bool</h3><p>写完成后，执行一个校验的阶段，只有当verify设置的时候才有效。默认是true</p>
+<h3 id="80-verify-str"><a href="#80-verify-str" class="headerlink" title="80.verify=str"></a>80.verify=str</h3><p>写一个文件时，每次执行完一个job扣，fio可以检验文件内容.允许的校验算法是：<br>md5,crc64,crc32c,crc32c-intel,crc32,crc16,crc7,sha512,sha256,sha1,meta,null.<br>这个选项可以用来执行重复的burn-in测试，来保证写数据已经正确的读回。如果是read或随机读，fio将假设它将会检验先前写的文件。如果是各种格式的写，verify将会是对新写入的数据进行校验。</p>
+<h3 id="81-verifysort-bool"><a href="#81-verifysort-bool" class="headerlink" title="81.verifysort=bool"></a>81.verifysort=bool</h3><p>如果设置的话，fio will sort written verify blocks when it deems it faster to read them back in a sorted manner. This is often the case when overwriting an existing file, since the blocks are already laid out in the file system. You can ignore this option unless doing huge amounts of really fast IO where the red-black tree sorting CPU time becomes significant.</p>
+<h3 id="82-verify-offset-int"><a href="#82-verify-offset-int" class="headerlink" title="82.verify_offset=int"></a>82.verify_offset=int</h3><p>Swap the verification header with data somewhere else in the block before writing. Its swapped back before verifying.</p>
+<h3 id="83-verify-interval-int"><a href="#83-verify-interval-int" class="headerlink" title="83.verify_interval=int"></a>83.verify_interval=int</h3><p>Write the verification header at a finer granularity than the blocksize. It will be written for chunks the size of header_interval. blocksize should divide this evenly</p>
+<h3 id="84-verify-pattern-str"><a href="#84-verify-pattern-str" class="headerlink" title="84.verify_pattern=str"></a>84.verify_pattern=str</h3><h3 id="85-verify-fatal-bool"><a href="#85-verify-fatal-bool" class="headerlink" title="85.verify_fatal=bool"></a>85.verify_fatal=bool</h3><h3 id="86-verify-dump-bool"><a href="#86-verify-dump-bool" class="headerlink" title="86.verify_dump=bool"></a>86.verify_dump=bool</h3><h3 id="87-verify-async-int"><a href="#87-verify-async-int" class="headerlink" title="87.verify_async=int"></a>87.verify_async=int</h3><h3 id="88-verify-async-cpus-str"><a href="#88-verify-async-cpus-str" class="headerlink" title="88.verify_async_cpus=str"></a>88.verify_async_cpus=str</h3><h3 id="89-verify-backlog-int"><a href="#89-verify-backlog-int" class="headerlink" title="89.verify_backlog=int"></a>89.verify_backlog=int</h3><h3 id="90-verify-backlog-batch-int"><a href="#90-verify-backlog-batch-int" class="headerlink" title="90.verify_backlog_batch=int"></a>90.verify_backlog_batch=int</h3><h3 id="91-stonewall-wait-for-previous"><a href="#91-stonewall-wait-for-previous" class="headerlink" title="91.stonewall,wait_for_previous"></a>91.stonewall,wait_for_previous</h3><p>等待先前的job执行完成后，再启动一个新的job。可以用来在job文件中加入串行化的点。stone wall也用来启动一个新reporting group</p>
+<h3 id="92-new-group"><a href="#92-new-group" class="headerlink" title="92.new_group"></a>92.new_group</h3><p>启动一个新的reporting group。如果这个选项没有设置的话，在job文件中的job将属于相同的reporting group，除非通过stonewall隔开</p>
+<h3 id="93-group-reporting"><a href="#93-group-reporting" class="headerlink" title="93.group_reporting"></a>93.group_reporting</h3><p>如果‘numjobs’设置的话，我们感兴趣的可能是打印group的统计值，而不是一个单独的job。这在‘numjobs’的值很大时，一般是设置为true的，可以减少输出的信息量。如果‘group_reporting’设置的话，fio将会显示最终的per-groupreport而不是每一个job都会显示</p>
+<h3 id="94-thread"><a href="#94-thread" class="headerlink" title="94.thread"></a>94.thread</h3><p>fio默认会使用fork()创建job，如果这个选项设置的话，fio将使用pthread_create来创建线程</p>
+<h3 id="95-zonesize-int"><a href="#95-zonesize-int" class="headerlink" title="95.zonesize=int"></a>95.zonesize=int</h3><p>将一个文件分为设定的大小的zone</p>
+<h3 id="96-zoneskip-int"><a href="#96-zoneskip-int" class="headerlink" title="96.zoneskip=int"></a>96.zoneskip=int</h3><p>跳过这个zone的数据都被读完后，会跳过设定数目的zone.</p>
+<h3 id="97-write-iolog-str"><a href="#97-write-iolog-str" class="headerlink" title="97.write_iolog=str"></a>97.write_iolog=str</h3><p>将IO模式写到一个指定的文件中。为每一个job指定一个单独的文件，否则iolog将会分散的的，文件将会冲突。</p>
+<h3 id="98-read-iolog-str"><a href="#98-read-iolog-str" class="headerlink" title="98.read_iolog=str"></a>98.read_iolog=str</h3><p>将开一个指定的文件，回复里面的日志。这可以用来存储一个负载，并进行重放。给出的iolog也可以是一个二进制文件，允许fio来重放通过blktrace获取的负载。</p>
+<h3 id="99-replay-no-stall"><a href="#99-replay-no-stall" class="headerlink" title="99.replay_no_stall"></a>99.replay_no_stall</h3><p>当使用read_iolog重放I/O时，默认是尝试遵守这个时间戳，在每个IOPS之前会有适当的延迟。通过设置这个属性，将不会遵守这个时间戳，会根据期望的顺序，尝试回复，越快越好。结果就是相同类型的IO，但是不同的时间</p>
+<h3 id="101-replay-redirect"><a href="#101-replay-redirect" class="headerlink" title="101.replay_redirect"></a>101.replay_redirect</h3><p>当使用read_iolog回放IO时，默认的行为是在每一个IOP来源的major/minor设备上回放IOPS。这在有些情况是不是期望的，比如在另一台机器上回放，或是更换了硬件，使是major/minor映射关系发生了改变。Replay_redirect将会导致所有的IOPS回放到单个设备上，不管这些IO来源于哪里。e.g.replay_redirect=/dev/sdc将会使得所有的IO都会重定向到/dev/sdc.这就意味着多个设备的数据都会重放到一个设置，如果想来自己多个设备的数据重放到多个设置的话，需要处理我们的trace，生成独立的trace，再使用fio进行重放，不过这会破坏多个设备访问的严格次序。</p>
+<h3 id="102-write-bw-log-str"><a href="#102-write-bw-log-str" class="headerlink" title="102.write_bw_log=str"></a>102.write_bw_log=str</h3><p>在job file写这个job的带宽日志。可以在他们的生命周期内存储job的带宽数据。内部的fio_generate_plots脚本可以使用gnuplot将这些文本转化成图。</p>
+<h3 id="103-write-lat-log-str"><a href="#103-write-lat-log-str" class="headerlink" title="103.write_lat_log=str"></a>103.write_lat_log=str</h3><p>同write_bw_log类似，只是这个选项可以存储io提交，完成和总的响应时间。如果没有指定文件名，默认的文件名是jobname_type.log。即使给出了文件名，fio也会添加两种类型的log。<br>e.g.如果我们指定write_lat_log=foo<br>实际的log名将是foo_slat.log,foo_slat.log和foo_lat.log.这会帮助fio_generate_plot来自动处理log</p>
+<h3 id="104-write-iops-log-str"><a href="#104-write-iops-log-str" class="headerlink" title="104.write_iops_log=str"></a>104.write_iops_log=str</h3><p>类似于write_bw_log,但是写的是IOPS.如果没有给定文件名的话，默认的文件名是jobname_type.log。</p>
+<h3 id="105-log-avg-msec-int"><a href="#105-log-avg-msec-int" class="headerlink" title="105.log_avg_msec=int"></a>105.log_avg_msec=int</h3><p>默认，fio每完成一个IO将会记录一个日志（iops,latency,bw log）。当向磁盘写日志的时候，将会很快变的很大。设置这个选项的话，fio将会在一定的时期内平均这些值，指少日志的数量，默认是0</p>
+<h3 id="106-lockmem-int"><a href="#106-lockmem-int" class="headerlink" title="106.lockmem=int"></a>106.lockmem=int</h3><p>使用mlock可以指定特定的内存大小，用来访真少量内存</p>
+<h3 id="107-exec-preren-str"><a href="#107-exec-preren-str" class="headerlink" title="107.exec_preren=str"></a>107.exec_preren=str</h3><p>运行job之前，通过过system执行指定的命令</p>
+<h3 id="108-exec-postrun-str"><a href="#108-exec-postrun-str" class="headerlink" title="108.exec_postrun=str"></a>108.exec_postrun=str</h3><p>job执行完成后，通过system执行指定的命令</p>
+<h3 id="109-ioscheduler-str"><a href="#109-ioscheduler-str" class="headerlink" title="109.ioscheduler=str"></a>109.ioscheduler=str</h3><p>在运行之前，尝试将文件所在的设备切换到指定的调度器。</p>
+<h3 id="110-cpuload-int"><a href="#110-cpuload-int" class="headerlink" title="110.cpuload=int"></a>110.cpuload=int</h3><p>如果job是非常占用CPU周期的，可以指定战胜CPU周期的百分比。</p>
+<h3 id="120-cpuchunks-int"><a href="#120-cpuchunks-int" class="headerlink" title="120.cpuchunks=int"></a>120.cpuchunks=int</h3><p>如果job是非常战胜CPU周期的，将load分拆为时间的cycles，以毫秒为单位</p>
+<h3 id="121-disk-util-bool"><a href="#121-disk-util-bool" class="headerlink" title="121.disk_util=bool"></a>121.disk_util=bool</h3><p>产生磁盘利用率统计信息。默认是打开的</p>
+<h3 id="122-disable-lat-bool"><a href="#122-disable-lat-bool" class="headerlink" title="122.disable_lat=bool"></a>122.disable_lat=bool</h3><p>延迟的有效数字。Disable measurements of total latency numbers. Useful only for cutting back the number of calls to gettimeofday,as that does impact performance at really high IOPS rates.Note that to really get rid of a large amount of these calls, this option must be used with disable_slat and disable_bw as well.</p>
+<h3 id="123-disable-clat-bool"><a href="#123-disable-clat-bool" class="headerlink" title="123.disable_clat=bool"></a>123.disable_clat=bool</h3><h3 id="124-disable-slat-bool"><a href="#124-disable-slat-bool" class="headerlink" title="124.disable_slat_bool"></a>124.disable_slat_bool</h3><h3 id="125-disable-bw-bool"><a href="#125-disable-bw-bool" class="headerlink" title="125.disable_bw=bool"></a>125.disable_bw=bool</h3><h3 id="126-clat-percentiles-bool"><a href="#126-clat-percentiles-bool" class="headerlink" title="126.clat_percentiles=bool"></a>126.clat_percentiles=bool</h3><p>允许报告完成完成响应时间的百分比</p>
+<h3 id="127-percentile-list-float-list"><a href="#127-percentile-list-float-list" class="headerlink" title="127.percentile_list=float_list"></a>127.percentile_list=float_list</h3><h3 id="128-gtod-reduce-bool"><a href="#128-gtod-reduce-bool" class="headerlink" title="128.gtod_reduce=bool"></a>128.gtod_reduce=bool</h3><h3 id="129-gtod-cpu-int"><a href="#129-gtod-cpu-int" class="headerlink" title="129.gtod_cpu=int"></a>129.gtod_cpu=int</h3><h3 id="130-continue-on-error-str"><a href="#130-continue-on-error-str" class="headerlink" title="130.continue_on_error=str"></a>130.continue_on_error=str</h3><p>一般情况下，一旦检测到错误，fio将会退出这个job.如果这个选项设置的话，fio将会一直执行到有‘non-fatal错误‘（EIO或EILSEQ）或是执行时间耗完，或是指定的I/Osize完成。如果这个选项设置的话，将会添加两个状态，总的错误计数和第一个error。允许的值是:</p>
+<ul>
+<li>none 全部IO或检验错误后，都会退出</li>
+<li>read 读错误时会继续执行，其它的错误会退出</li>
+<li>write 写错误时会继续执行，其它的错误会退出</li>
+<li>io 任何IO error时会继续执行，其它的错误会退出</li>
+<li>verify 校验错误时会继续执行，其它的错误会退出</li>
+<li>all 遇到所有的错误都会继续执行</li>
+</ul>
+<h3 id="131-cgroup-str"><a href="#131-cgroup-str" class="headerlink" title="131.cgroup=str"></a>131.cgroup=str</h3><h3 id="132-cgroup-weitht-int"><a href="#132-cgroup-weitht-int" class="headerlink" title="132.cgroup_weitht=int"></a>132.cgroup_weitht=int</h3><h3 id="133-cgroup-weight-int"><a href="#133-cgroup-weight-int" class="headerlink" title="133.cgroup_weight=int"></a>133.cgroup_weight=int</h3><h3 id="134-cgroup-nodelete-bool"><a href="#134-cgroup-nodelete-bool" class="headerlink" title="134.cgroup_nodelete=bool"></a>134.cgroup_nodelete=bool</h3><h3 id="135-uid-int"><a href="#135-uid-int" class="headerlink" title="135.uid=int"></a>135.uid=int</h3><p>不是使用调用者的用户来执行，而是指定用户ID</p>
+<h3 id="136-gid-int"><a href="#136-gid-int" class="headerlink" title="136.gid=int"></a>136.gid=int</h3><p>设置group id</p>
+<h3 id="137-flow-id-int"><a href="#137-flow-id-int" class="headerlink" title="137.flow_id=int"></a>137.flow_id=int</h3><h3 id="138-flow-int"><a href="#138-flow-int" class="headerlink" title="138.flow=int"></a>138.flow=int</h3><h3 id="139-flow-watermark-int"><a href="#139-flow-watermark-int" class="headerlink" title="139.flow_watermark=int"></a>139.flow_watermark=int</h3><h3 id="140-flow-sleep-int"><a href="#140-flow-sleep-int" class="headerlink" title="140.flow_sleep=int"></a>140.flow_sleep=int</h3><h2 id="下面的参数只对指定的IO引擎有效："><a href="#下面的参数只对指定的IO引擎有效：" class="headerlink" title="下面的参数只对指定的IO引擎有效："></a>下面的参数只对指定的IO引擎有效：</h2><pre><code>[libaio] userspace_reap
+[netsplice]hostname=str
+[net]hostname=str
+[netsplice]port=int
+[netsplice]proto=str
+[net]protocol=str
+[net]proto=str
+[net]listen
+</code></pre><h2 id="输出"><a href="#输出" class="headerlink" title="输出"></a>输出</h2><p>在运行时，fio将打印当前job创建的状态:</p>
+<pre><code>Threads: 1: [_r] [24.8% done] [ 13509/ 8334 kb/s] [eta 00h:01m:31s]
+</code></pre><ul>
+<li>生命周期</li>
+<li>P 线程已经启动，还没有启动</li>
+<li>C 线程启动</li>
+<li>I 纯种已经初始化，等待中</li>
+<li>p 线程运行中，预读文件</li>
+<li>R 顺序读</li>
+<li>r 随机读</li>
+<li>W 顺序写</li>
+<li>w 随机写</li>
+<li>M 混合顺序读写</li>
+<li>m 混合随机读写</li>
+<li>F 等待执行fsync()</li>
+<li>V 运行，检验写的数据</li>
+<li>E 线程退出,还没有被主线程获取状态</li>
+<li>_ Thread reaped, or</li>
+<li>X Thread reaped, exited with an error.</li>
+<li>K Thread reaped, exited due to signal.</li>
+<li>其它的值都是可以自解释的：</li>
+<li>当前正在运行的IO线程数。</li>
+<li>从上次检查之后的IO速度（读速度/写速度）</li>
+<li>估计的完成百分比</li>
+<li>整个group的估计完成时间</li>
+<li>当fio完成的时候（或是通过ctrl-c终止的时候），将会打印每一个线程的数据，每个group的数据，和磁盘数据。</li>
+<li>io= 执行了多少M的IO</li>
+<li>bw= 平均IO带宽</li>
+<li>iops= IOPS</li>
+<li>runt= 线程运行时间</li>
+<li>slat 提交延迟</li>
+<li>clat 完成延迟</li>
+<li>lat响应时间</li>
+<li>bw 带宽</li>
+<li>cpu利用率</li>
+<li>IO depths=io队列</li>
+<li>IO submit=单个IO提交要提交的IO数</li>
+<li>IO complete= Like the above submit number, but for completions instead.</li>
+<li>IO issued= The number of read/write requests issued, and how many of them were short.</li>
+<li>IO latencies=IO完延迟的分布</li>
+<li>io= 总共执行了多少size的IO</li>
+<li>aggrb= group总带宽</li>
+<li>minb= 最小平均带宽.</li>
+<li>maxb= 最大平均带宽.</li>
+<li>mint= group中线程的最短运行时间.</li>
+<li>maxt= group中线程的最长运行时间.</li>
+<li>ios= 所有group总共执行的IO数.</li>
+<li>merge= 总共发生的IO合并数.</li>
+<li>ticks= Number of ticks we kept the disk busy.</li>
+<li>io_queue= 花费在队列上的总共时间.</li>
+<li>util= 磁盘利用率</li>
+<li>为了便于脚本分析，可能需要将结果生成表或图，fio可以生成以分号分割的结果。</li>
+<li>trace文件格式</li>
+</ul>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[文件目录树的python和shell生成方法]]></title>
+      <url>http://blog.itzhoulin.com/2015/12/23/using-python-or-shell-create-file-tree/</url>
+      <content type="html"><![CDATA[<h2 id="1-背景"><a href="#1-背景" class="headerlink" title="1.背景"></a>1.背景</h2><p>背景很明确，需要遍历一个目录下的所有文件和目录，生成目录树，输出样式为相对路径显示目录和目录下的文件</p>
+<h2 id="2-python实现"><a href="#2-python实现" class="headerlink" title="2.python实现"></a>2.python实现</h2><h3 id="2-1-基础版"><a href="#2-1-基础版" class="headerlink" title="2.1.基础版"></a>2.1.基础版</h3><pre><code>import os
+currentDir = &apos;/home/ubuntu/data/user-config/Downloads/ceph&apos;
+for dirName,subdirList,fileList in os.walk(currentDir):
+    print(&apos;%s&apos; % dirName)
+    for fname in fileList:
+        abspath=dirName+os.sep+fname
+        print(abspath)
+</code></pre><p>输出如下：</p>
+<pre><code>/home/ubuntu/data/user-config/Downloads/ceph
+/home/ubuntu/data/user-config/Downloads/ceph/.gitignore
+/home/ubuntu/data/user-config/Downloads/ceph/SUMMARY.md
+/home/ubuntu/data/user-config/Downloads/ceph/chapter1.md
+/home/ubuntu/data/user-config/Downloads/ceph/README.md
+/home/ubuntu/data/user-config/Downloads/ceph/.git
+/home/ubuntu/data/user-config/Downloads/ceph/.git/config
+/home/ubuntu/data/user-config/Downloads/ceph/.git/description
+/home/ubuntu/data/user-config/Downloads/ceph/.git/branches
+/home/ubuntu/data/user-config/Downloads/ceph/.git/refs
+/home/ubuntu/data/user-config/Downloads/ceph/.git/refs/tags
+/home/ubuntu/data/user-config/Downloads/ceph/.git/refs/remotes
+/home/ubuntu/data/user-config/Downloads/ceph/.git/refs/remotes/origin
+</code></pre><h3 id="2-2-加入筛选功能版"><a href="#2-2-加入筛选功能版" class="headerlink" title="2.2.加入筛选功能版"></a>2.2.加入筛选功能版</h3><p>这里额外多了三个参数：</p>
+<ul>
+<li>pattern是匹配模式，寻找匹配这个匹配模式的文件和目录；</li>
+<li>single_level指是否只显示定义目录根目录下的文件和目录，不递归遍历；</li>
+<li>yield_folders：输出结果是否需要包含目录名</li>
+</ul>
+<p>详细代码如下：</p>
+<pre><code>import os,fnmatch
+
+def all_files(root,patterns=&apos;*&apos;,single_level=False,yield_folders=True):
+    &quot;&quot;&quot;
+    Expand patterns from semicolon-separated string to list
+    pattern：use patterns to select files and dirs
+    single_level:if only show the root dir
+    yield_folders:the output contain dirs?
+    &quot;&quot;&quot;
+    patterns = patterns.split(&apos;;&apos;)
+    for path,subdirs,files in os.walk(root):
+        if yield_folders:
+            files.extend(subdirs)
+        for name in files:
+            for pattern in patterns:
+                if fnmatch.fnmatch(name,pattern):
+                    yield os.path.join(path,name)
+            break
+        if single_level:
+            break
+
+thefiles = list(all_files(&apos;/home/ubuntu/data/user-config/Downloads/ceph&apos;))
+thefiles.sort()
+for i in thefiles:
+    print (i)
+</code></pre><p>输出为：</p>
+<pre><code>/home/ubuntu/data/user-config/Downloads/ceph/.git
+/home/ubuntu/data/user-config/Downloads/ceph/.git/HEAD
+/home/ubuntu/data/user-config/Downloads/ceph/.git/branches
+/home/ubuntu/data/user-config/Downloads/ceph/.git/config
+/home/ubuntu/data/user-config/Downloads/ceph/.git/description
+/home/ubuntu/data/user-config/Downloads/ceph/.git/logs/refs
+/home/ubuntu/data/user-config/Downloads/ceph/.git/logs/refs/heads
+/home/ubuntu/data/user-config/Downloads/ceph/.git/logs/refs/heads/master
+/home/ubuntu/data/user-config/Downloads/ceph/.git/logs/refs/remotes
+/home/ubuntu/data/user-config/Downloads/ceph/.git/logs/refs/remotes/origin
+/home/ubuntu/data/user-config/Downloads/ceph/.gitignore
+/home/ubuntu/data/user-config/Downloads/ceph/README.md
+/home/ubuntu/data/user-config/Downloads/ceph/SUMMARY.md
+</code></pre><h3 id="2-3-版本3：获取文件的最近修改时间"><a href="#2-3-版本3：获取文件的最近修改时间" class="headerlink" title="2.3.版本3：获取文件的最近修改时间"></a>2.3.版本3：获取文件的最近修改时间</h3><pre><code>import os,fnmatch
+
+def all_files(root,patterns=&apos;*&apos;,single_level=False,yield_folders=True):
+    &quot;&quot;&quot;
+    Expand patterns from semicolon-separated string to list
+    pattern：use patterns to select files and dirs
+    single_level:if only show the root dir
+    yield_folders:the output contain dirs?
+    &quot;&quot;&quot;
+    patterns = patterns.split(&apos;;&apos;)
+    for path,subdirs,files in os.walk(root):
+        if yield_folders:
+            files.extend(subdirs)
+        for name in files:
+            for pattern in patterns:
+                if fnmatch.fnmatch(name,pattern):
+                    file1=path+os.sep+name
+                    statinfo=os.stat(file1)
+                    name=name+&apos; &apos;+str(statinfo.st_mtime)
+                    yield os.path.join(path,name)
+            break
+        if single_level:
+            break
+
+thefiles = list(all_files(&apos;/home/ubuntu/data/user-config/Downloads/ceph&apos;))
+thefiles.sort()
+for i in thefiles:
+    print (i)
+</code></pre><h3 id="2-4-os-walk函数详解"><a href="#2-4-os-walk函数详解" class="headerlink" title="2.4.os.walk函数详解"></a>2.4.os.walk函数详解</h3><p>使用 os.walk 方便很多了.这个方法返回的是一个三元tupple(dirpath, dirnames, filenames)：</p>
+<ul>
+<li>第一个为起始路径，是一个string，代表目录的路径,</li>
+<li>第二个为起始路径下的文件夹,是一个list，包含了dirpath下所有子目录的名字,</li>
+<li>第三个是起始路径下的文件，是一个list，包含了非目录文件的名字.这些名字不包含路径信息,如果需要得到全路径,需要使用 os.path.join(</li>
+</ul>
+<p>详细的介绍看官方帮助： <code>help (os.walk)</code></p>
+<h2 id="3-shell实现"><a href="#3-shell实现" class="headerlink" title="3.shell实现"></a>3.shell实现</h2><pre><code>#!/bin/bash
+#This script is used to list all files in a directory
+# including the sub-directory and the last modified time
+# then write this into files.
+
+if [ $# -eq 0 ]&amp;&amp;[ $# -lt 3 ];then
+    echo &quot;listfiles.sh: running as listfiles.sh &lt;directory&gt; &lt;timestamp&gt; &lt;level&gt; &quot;
+    echo&quot;&quot;
+    exit
+fi
+
+filelist=index_$2_$3
+declare statinfo=197900000000
+
+function ergostat(){
+    statinfo=`stat $1|grep Modify|awk -F. &apos;{print $1}&apos;
+    | awk &apos;{print $2$3}&apos;| awk -F- &apos;{print $1$2$3}&apos; | awk -F: &apos;{print $1$2$3}&apos;`
+    # echo -n $statinfo
+}
+
+function ergodic(){
+    for file in `ls $1`
+    do
+    if [ -d $1&quot;/&quot;$file ]
+    then
+    echo $1&quot;/&quot;$file&gt;&gt;$filelist
+
+    ergodic $1&quot;/&quot;$file
+    else
+    local path=$1&quot;/&quot;$file
+    ergostat $path
+    echo &quot;$path $statinfo&quot; &gt;&gt;$filelist
+    fi
+    done
+}
+
+#这个必须要，否则会在文件名中有空格时出错
+IFS=$&apos;n&apos; 
+#INIT_PATH=&quot;.&quot;;
+ergodic $1 $2 $3[/bash]
+</code></pre>]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[SQLAlchemy的ORM模型操作数据库]]></title>
+      <url>http://blog.itzhoulin.com/2015/12/07/sqlalchemy-orm/</url>
+      <content type="html"><![CDATA[<p>SQLAlchemy 是python 操作数据库的一个库。能够进行<strong>ORM</strong>映射</p>
+<blockquote>
+<p>SQLAlchemy采用简单的Python语言，为高效和高性能的数据库访问设计，实现了完整的企业级持久模型</p>
+</blockquote>
+<p>本文在实例的基础上加上注释来解释如何利用SQLAlchemy的ORM模型像操作类一样实现对数据库的操作。</p>
+<h2 id="1-初始化操作"><a href="#1-初始化操作" class="headerlink" title="1.初始化操作"></a>1.初始化操作</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">coding:utf-8</span><br><span class="line">__author__ = &apos;itzhoulin&apos;</span><br><span class="line"></span><br><span class="line">from sqlalchemy import Integer, String, BIGINT, DateTime,         VARCHAR, and_, Table, Sequence</span><br><span class="line">from sqlalchemy import create_engine, MetaData, Column</span><br><span class="line">from sqlalchemy.orm import sessionmaker</span><br><span class="line">from sqlalchemy.ext.declarative import declarative_base</span><br><span class="line"></span><br><span class="line">Base = declarative_base()</span><br></pre></td></tr></table></figure>
+<p>##2.定义数据库中的表</p>
+<p>当使用ORM模式的时候，需要为每一个Table建立一个以Base为基类的类，这个类必不可少的一项就是tablename和至少一个Column(设置为primary_key)</p>
+<pre><code>class host(Base):
+__tablename__ = &apos;gci_server_orm&apos;
+id = Column(Integer, primary_key = True)
+hostname = Column(String(30), nullable = False)
+ip = Column(String(16), nullable = False)
+fsid = Column(String(60), nullable = False)
+type = Column(String(10),nullable = False)
+
+def __repr__(self):
+return &quot;host(hostname=&apos;%s&apos;,ip=&apos;%s&apos;,fsid=&apos;%s&apos;,type=&apos;%s&apos;)&quot; % (self.hostname,self.ip,self.fsid,self.type)
+</code></pre><p>这里定义 <code>__repr__</code> 函数是为了显示该类，可以自定义，是可选的</p>
+<blockquote>
+<p>Additionally, Firebird and Oracle require sequences to generate new primary key identifiers, and SQLAlchemy doesn’t generate or assume these without being instructed. For that, you use the Sequence construct:</p>
+</blockquote>
+<p>对于postgresql而言，会自动新建，这里指定是为了设定自增起始值，关于Sequence的详细说明请<a href="http://docs.sqlalchemy.org/en/latest/core/defaults.htmlsqlalchemy.schema.Sequence" target="_blank" rel="external">点击</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">class fsuser(Base):</span><br><span class="line">    __tablename__ = &apos;fsusers_orm&apos;</span><br><span class="line">    id = Column(BIGINT, Sequence(&apos;fsuser_aid_seq&apos;, start=5000, increment=1), primary_key=True)</span><br><span class="line">    user_name = Column(VARCHAR(50),nullable=False)</span><br><span class="line">    user_pwd = Column(VARCHAR(500),nullable=False)</span><br><span class="line">    fsid = Column(String(60),nullable=False)</span><br><span class="line">     mount_point = Column(VARCHAR(50))</span><br><span class="line">     uuid = Column(VARCHAR(50))</span><br><span class="line">     flag = Column(VARCHAR(1))</span><br><span class="line"></span><br><span class="line">def __repr__(self):</span><br><span class="line">    return &quot;fsuser(user_name=&apos;%s&apos;,user_pwd=&apos;%s&apos;,fsid=&apos;%s&apos;)&quot; % (self.user_name,self.user_pwd,self.fsid)</span><br></pre></td></tr></table></figure>
+<p>可以输出看一下定义的类，这里需要注意的是，这里的 <code>String</code> 和 <code>VARCHAR</code> 都定义了长度的， 对于sqlite和postgresql不定义长度也是可以的，但是其他数据就不行:</p>
+<blockquote>
+<p>Users familiar with the syntax of CREATE TABLE may notice that the VARCHAR columns were generated without a length; on SQLite and Postgresql, this is a valid datatype, but on others, it’s not allowed. So if running this tutorial on one of those databases, and you wish to use SQLAlchemy to issue CREATE TABLE, a “length” may be provided to the String type as below:<br> Column(String(50))</p>
+</blockquote>
+<pre><code>print host.__table__
+</code></pre><h2 id="3-准备连接数据库"><a href="#3-准备连接数据库" class="headerlink" title="3.准备连接数据库"></a>3.准备连接数据库</h2><p>首先设置数据库连接，更多数据库连接设置方式参考<a href="http://docs.sqlalchemy.org/en/rel_0_9/core/engines.htmldatabase-urls" target="_blank" rel="external">官网手册</a>：</p>
+<p>创建一个Engine实例，指向通过db_url设置的数据库，这仅仅表示到数据库的接口已经建立:</p>
+<pre><code>db_url = &apos;postgresql://testdb:123456@192.168.14.78/testdbdb&apos;
+</code></pre><p>但是并没有连接到数据库，仅仅当执行engine.execute() 或者 engine.connect()时才真正建立连接。</p>
+<pre><code>engine = create_engine(db_url)
+</code></pre><p>定义一个Metadata，它是一个容器对象，能够描述一个数据库或者多个数据库的很多不同特性。Table对象是被连接到Metadata的，Table是由诸多Column组成的，Base类包含有.metadata方法，因此新建Table方法如下，跟不使用ORM的时候一样</p>
+<pre><code>Base.metadata.reflect(engine)
+</code></pre><p>新建/删除上面定义的两个类对应的Table是很容易的：</p>
+<pre><code>Base.metadata.drop_all(engine)
+Base.metadata.create_all(engine)
+</code></pre><p>上面drop和create是通过Base类来实现对其上下文定义的所有Table进行操作的</p>
+<p>新建的实例，Base类定义有 <code>__init__</code> 方法，会接收值并赋给Table中设置的Column，如下新建插入值：</p>
+<pre><code>host1=host(hostname=&apos;host4.test.com&apos;,ip=&apos;10.1.35.27&apos;,fsid=&apos;1qazxsw23edcvfr4&apos;,type=&apos;s3&apos;)
+print host1.hostname
+</code></pre><p>这里实际还 <strong>没有写入数据库</strong> ，只是生成一个跟数据库mappered的类的实例，<br>因此 <strong>主键id并没有实际值</strong> ，但是引用也不会报错，返回None，打印测试一下：</p>
+<pre><code>print host1.id
+</code></pre><h2 id="4-连接数据库"><a href="#4-连接数据库" class="headerlink" title="4.连接数据库"></a>4.连接数据库</h2><p>连接数据库，ORM模式下跟数据库的实际连接是通过Session</p>
+<pre><code>Session = sessionmaker(bind=engine)
+</code></pre><p>如果新建Session的时候还没有生成engine，可以通过下面的两步先后设置</p>
+<pre><code>Session = sessionmaker()
+Session.configure(bind=engine)
+</code></pre><p>这样每当需要跟数据库进行操作的时候实例化Session就行</p>
+<pre><code>session = Session()
+</code></pre><p>这里新建了实例session，但是也并 <strong>没有打开跟数据库的连接</strong> ，仅当 <strong>第一次开始用时才建立连接</strong> ， 而且仅当我们提交所有的变更或者手动关闭session的时候才断开连接</p>
+<h2 id="5-插入操作"><a href="#5-插入操作" class="headerlink" title="5.插入操作"></a>5.插入操作</h2><p>插入一条记录，以上面的host1为例：</p>
+<pre><code>session.add(host1)
+</code></pre><p>此时依然能够修改其中的某一个记录，同时session知道我们修改了这个数据：</p>
+<pre><code>host1.fsid = &apos;abcdefghijklmnopqresuvmxyz&apos;
+</code></pre><p>通过dirty来判定session里面的数据是否有修改<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">session.dirty</span><br><span class="line"> Out[40]: IdentitySet([host(hostname=&apos;host1.test.com&apos;,ip=&apos;192.168.35.23&apos;,fsid=&apos;abcdefghijklmnopqresuvmxyz&apos;,type=&apos;samba&apos;)])</span><br></pre></td></tr></table></figure></p>
+<p>或者添加多条记录</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">session.add_all([</span><br><span class="line">fsuser(user_name=&apos;user1&apos;,user_pwd=&apos;123456&apos;,fsid=&apos;abcdefghijklmnopqresuvmxyz&apos;),</span><br><span class="line">fsuser(user_name=&apos;user3&apos;,user_pwd=&apos;123456&apos;,fsid=&apos;abcdefghijklmnopqresuvmxyz&apos;),</span><br><span class="line">host(hostname=&apos;host2.test.com&apos;,ip=&apos;10.1.35.24&apos;,fsid=&apos;1qazxsw23edcvfr4&apos;,type=&apos;samba&apos;)])</span><br></pre></td></tr></table></figure>
+<p>此时通过session的new方法 <strong>获取新加的记录</strong><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"> Out[43]: IdentitySet([</span><br><span class="line">host(hostname=&apos;host2.test.com&apos;,ip=&apos;10.1.35.24&apos;,fsid=&apos;1qazxsw23edcvfr4&apos;,type=&apos;samba&apos;),</span><br><span class="line">fsuser(user_name=&apos;user1&apos;,user_pwd=&apos;123456&apos;,fsid=&apos;abcdefghijklmnopqresuvmxyz&apos;),</span><br><span class="line">fsuser(user_name=&apos;user1&apos;,user_pwd=&apos;123456&apos;,fsid=&apos;abcdefghijklmnopqresuvmxyz&apos;)])</span><br></pre></td></tr></table></figure></p>
+<p><strong><em>注意</em></strong>：此时并没有实际写入数据库</p>
+<p>仅仅当执行commit之后才会实际写入数据库</p>
+<pre><code>session.commit()
+</code></pre><h2 id="6-修改"><a href="#6-修改" class="headerlink" title="6.修改"></a>6.修改</h2><p>数据项修改，需要先查询以获得前面定义的Table的实例<br><code>all()</code>获取所有符合条件的数据项，返回结果是一个列表，<code>and_</code>用于定义多个查找匹配项，举例如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">for user2 in session.query(fsuser).filter(and_(fsuser.user_name==&apos;user7&apos;,\</span><br><span class="line">fsuser.user_pwd==&apos;itzhoulin&apos;,fsuser.fsid==&apos;abcdefghijklmnopqresuvmxyz&apos;)).all():</span><br><span class="line">#或者</span><br><span class="line">for user2 in session.query(fsuser).filter(fsuser.user_name==&apos;user7&apos;).all():</span><br><span class="line">    print user2</span><br><span class="line">print user2.user_pwd</span><br></pre></td></tr></table></figure></p>
+<p>修改后提交到数据库<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">print user2</span><br><span class="line">user2.user_pwd=&apos;yifangzhoulin&apos;</span><br><span class="line">print user2</span><br><span class="line">session.commit()</span><br></pre></td></tr></table></figure></p>
+<h2 id="7-回滚"><a href="#7-回滚" class="headerlink" title="7.回滚"></a>7.回滚</h2><p>session的回滚功能，比较赞<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">host1.hostname=&apos;host1-2.test.com&apos;</span><br><span class="line">#修改后查询一下</span><br><span class="line">session.query(host).filter(host.ip==&apos;192.168.35.23&apos;).all()</span><br><span class="line"> Out[52]: [host(hostname=&apos;host1-2.test.com&apos;,ip=&apos;192.168.35.23&apos;,fsid=&apos;abcdefghijklmnopqresuvmxyz&apos;,type=&apos;samba&apos;)]</span><br><span class="line">#回滚后再查询一下：</span><br><span class="line">session.rollback()</span><br><span class="line">session.query(host).filter(host.ip==&apos;192.168.35.23&apos;).get(1)</span><br><span class="line"> Out[60]: host(hostname=&apos;host1.test.com&apos;,ip=&apos;192.168.35.23&apos;,</span><br><span class="line">    fsid=&apos;abcdefghijklmnopqresuvmxyz&apos;,type=&apos;samba&apos;)</span><br></pre></td></tr></table></figure></p>
+<h2 id="8-查询操作"><a href="#8-查询操作" class="headerlink" title="8.查询操作"></a>8.查询操作</h2><p>查询的方法很多，一看就能明白，选择合适的<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">下面result的值即为一个string类型的，实际为ip的值，由此可见all()返回列表，取一条记录中的某一个值直接点号</span><br><span class="line">result= session.query(host).filter(and_(host.fsid==&apos;1qazxsw23edcvfr4&apos;,host.hostname==&apos;host3&apos;)).all()[0].ip</span><br><span class="line"></span><br><span class="line">for instance in session.query(fsuser).order_by(fsuser.id):</span><br><span class="line">    print instance.name, instance.fullname</span><br><span class="line"></span><br><span class="line">for name, fullname in session.query(fsuser.user_name, fsuser.fullname):</span><br><span class="line">    print name, fullname</span><br><span class="line"></span><br><span class="line">for row in session.query(fsuser, fsuser.user_name).all():</span><br><span class="line">    print row.User, row.name</span><br><span class="line"></span><br><span class="line">关于`label`还不是很清楚，我的理解就是给某一项一个别名</span><br><span class="line">for row in session.query(fsuser.user_name.label(&apos;name_label&apos;)).all():</span><br><span class="line">    print(row.name_label)</span><br><span class="line"></span><br><span class="line">这里的aliased就是专门给Table设置别名的</span><br><span class="line">from sqlalchemy.orm import aliased</span><br><span class="line">user_alias = aliased(fsuser, name=&apos;user_alias&apos;)</span><br><span class="line">for row in session.query(user_alias, user_alias.name).all():</span><br><span class="line">    print row.user_alias</span><br><span class="line"></span><br><span class="line">query返回的是列表，这个比较好理解，查询返回排序</span><br><span class="line">for u in session.query(fsuser).order_by(fsuser.id)[1:3]:</span><br><span class="line">    print u</span><br></pre></td></tr></table></figure></p>
+<p>这里需要注意的就是filter_by和filter两者的区别<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">for name, in session.query(fsuser.user_name).filter_by(fullname=&apos;Ed Jones&apos;):</span><br><span class="line">    print name</span><br><span class="line">for name, in session.query(fsuser.user_name).filter(fsuser.fullname==&apos;Ed Jones&apos;):</span><br><span class="line">    print name</span><br><span class="line"></span><br><span class="line">for user in session.query(fsuser).filter(fsuser.user_name==&apos;ed&apos;).filter(fsuser.fullname==&apos;Ed Jones&apos;):</span><br><span class="line">    print user</span><br></pre></td></tr></table></figure></p>
+<h2 id="9-删除操作"><a href="#9-删除操作" class="headerlink" title="9.删除操作"></a>9.删除操作</h2><p>删除，一样的首先需要query查询获得一个实例<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">host1 = session.query(host).filter(and_(host.hostname==&apos;host3&apos;,host.fsid == &apos;1qazxsw23edcvfr4&apos;)).first()</span><br><span class="line">session.delete(host1)</span><br><span class="line">session.commit()</span><br></pre></td></tr></table></figure></p>
+<h2 id="10-关闭连接"><a href="#10-关闭连接" class="headerlink" title="10.关闭连接"></a>10.关闭连接</h2><p>最好是在操作完成后关闭数据库连接<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">session.close()</span><br></pre></td></tr></table></figure></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Ceph V9.2.0版本(代号INFERNALIS)已发布]]></title>
+      <url>http://blog.itzhoulin.com/2015/11/24/ceph-release-infernalis/</url>
+      <content type="html"><![CDATA[<p>本文由Ceph中国社区-AmosG翻译 Thomas校稿</p>
+<p>英文出处：<a href="http://ceph.com/releases/v9-2-0-infernalis-released/" target="_blank" rel="external">官网releases栏</a> 欢迎加入<a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">Ceph中国社区翻译组</a></p>
+<p><img src="http://ceph.com/release_images/infernalis-460x148.png" alt=""></p>
+<p>此次的主发版本将是Ceph下一个稳定系列的基石。自Hammer v0.94.x发布后，我们做了重大修改，这个更新过程很不简单。请仔细阅读以下的发行说明。</p>
+<h2 id="自Hammer版本以来所做的重要修改"><a href="#自Hammer版本以来所做的重要修改" class="headerlink" title="自Hammer版本以来所做的重要修改"></a>自Hammer版本以来所做的重要修改</h2><ul>
+<li><strong>General</strong><ul>
+<li>Ceph的守护进程现已通过systemd来管理(Ubuntu Trusty是个例外，仍沿用upstart来管理)</li>
+<li>Ceph的守护进程以ceph用户而非root运行</li>
+<li>在Red Hat的发行版本中，也存在SeLinux Policy</li>
+</ul>
+</li>
+<li><strong>RADOS</strong><ul>
+<li>RADOS的cache层现在可通过代理将写操作发送到持久层(base tier)，允许直接处理写操作无需先强制将对象移至cache层</li>
+<li>对SHEC 纠删码的支持已不再标记为实验性的。SHEC通过消耗一些额外的存储空间来换取更快的修复速度。</li>
+<li>为（优化）客户端IO、数据恢复、数据清理、快照裁剪提供统一的队列。</li>
+<li>对低层级的修复工具（ceph-objectstore-tool）做了许多改进</li>
+<li>为方便使用新的存储后端（如NewStore），内部ObjectStore API已做了重大的修改</li>
+</ul>
+</li>
+<li><strong>RGW</strong><ul>
+<li>Swift API现已支持对象过期机制</li>
+<li>Swift API的兼容性方面做出了很大改善</li>
+</ul>
+</li>
+<li><strong>RBD</strong><ul>
+<li>通过rbd du命令显示实际的使用（容量）信息（当object-map处于enabled状态时该操作很快）</li>
+<li>对object-map特性的稳定性做了许多改善。</li>
+<li>object-map和exclusive-lock特性可动态的开启或者关闭。</li>
+<li>现在你可以依据个体镜像(individual image)来存储用户的元数据并设置持久的librbd选项。</li>
+<li>新的深度扁平（deep-flatten）特性允许对一个克隆及其所有的快照进行扁平化处理（在此之前快照不能被扁平化。）</li>
+<li>更快的export-diff命令（使用了aio）。另外新增了fast-diff特性。</li>
+<li>可通过单位后缀指定-size参数大小（如–size 64G）。</li>
+<li>有一个新的rbd status命令，现在可通过该命令来显示谁打开/映射了某个镜像。</li>
+</ul>
+</li>
+<li><strong>CephFS</strong><ul>
+<li>现已可对快照进行重命名操作</li>
+<li>在管理、诊断、检查和修复工具上已作出了持续的改善</li>
+<li>32位主机上，ceph-fuse客户端表现得更好</li>
+</ul>
+</li>
+</ul>
+<h2 id="发行版的兼容性"><a href="#发行版的兼容性" class="headerlink" title="发行版的兼容性"></a>发行版的兼容性</h2><p>我们已决定放弃对多个旧的Linux发行版的支持，这样一来我们就可以转用更新的编译器工具链（如C++11）。尽管通过安装向后兼容的开发工具来在旧版本中生成Ceph还是可能的，但我们不会在ceph.com上为这些发行版生成并发布release版本的安装包。</p>
+<p>我们现在为以下的版本生成安装包：</p>
+<ul>
+<li>CentOS 7或更高的版本。我们已放弃对CentOS 6（以及其它RHEL 6的衍生系列，如Scientific Linux 6）的支持</li>
+<li>Debian Jessie 8.x或后续版本。 Debian Wheezy 7.x的g++对C++11的支持并不完整（而且没有systemd）</li>
+<li>Ubuntu Trusty 14.04或后续版本版本。 Ubuntu Precise 12.04已不再受支持</li>
+<li>Fedora 22或后续版本版本</li>
+</ul>
+<h2 id="从Firefly更新至Infernalis"><a href="#从Firefly更新至Infernalis" class="headerlink" title="从Firefly更新至Infernalis"></a>从Firefly更新至Infernalis</h2><p>我们不推荐从Firefly v0.80.z直接更新。虽然直接更新是可能的，但会存在停机时间。我们推荐先更新至Hammer v0.94.4或之后的v0.94.z的发行版，只有那样才能做到线上更新至Infernalis 9.2.z(见下文)。</p>
+<p>若需线下直接从Firefly版更新至Infernalis版，那么在任一Infernalis OSD允许启动之前，必须停止所有的Firefly OSD并将其标记为down状态。通过Infernalis的监控器来保证这种隔离机制，因此，使用类似如下的升级步骤</p>
+<ol>
+<li>在monitor主机上更新Ceph</li>
+<li>重启所有的ceph-mon守护进程</li>
+<li>在所有的OSD主机上更新Ceph</li>
+<li>停止所有的ceph-osd守护进程</li>
+<li>将所有的OSD标记为down，所用的执行命令类似于：<code>ceph osd down seq 0 1000</code></li>
+<li>重启所有的ceph-osd守护进程</li>
+<li>升级并重启余下的守护进程(ceph-mds, radosgw)</li>
+</ol>
+<h2 id="从Hammer更新至Infernalis"><a href="#从Hammer更新至Infernalis" class="headerlink" title="从Hammer更新至Infernalis"></a>从Hammer更新至Infernalis</h2><ul>
+<li>对支持systemd(CentOS 7, Fedora, Debian Jessie 8.x, OpenSUSE)的所有Linux发行版而言，Ceph守护进程现在使用原生的systemd文件而不是遗留的sysvinit脚本来进行管理。比如：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl start ceph.target   # start all daemons</span><br><span class="line">systemctl start ceph.target   # start all daemons</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>值得注意的是，主流的发行版中，Ubuntu trusty 14.04还未使用systemd。下一个Ubuntu LTS（即16.04）中，将会使用systemd替换upstart。</p>
+<ul>
+<li><p>现在，默认情况下，Ceph守护进程将以ceph用户和组的身份运行。 在Fedora和Debian（以及其他诸如RHEL/CentOS和Ubuntu等衍生发行版）中ceph用户被赋予了一个静态UID。在SUSE中ceph用户会在其创建的时候被动态的赋予一个UID。</p>
+<p>  如果你的系统中已有ceph用户，那么升级安装包的过程中将会出现问题。我们建议在升级前，先移除或重命名已有的ceph用户或ceph组。</p>
+<p>  升级过程中，管理员有两个选择：</p>
+<ol>
+<li><p>将如下行添加至所有主机的ceph.conf中：<br> <code>setuser match path = /var/lib/ceph/$type/$cluster-$id</code></p>
+<p> 这将使得Ceph的守护进程以root身份运行（即：未放弃特权及切换至ceph用户），如果Ceph守护进程的数据目录的所有者仍是root。新部署的守护进程将以ceph用户来创建数据目录，并以非特权运行，但升级的守护进程仍以root身份运行。</p>
+</li>
+<li><p>升级过程中修复数据的所有权。这是我们所偏好的选择，但这个选择工作量大而且耗时。对每个主机，需做如下步骤的操作：</p>
+<p> 1). 升级ceph安装包。这就创建了ceph用户和组。如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph-deploy install --stable infernalis HOST</span><br></pre></td></tr></table></figure>
+<p> 2). 停止守护进程</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">service ceph stop           # fedora, centos, rhel, debian</span><br><span class="line">stop ceph-all               # ubuntu</span><br></pre></td></tr></table></figure>
+<p> 3). 修复所有权</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chown -R ceph:ceph /var/lib/ceph</span><br></pre></td></tr></table></figure>
+<p> 4). 重启守护进程</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">start ceph-all                # ubuntu</span><br><span class="line">systemctl start ceph.target   # debian, centos, fedora, rhel</span><br></pre></td></tr></table></figure>
+<p> 另一个可行的方法是:相同的过程可以用单一的守护进程类型来完成，比如：只停止监控器并改变/var/lib/ceph/mon的所有者。</p>
+</li>
+</ol>
+</li>
+<li><p>处于实验阶段的KeyValueStore OSD后端所采用的磁盘格式(on-disk format)已发生了变化。如果你所要升级的测试集群中用到了它，那么你需要移除所有用到该后端的OSD。</p>
+</li>
+<li>与集群满一样，当达到存储池的配额时，librados操作将会无限期阻塞。（而之前的版本中会返回-ENOSPC）。默认状态下，当一个集群或pool满了，就会发生阻塞。如果你的librados应用能优雅地处理ENOSPC或EDQUOT等错误，那么你可以通过使用lirados中新的OPERATION_FULL_TRY标记来获取错误返回码。</li>
+<li>librbd的rbd_aio_read和Image::aio_read API方法在成功时将不再返回已读的字节数，而是在成功时返回0，失败时返回一个负值。</li>
+<li><code>ceph scrub</code>, <code>ceph compact</code> 和 <code>ceph sync force</code> 已弃用，取而代之的是 ‘ceph mon scrub’, ‘ceph mon compact’ 和 ‘ceph mon sync force’。</li>
+<li><code>ceph mon_metadata</code> 现在应写成 <code>ceph mon metadata</code>。没有必要弃用这个命令（自引入以来一直存在）。</li>
+<li>osdmaptool命令的–dump-json已由–dump json替换。</li>
+<li>pg ls-by-{pool,primary,osd} 和 pg ls 这两命令中的recovery参数改为了recovering, 用来包含所列出的pg中正处于recovering状态的pg。</li>
+</ul>
+<p>更多变化内容请详见<a href="http://ceph.com/releases/v9-2-0-infernalis-released/" target="_blank" rel="external">发行说明</a></p>
+<p>转载自<a href="http://bbs.ceph.org.cn/article/20" target="_blank" rel="external">cph中国社区</a></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[ceph的infernalis版本的五个很实用的新功能]]></title>
+      <url>http://blog.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</url>
+      <content type="html"><![CDATA[<p><em>本文由 Ceph中国社区-半天河翻译，Thomas校稿。</em></p>
+<p>英文出处：<a href="http://www.sebastien-han.fr/blog/2015/11/18/five-useful-new-features-from-ceph-infernalis/" target="_blank" rel="external">Sébastien Han</a>  欢迎加入 <a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">翻译组</a></p>
+<p><img src="http://www.sebastien-han.fr/images/ceph-infernalis-5-new-features.jpg" alt=""></p>
+<p>Infernalis已于几周前发布，我对所做的工作印象深刻。因此我将向你展示新版本中5个非常实用的新功能。</p>
+<h2 id="1-使用单位来创建镜像和基准测试"><a href="#1-使用单位来创建镜像和基准测试" class="headerlink" title="1.使用单位来创建镜像和基准测试"></a>1.使用单位来创建镜像和基准测试</h2><p>在此之前，默认的单位是 <strong>MB</strong> ，因此我们不得不填写经过换算后的镜像大小</p>
+<pre><code>$ rbd create a -s 1G
+</code></pre><h2 id="2-镜像实际使用空间"><a href="#2-镜像实际使用空间" class="headerlink" title="2.镜像实际使用空间"></a>2.镜像实际使用空间</h2><p>由于镜像是稀疏的并且很多的虚拟存储管理器支持discard，因此具备跟踪镜像实际使用空间的能力是很不错的。在这里显然我们强烈推荐使用object-map，因为它将加快计算速度。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">$ rbd du a</span><br><span class="line">warning: fast-diff map is not enabled for a. operation may be slow.</span><br><span class="line">NAME PROVISIONED USED</span><br><span class="line">a          1024M    0</span><br><span class="line"></span><br><span class="line">$ rbd -p rbd bench-write a --io-size 4096 --io-threads 1 --io-total 4096 --io-pattern rand</span><br><span class="line">bench-write  io_size 4096 io_threads 1 bytes 4096 pattern rand</span><br><span class="line">  SEC       OPS   OPS/SEC   BYTES/SEC</span><br><span class="line">elapsed:     0  ops:        1  ops/sec:    83.42  bytes/sec: 341671.93</span><br><span class="line"></span><br><span class="line">$ rbd du a</span><br><span class="line">warning: fast-diff map is not enabled for a. operation may be slow.</span><br><span class="line">NAME PROVISIONED  USED</span><br><span class="line">a          1024M 4096k</span><br></pre></td></tr></table></figure>
+<h2 id="3-OSD性能分析器"><a href="#3-OSD性能分析器" class="headerlink" title="3.OSD性能分析器"></a>3.OSD性能分析器</h2><p>一个新的命令，它连接Daemon进程的socket并显示很多统计数据。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ ceph daemonperf osd.1</span><br><span class="line">---objecter--- -----------osd-----------</span><br><span class="line">writ read actv|recop rd   wr   lat  ops |</span><br><span class="line">  0    0    0 |   0    0   53k 339   13</span><br><span class="line">  0    0    0 |   0    0  753k 516  180</span><br><span class="line">  0    0    0 |   0    0  843k 149  206</span><br><span class="line">  0    0    0 |   0    0  507k  34  123</span><br><span class="line">  0    0    0 |   0    0  630k  45  150</span><br><span class="line">  0    0    0 |   0    0  626k  33  149</span><br><span class="line">  0    0    0 |   0    0  573k  57  138</span><br><span class="line">  0    0    0 |   0    0  172k  49   42</span><br><span class="line">  0    0    0 |   0    0    0    0    0</span><br><span class="line">  0    0    0 |   0    0    0    0    0</span><br></pre></td></tr></table></figure>
+<h2 id="4-动态的启用和禁用镜像特性"><a href="#4-动态的启用和禁用镜像特性" class="headerlink" title="4.动态的启用和禁用镜像特性"></a>4.动态的启用和禁用镜像特性</h2><p>下面的例子展示了如何在镜像创建之后启动object map。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ rbd create a -s 1G --image-feature exclusive-lock</span><br><span class="line">$ rbd info a</span><br><span class="line">rbd image &apos;a&apos;:</span><br><span class="line">        size 1024 MB in 256 objects</span><br><span class="line">        order 22 (4096 kB objects)</span><br><span class="line">        block_name_prefix: rbd_data.856d51f8ceac</span><br><span class="line">        format: 2</span><br><span class="line">        features: exclusive-lock</span><br><span class="line">        flags:</span><br><span class="line"></span><br><span class="line">$ rbd feature enable a object-map</span><br></pre></td></tr></table></figure>
+<h2 id="5-默认镜像格式变为format-2"><a href="#5-默认镜像格式变为format-2" class="headerlink" title="5.默认镜像格式变为format 2"></a>5.默认镜像格式变为format 2</h2><p>归功于该功能，我们无需在创建镜像时指定格式，也无需在 <em>ceph.conf</em> 中添加一行配置。</p>
+<p>转载自：<a href="http://bbs.ceph.org.cn/article/22" target="_blank" rel="external">ceph中国社区</a></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Ceph里手动修复Object]]></title>
+      <url>http://blog.itzhoulin.com/2015/11/24/ceph-manual-repair-object/</url>
+      <content type="html"><![CDATA[<p><em>本文由 Ceph中国社区-半天河翻译，高华敏 校稿。</em></p>
+<p>英文出处：<a href="http://www.sebastien-han.fr/blog/2015/04/27/ceph-manually-repair-object/" target="_blank" rel="external">Sébastien Han</a>  欢迎加入 <a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">ceph中国社区翻译组</a></p>
+<p><img src="http://sebastien-han.fr/images/ceph-manually-repair-objects.jpg" alt="ceph-manually-repair-objects"></p>
+<p>调试scrub错误有窍门，你甚至无需了解调试究竟是怎样进行的。</p>
+<p>假设你的集群状态信息类似下面的：</p>
+<pre><code>health HEALTH_ERR 1 pgs inconsistent; 2 scrub errors
+</code></pre><p>现在让我们开始对故障进行排错吧。</p>
+<h2 id="定位PG"><a href="#定位PG" class="headerlink" title="定位PG"></a>定位PG</h2><p>用下面这条简单的命令找到出问题的PG：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ sudo ceph health detail</span><br><span class="line">HEALTH_ERR 1 pgs inconsistent; 2 scrub errors</span><br><span class="line">pg 17.1c1 is active+clean+inconsistent, acting [21,25,30]</span><br><span class="line">2 scrub errors</span><br></pre></td></tr></table></figure>
+<p>由上可知，出问题的PG是 <code>17.1c1</code> ，该PG的acting OSD是 21、25和30 。</p>
+<p>你可以尝试运行 <code>ceph pg repair 17.1c1</code> ，后检查问题是否得以修复。这条命令有时可行，但如果不能修复故障的话，你就得深挖</p>
+<h2 id="定位故障"><a href="#定位故障" class="headerlink" title="定位故障"></a>定位故障</h2><p>为了找到故障的根本起因，我们需要到OSD的日志文件里仔细看看。使用这个简单命令：grep -Hn ‘ERR’ /var/log/ceph/ceph-osd.21.log，注意，如果日志文件是循环写入的，你需要使用zgrep替代grep。 </p>
+<p>日志中的这段话显示了故障的根本起因：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">log [ERR] : 17.1c1 shard 21: soid 58bcc1c1/rb.0.90213.238e1f29.00000001232d/head//17 digest 0 != known digest 3062795895</span><br><span class="line">log [ERR] : 17.1c1 shard 25: soid 58bcc1c1/rb.0.90213.238e1f29.00000001232d/head//17 digest 0 != known digest 3062795895</span><br></pre></td></tr></table></figure>
+<p>这些日志表明object digest应该是3062795895而现在实际情况是0 。</p>
+<h2 id="定位object"><a href="#定位object" class="headerlink" title="定位object"></a>定位object</h2><p>现在需要深入OSD.21的目录，幸运的是前面我们抓到的日志已经足够清晰简洁明了的表明对应object信息：</p>
+<ul>
+<li>问题PG：17.1c1</li>
+<li>OSD编号：21、25，30</li>
+<li>Object名字：rb.0.90213.238e1f29.00000001232d</li>
+</ul>
+<p>接下来，我们搜索这个object：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo find /var/lib/ceph/osd/ceph-21/current/17.1c1_head/ -name &apos;rb.0.90213.238e1f29.00000001232d*&apos; -ls</span><br><span class="line">671193536 4096 -rw-r--r--   1 root     root      4194304 Feb 14 01:05 /var/lib/ceph/osd/ceph-21/current/17.1c1_head/DIR_1/DIR_C/DIR_1/DIR_C/rb.0.90213.238e1f29.00000001232d__head_58BCC1C1__11</span><br></pre></td></tr></table></figure>
+<p>还有一些其他事项需要检查：</p>
+<ul>
+<li>查看PG每个acting OSD上的该object的大小</li>
+<li>查看PG每个acting OSD上的该object的MD5</li>
+</ul>
+<p>检查之后，对比所有这些object，找到出故障的那个object。</p>
+<h2 id="修复故障"><a href="#修复故障" class="headerlink" title="修复故障"></a>修复故障</h2><p>按照下面的方法移除故障object即可：</p>
+<ul>
+<li>停止错误的object所在OSD</li>
+<li>flush日志（<code>ceph-osd -i &lt;id&gt; --flush-journal</code> ）</li>
+<li>将故障object移到别的地方</li>
+<li>重新启动OSD服务</li>
+<li>执行命令 <code>ceph pg repair 17.1c1</code></li>
+</ul>
+<blockquote>
+<p>直接删除object看起来有些粗暴，但最终是由Ceph job做了一些工作。在有三个副本的情况下，以上方法显然能够正常使用，因为将其中两个版本和另一个版本进行对比是相当容易的。但如果只有2个副本，情况则有些不同。Ceph可能因无法解决版本冲突，导致故障依然存在。所以，一个简单的窍门是，选择一个最新版本的object，在集群上将其标记为 noout，停掉有错误版本object的OSD，稍等片刻后，重启OSD，并取消之前设置在最新版object上的noout标记。这时，集群就会将正确版本的object同步到有错误版本object的OSD。</p>
+</blockquote>
+<p>转载自：<a href="http://bbs.ceph.org.cn/article/17" target="_blank" rel="external">ceph中国社区</a></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[php-sdk访问ceph对象存储时405错误]]></title>
+      <url>http://blog.itzhoulin.com/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/</url>
+      <content type="html"><![CDATA[<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><p>在使用ceph对象存储的php sdk备份数据到ceph时，在对象存储创建bucket失败，错误如下：</p>
+<pre><code>[Code] =&gt; MethodNotAllowed
+</code></pre><p>查看rgw日志错误代码是 <strong>405</strong></p>
+<p>但是使用cloudberry访问S3是没问题的，使用IP</p>
+<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>尝试过F版和H版，rgw使用civetweb创建，在ceph.conf中使用下面的配置修改端口为80：</p>
+<pre><code>[client.rgw.gcibackup]
+host = gcibackup
+log file = /var/log/ceph/client.rgw.gcibackup.log
+rgw_frontends =civetweb port=80
+rgw print continue = false
+</code></pre><p>php这里使用的是域名访问云存储，域名解析是自己用dnsmasq搭的，设置为s3.storage.com</p>
+<h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><p>再次尝试备份到生产环境云存储中，这个以前是测过没问题的，同样的错误。</p>
+<p>总结一下发现唯一的问题就是域名和rgw的配置问题，同时搜索邮件列表从 <a href="http://www.spinics.net/lists/ceph-devel/msg12135.html" target="_blank" rel="external">radosgw: “MethodNotAllowed” response</a> 中获得启发。</p>
+<p>首先是将rgw的配置加上 <strong>rgw dns name =backup</strong></p>
+<p>然后将域名修改为主机名一致即： <strong>backup.storage.com</strong></p>
+<p>再次尝试一切OK。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[一次硬盘被重新分区并写入数据后的整体恢复]]></title>
+      <url>http://blog.itzhoulin.com/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/</url>
+      <content type="html"><![CDATA[<h2 id="1-前请提要"><a href="#1-前请提要" class="headerlink" title="1.前请提要"></a>1.前请提要</h2><p>新买了一个SanDisk的3.0的U盘，于是换系统到<strong>移动硬盘</strong>里的win8.1进行测试，测试完成后就开始制作<strong>多系统启动U盘</strong>，使用大白菜制作，由于自定义了背景字体等，于是跟常规制作方式不一样，弹出了一个类似<strong>UltraISO</strong>的制作框，于是没多看没多想，点了制作隐藏分区，勾选格式化，悲催就在这里，默认选择的是我的移动硬盘，等到提示说是使用中时才发现，惨剧已经酿成。只能先把多系统启动盘做完再说，后面的没什么问题。</p>
+<p>但是在重启后查看移动银盘发现，<strong>500G的空间被分割成一个470M的隐藏分区，剩余空间为未分区状态</strong>。</p>
+<p><strong><code>实际分区：</code></strong></p>
+<ul>
+<li>/dev/sdb1      主分区  60G    Ext4  LinuxMint17.1</li>
+<li>/dev/sdb2      主分区  350G  Ext4  Linux Home data</li>
+<li>/dev/sdb3      主分区  40G     NTFS  win8.1 </li>
+<li>/dev/sdb3       HPFS/NTFS/exFAT</li>
+<li>/dev/sdb4       扩展分区  50G</li>
+<li>/dev/sdb5       主分区  50G    Ext4  LinuxMint17</li>
+</ul>
+<h2 id="2-解决过程"><a href="#2-解决过程" class="headerlink" title="2.解决过程"></a>2.解决过程</h2><p>想到的第一种解决方法是尝试<strong><code>恢复分区</code></strong>，毕竟只有前面的470M写入数据，后面的理论上是没有发生变化的。</p>
+<p><strong><code>由于手边没有大容量硬盘先将恢复硬盘拷贝一份，于是本着尽量不对硬盘做任何有可能改变其数据的原则进行下面的工作。</code></strong></p>
+<h3 id="2-1-DiskGenius恢复分区表"><a href="#2-1-DiskGenius恢复分区表" class="headerlink" title="2.1 DiskGenius恢复分区表"></a>2.1 DiskGenius恢复分区表</h3><p>由于大白菜的win2003PE进不去，进入系统也是加载失败，于是换Win8PE，默认就加载了<strong><code>DiskGenius</code></strong>，这个也是最熟悉的，于是乎最先使用它搜索移动硬盘。</p>
+<p>最先找到的是我安装有LinuxMint17的Ext4主分区，这个没什么问题，但是接下来的事情就很诡异了，连续很多次提示找到100M的FAT，500M的NTFS等等，搜索速度还是可以的，只是个把小时了，搜索也将近80%，依然没有找到我最像保留的<strong><code>sdb2分区</code></strong>，于是放弃。</p>
+<h3 id="2-2-分区助手恢复"><a href="#2-2-分区助手恢复" class="headerlink" title="2.2 分区助手恢复"></a>2.2 分区助手恢复</h3><p>于是又在PE里面盘工具，找到了另一个分区工具<strong><code>分区助手</code></strong>，找找发现确实也有恢复分区表功能，又是一段时间的检索，一开始我还是很兴奋的，因为没找多久就提示我找到了如上所述的sdb1和sdb3，只是很快就提示找了很多歌Ext4分区，不靠谱啊，果断又终止了。</p>
+<h3 id="2-3-DiskGenius恢复文件"><a href="#2-3-DiskGenius恢复文件" class="headerlink" title="2.3 DiskGenius恢复文件"></a>2.3 DiskGenius恢复文件</h3><p>这个工具还可以实现文件恢复，对于数据依然还在硬盘上这一点我是很清楚很肯定的，因此在分区表找回不顺畅的情况下，很自然的想到的就是数据恢复。</p>
+<p>在经过漫漫等待后，（其实是看了部电影）回来看我擦擦，居然定格在55%不动了，苍天不开眼啊，想着55%应该也能恢复不少数据，先停止看看都有哪些，坑爹的是停止也等了很长时间也没反应，整个电脑卡了，无奈重启。</p>
+<h3 id="2-4-FinalData恢复"><a href="#2-4-FinalData恢复" class="headerlink" title="2.4 FinalData恢复"></a>2.4 FinalData恢复</h3><p>再次进入PE后点击加载更多工具，就能够使用<strong><code>FinalData</code></strong>了，这个恢复还是满强悍的，只是速度不咋地，用它恢复貌似默认也还是会先搜分区表，短暂扫描它居然找到了现成的470M分区和40G安装有win8.1的主分区，然后一小会时间文件树就出来了，简单看看文件都在，但是<strong>其他被删分区的文件居然一点也没有</strong>，我觉得很奇怪，同时瞬间泪奔啊，找不到分区就没法恢复，这还有天理吗？但同时也有一个比较疯的想法，(至少在我的知识储备里面当时觉得是死马当活马医)：<strong><code>不破不立</code></strong>。</p>
+<p>既然只能搜找到分区的文件，那么我和不干脆将<strong>现有的分区表干掉，整个盘建分区再恢复</strong>？数据肯定还是会在的。</p>
+<p>就在我尝试使用前面的工具DG删除分区的时候，居然提示我已经挂载请先卸载，无奈这个 win下面已经挂在的分区不会卸载啊。于是又用<strong><code>分区助手</code></strong>来试一试，于是乎使用它强行将移动硬盘的所有分区删除了，就在我准备新建分区时，有看到了寻找分区表的菜单，我想<strong><code>会不会是现有的分区表导致DG恢复分区表的时候出错</code></strong>，既然现在分区表已经删掉了，何不在新建前再试一次？</p>
+<h3 id="2-5-删除现有分区后再用分区助手找回分区"><a href="#2-5-删除现有分区后再用分区助手找回分区" class="headerlink" title="2.5 删除现有分区后再用分区助手找回分区"></a>2.5 删除现有分区后再用分区助手找回分区</h3><p>这时，奇迹出现了，才几秒钟分区助手就全部将上述提到的分区都找到了，立马选择回写。</p>
+<p>然后重启，这次是进入我的笔记本SSD的LinuxDeepin系统，经过简单检查发现分区表没问题，主要文件也没有问题，尝试重启进入移动硬盘win8.1的时候报错了，可能是MBR需要修复下也有可能最初写的470M将某部分文件覆盖了，这个无所谓，关键的350G的数据分区在，另外两个LinuxMint，17.1的进入正常，17的因为原本升级内核的时候出了点问题，进不去桌面，这次直接就是无法正常启动，fsck过后，卡在某一点不动了，这也无所谓。</p>
+<h2 id="3-总结"><a href="#3-总结" class="headerlink" title="3. 总结"></a>3. 总结</h2><ol>
+<li>一开始定的原则是没错的：尽量不对硬盘有任何写操作</li>
+<li>优选分区恢复</li>
+<li>其次数据还原</li>
+<li>现有分区会影响分区恢复软件的搜索结果，需要先将所有分区表去掉</li>
+<li>最好<strong><code>备份分区表</code></strong></li>
+</ol>
+]]></content>
+    </entry>
+    
+  
+  
+</search>
