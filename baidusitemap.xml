@@ -307,16 +307,14 @@
 
     
   <url>
-    <loc>http://www.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</loc>
+    <loc>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</loc>
     <lastmod>2016-01-31T16:05:54.000Z</lastmod>
     <data>
         <display>
-        <title>ceph的infernalis版本的五个很实用的新功能</title>
-        <pubTime>2015-11-24T04:42:46.000Z</pubTime>
+        <title>Ceph的IO模式分析</title>
+        <pubTime>2015-12-28T07:37:40.000Z</pubTime>
         
-        <tag>infenalis</tag>
-         
-        <tag>tool</tag>
+        <tag>翻译</tag>
          
          
            
@@ -329,14 +327,16 @@
 
     
   <url>
-    <loc>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</loc>
+    <loc>http://www.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</loc>
     <lastmod>2016-01-31T16:05:54.000Z</lastmod>
     <data>
         <display>
-        <title>Ceph的IO模式分析</title>
-        <pubTime>2015-12-28T07:37:40.000Z</pubTime>
+        <title>ceph的infernalis版本的五个很实用的新功能</title>
+        <pubTime>2015-11-24T04:42:46.000Z</pubTime>
         
-        <tag>翻译</tag>
+        <tag>infenalis</tag>
+         
+        <tag>tool</tag>
          
          
            
