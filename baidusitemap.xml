@@ -4,6 +4,28 @@
 
     
   <url>
+    <loc>http://www.itzhoulin.com/2016/05/24/create-ubuntu-source-file-based-local-deb-files/</loc>
+    <lastmod>2016-05-24T09:43:01.000Z</lastmod>
+    <data>
+        <display>
+        <title>根据本地deb文件生成ubuntu本地安装源</title>
+        <pubTime>2016-05-24T09:42:01.000Z</pubTime>
+        
+        <tag>源</tag>
+         
+        <tag>deb</tag>
+         
+         
+           
+             
+              <breadCrumb title="ubuntu" url="http://www.itzhoulin.com/categories/ubuntu/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
     <loc>http://www.itzhoulin.com/2016/04/24/blog-updates/</loc>
     <lastmod>2016-05-07T09:58:55.000Z</lastmod>
     <data>
@@ -144,11 +166,11 @@
         <title>Ceph Jewel版功能预览---RBD mirroring</title>
         <pubTime>2016-04-02T14:41:58.000Z</pubTime>
         
-        <tag>翻译</tag>
-         
         <tag>rbd</tag>
          
         <tag>jewel</tag>
+         
+        <tag>翻译</tag>
          
          
            
@@ -168,9 +190,9 @@
         <title>调整pg数量的步骤</title>
         <pubTime>2016-01-06T08:59:18.000Z</pubTime>
         
-        <tag>排错</tag>
-         
         <tag>pg</tag>
+         
+        <tag>排错</tag>
          
          
            
@@ -307,14 +329,16 @@
 
     
   <url>
-    <loc>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</loc>
+    <loc>http://www.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</loc>
     <lastmod>2016-01-31T16:05:54.000Z</lastmod>
     <data>
         <display>
-        <title>Ceph的IO模式分析</title>
-        <pubTime>2015-12-28T07:37:40.000Z</pubTime>
+        <title>ceph的infernalis版本的五个很实用的新功能</title>
+        <pubTime>2015-11-24T04:42:46.000Z</pubTime>
         
-        <tag>翻译</tag>
+        <tag>infenalis</tag>
+         
+        <tag>tool</tag>
          
          
            
@@ -327,16 +351,14 @@
 
     
   <url>
-    <loc>http://www.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</loc>
+    <loc>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</loc>
     <lastmod>2016-01-31T16:05:54.000Z</lastmod>
     <data>
         <display>
-        <title>ceph的infernalis版本的五个很实用的新功能</title>
-        <pubTime>2015-11-24T04:42:46.000Z</pubTime>
+        <title>Ceph的IO模式分析</title>
+        <pubTime>2015-12-28T07:37:40.000Z</pubTime>
         
-        <tag>infenalis</tag>
-         
-        <tag>tool</tag>
+        <tag>翻译</tag>
          
          
            
@@ -376,6 +398,12 @@
         <title>Ceph里手动修复Object</title>
         <pubTime>2015-11-24T04:02:18.000Z</pubTime>
         
+        <tag>翻译</tag>
+         
+        <tag>troubleshoot</tag>
+         
+        <tag>pg</tag>
+         
          
            
              
