@@ -5,7 +5,7 @@
     
   <url>
     <loc>http://www.itzhoulin.com/2016/04/24/blog-updates/</loc>
-    <lastmod>2016-05-28T06:54:53.000Z</lastmod>
+    <lastmod>2016-05-28T06:58:18.000Z</lastmod>
     <data>
         <display>
         <title>博客更新</title>
@@ -20,7 +20,7 @@
     
   <url>
     <loc>http://www.itzhoulin.com/2016/05/28/migrate-ceph-cluster-from-one-distro-to-another/</loc>
-    <lastmod>2016-05-28T06:54:01.000Z</lastmod>
+    <lastmod>2016-05-28T06:56:24.000Z</lastmod>
     <data>
         <display>
         <title>将Ceph集群从Ubuntu迁移到RHEL</title>
@@ -381,6 +381,8 @@
         <tag>infenalis</tag>
          
         <tag>tool</tag>
+         
+        <tag>翻译</tag>
          
          
            

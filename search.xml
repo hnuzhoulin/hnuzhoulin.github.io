@@ -30,7 +30,7 @@
 <li>拷贝这个打包文件到Ansible服务器</li>
 <li>停止OSDs服务</li>
 <li>关闭服务器并 <strong>使用你自己的方法</strong> 安装RHEL，这里playbook只会执行 <code>重启</code> </li>
-<li>服务器安装完成并启动后，拷贝上面打好的包到这个新的系统上( <strong>确保已经安装好相同版本的CEph</strong> )</li>
+<li>服务器安装完成并启动后，拷贝上面打好的包到这个新的系统上( <strong>确保已经安装好相同版本的Ceph</strong> )</li>
 <li>解包并将文件拷回原来的目录</li>
 <li>启动OSD并等待PG的状态变为clean，在它们的状态都变成 <code>active+clean</code> 之后开始针对其他OSD节点执行上面的步骤</li>
 </ul>

@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.itzhoulin.com/"/>
-  <updated>2016-05-28T06:54:01.000Z</updated>
+  <updated>2016-05-28T06:56:24.000Z</updated>
   <id>http://www.itzhoulin.com/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="http://www.itzhoulin.com/2016/05/28/migrate-ceph-cluster-from-one-distro-to-another/"/>
     <id>http://www.itzhoulin.com/2016/05/28/migrate-ceph-cluster-from-one-distro-to-another/</id>
     <published>2016-05-28T06:44:48.000Z</published>
-    <updated>2016-05-28T06:54:01.000Z</updated>
+    <updated>2016-05-28T06:56:24.000Z</updated>
     
     <content type="html">&lt;p&gt;英文出处：[&lt;a href=&quot;http://www.sebastien-han.fr/blog/2016/03/07/migrate-ceph-cluster-from-one-distro-to-another/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://www.sebastien-han.fr/blog/2016/03/07/migrate-ceph-cluster-from-one-distro-to-another/&lt;/a&gt;) &lt;/p&gt;
 &lt;p&gt;欢迎加入 &lt;a href=&quot;http://7xj5dz.com1.z0.glb.clouddn.com/qun.png&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Ceph中国社区翻译小组&lt;/a&gt;&lt;/p&gt;
@@ -46,7 +46,7 @@
 &lt;li&gt;拷贝这个打包文件到Ansible服务器&lt;/li&gt;
 &lt;li&gt;停止OSDs服务&lt;/li&gt;
 &lt;li&gt;关闭服务器并 &lt;strong&gt;使用你自己的方法&lt;/strong&gt; 安装RHEL，这里playbook只会执行 &lt;code&gt;重启&lt;/code&gt; &lt;/li&gt;
-&lt;li&gt;服务器安装完成并启动后，拷贝上面打好的包到这个新的系统上( &lt;strong&gt;确保已经安装好相同版本的CEph&lt;/strong&gt; )&lt;/li&gt;
+&lt;li&gt;服务器安装完成并启动后，拷贝上面打好的包到这个新的系统上( &lt;strong&gt;确保已经安装好相同版本的Ceph&lt;/strong&gt; )&lt;/li&gt;
 &lt;li&gt;解包并将文件拷回原来的目录&lt;/li&gt;
 &lt;li&gt;启动OSD并等待PG的状态变为clean，在它们的状态都变成 &lt;code&gt;active+clean&lt;/code&gt; 之后开始针对其他OSD节点执行上面的步骤&lt;/li&gt;
 &lt;/ul&gt;
@@ -102,7 +102,7 @@
     <link href="http://www.itzhoulin.com/2016/04/24/blog-updates/"/>
     <id>http://www.itzhoulin.com/2016/04/24/blog-updates/</id>
     <published>2016-04-24T08:53:35.000Z</published>
-    <updated>2016-05-28T06:54:53.000Z</updated>
+    <updated>2016-05-28T06:58:18.000Z</updated>
     
     <content type="html">&lt;h3 id=&quot;TODO-List&quot;&gt;&lt;a href=&quot;#TODO-List&quot; class=&quot;headerlink&quot; title=&quot;TODO List&quot;&gt;&lt;/a&gt;TODO List&lt;/h3&gt;&lt;ol&gt;
 &lt;li&gt;Yelee主题学习：&lt;/li&gt;
