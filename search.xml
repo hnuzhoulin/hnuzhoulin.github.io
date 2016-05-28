@@ -4,6 +4,45 @@
   
     
     <entry>
+      <title><![CDATA[将Ceph集群从Ubuntu迁移到RHEL]]></title>
+      <url>http://www.itzhoulin.com/2016/05/28/migrate-ceph-cluster-from-one-distro-to-another/</url>
+      <content type="html"><![CDATA[<p>英文出处：[<a href="http://www.sebastien-han.fr/blog/2016/03/07/migrate-ceph-cluster-from-one-distro-to-another/" target="_blank" rel="external">http://www.sebastien-han.fr/blog/2016/03/07/migrate-ceph-cluster-from-one-distro-to-another/</a>) </p>
+<p>欢迎加入 <a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">Ceph中国社区翻译小组</a></p>
+<p><img src="http://sebastien-han.fr/images/migrate-ceph-cluster-from-ubuntu-to-rhel.jpg" alt="migrate-ceph-cluster-from-ubuntu-to-rhel.jpg"></p>
+<p>最近我经历的一个使用案例是将基于Ubuntu的Ceph集群迁移到RHEL系统。对此我们有严格的要求，不希望有任何数据迁移。这是Ceph特别是OSD的另一种美妙之处，那就是基本上他们能够在任何机器上运行。假设你有一个OSD，你可以拔出磁盘并无缝地插入另一台机器上。这里采取的方法有点不同，但依赖于这种能力。</p>
+<p>我使用Ansible构建自动化。过程相当简单，可以解耦为下列步骤。请注意所有任务都是串行的。</p>
+<p>对于monitors:</p>
+<ul>
+<li>压缩monitor store</li>
+<li>打包monitor store</li>
+<li>拷贝上面一步打好的包到Ansible服务器</li>
+<li>停止monitor服务</li>
+<li>关闭服务器并 <strong>使用你自己的方法</strong> 安装RHEL，这里playbook只会执行 <code>重启</code> </li>
+<li>服务器安装完成并启动后，拷贝上面打好的包到这个新的系统上( <strong>确保已经安装好相同版本的CEph</strong> )</li>
+<li>解包并将文件拷回原来的目录</li>
+<li>启动monitor服务，并等待跟其他mon之间同步好数据</li>
+<li>跟对剩余的monitors重复以上步骤</li>
+</ul>
+<p>对于OSDs:</p>
+<ul>
+<li>设置 <code>noout</code> 标记，这样就不会触发recovery</li>
+<li>打包OSD bootstrap key 和 <code>ceph.conf</code></li>
+<li>拷贝这个打包文件到Ansible服务器</li>
+<li>停止OSDs服务</li>
+<li>关闭服务器并 <strong>使用你自己的方法</strong> 安装RHEL，这里playbook只会执行 <code>重启</code> </li>
+<li>服务器安装完成并启动后，拷贝上面打好的包到这个新的系统上( <strong>确保已经安装好相同版本的CEph</strong> )</li>
+<li>解包并将文件拷回原来的目录</li>
+<li>启动OSD并等待PG的状态变为clean，在它们的状态都变成 <code>active+clean</code> 之后开始针对其他OSD节点执行上面的步骤</li>
+</ul>
+<p>在测试环境，你只需要下面的步骤：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git <span class="built_in">clone</span> https://github.com/ceph/ceph-ansible.git</span><br><span class="line">$ <span class="built_in">cd</span> ceph-ansible</span><br><span class="line">$ ansible-playbook cluster-os-migration.yml</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>愉快的迁移之旅！最后再提一句，整个过程不触发任何数据迁移，所以这些操作都能够在线执行，逐步推进，并且不会影响已连接的客户端。</p>
+</blockquote>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[根据本地deb文件生成ubuntu本地安装源]]></title>
       <url>http://www.itzhoulin.com/2016/05/24/create-ubuntu-source-file-based-local-deb-files/</url>
       <content type="html"><![CDATA[<p>脚本来源于ceph的calamari项目以及diluge，感谢各位大神：</p>

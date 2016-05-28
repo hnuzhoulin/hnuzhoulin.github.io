@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.itzhoulin.com/"/>
-  <updated>2016-05-24T09:43:01.000Z</updated>
+  <updated>2016-05-28T06:54:01.000Z</updated>
   <id>http://www.itzhoulin.com/</id>
   
   <author>
@@ -14,6 +14,63 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>将Ceph集群从Ubuntu迁移到RHEL</title>
+    <link href="http://www.itzhoulin.com/2016/05/28/migrate-ceph-cluster-from-one-distro-to-another/"/>
+    <id>http://www.itzhoulin.com/2016/05/28/migrate-ceph-cluster-from-one-distro-to-another/</id>
+    <published>2016-05-28T06:44:48.000Z</published>
+    <updated>2016-05-28T06:54:01.000Z</updated>
+    
+    <content type="html">&lt;p&gt;英文出处：[&lt;a href=&quot;http://www.sebastien-han.fr/blog/2016/03/07/migrate-ceph-cluster-from-one-distro-to-another/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://www.sebastien-han.fr/blog/2016/03/07/migrate-ceph-cluster-from-one-distro-to-another/&lt;/a&gt;) &lt;/p&gt;
+&lt;p&gt;欢迎加入 &lt;a href=&quot;http://7xj5dz.com1.z0.glb.clouddn.com/qun.png&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Ceph中国社区翻译小组&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://sebastien-han.fr/images/migrate-ceph-cluster-from-ubuntu-to-rhel.jpg&quot; alt=&quot;migrate-ceph-cluster-from-ubuntu-to-rhel.jpg&quot;&gt;&lt;/p&gt;
+&lt;p&gt;最近我经历的一个使用案例是将基于Ubuntu的Ceph集群迁移到RHEL系统。对此我们有严格的要求，不希望有任何数据迁移。这是Ceph特别是OSD的另一种美妙之处，那就是基本上他们能够在任何机器上运行。假设你有一个OSD，你可以拔出磁盘并无缝地插入另一台机器上。这里采取的方法有点不同，但依赖于这种能力。&lt;/p&gt;
+&lt;p&gt;我使用Ansible构建自动化。过程相当简单，可以解耦为下列步骤。请注意所有任务都是串行的。&lt;/p&gt;
+&lt;p&gt;对于monitors:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;压缩monitor store&lt;/li&gt;
+&lt;li&gt;打包monitor store&lt;/li&gt;
+&lt;li&gt;拷贝上面一步打好的包到Ansible服务器&lt;/li&gt;
+&lt;li&gt;停止monitor服务&lt;/li&gt;
+&lt;li&gt;关闭服务器并 &lt;strong&gt;使用你自己的方法&lt;/strong&gt; 安装RHEL，这里playbook只会执行 &lt;code&gt;重启&lt;/code&gt; &lt;/li&gt;
+&lt;li&gt;服务器安装完成并启动后，拷贝上面打好的包到这个新的系统上( &lt;strong&gt;确保已经安装好相同版本的CEph&lt;/strong&gt; )&lt;/li&gt;
+&lt;li&gt;解包并将文件拷回原来的目录&lt;/li&gt;
+&lt;li&gt;启动monitor服务，并等待跟其他mon之间同步好数据&lt;/li&gt;
+&lt;li&gt;跟对剩余的monitors重复以上步骤&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;对于OSDs:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;设置 &lt;code&gt;noout&lt;/code&gt; 标记，这样就不会触发recovery&lt;/li&gt;
+&lt;li&gt;打包OSD bootstrap key 和 &lt;code&gt;ceph.conf&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;拷贝这个打包文件到Ansible服务器&lt;/li&gt;
+&lt;li&gt;停止OSDs服务&lt;/li&gt;
+&lt;li&gt;关闭服务器并 &lt;strong&gt;使用你自己的方法&lt;/strong&gt; 安装RHEL，这里playbook只会执行 &lt;code&gt;重启&lt;/code&gt; &lt;/li&gt;
+&lt;li&gt;服务器安装完成并启动后，拷贝上面打好的包到这个新的系统上( &lt;strong&gt;确保已经安装好相同版本的CEph&lt;/strong&gt; )&lt;/li&gt;
+&lt;li&gt;解包并将文件拷回原来的目录&lt;/li&gt;
+&lt;li&gt;启动OSD并等待PG的状态变为clean，在它们的状态都变成 &lt;code&gt;active+clean&lt;/code&gt; 之后开始针对其他OSD节点执行上面的步骤&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;在测试环境，你只需要下面的步骤：&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;$ git &lt;span class=&quot;built_in&quot;&gt;clone&lt;/span&gt; https://github.com/ceph/ceph-ansible.git&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;$ &lt;span class=&quot;built_in&quot;&gt;cd&lt;/span&gt; ceph-ansible&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;$ ansible-playbook cluster-os-migration.yml&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;blockquote&gt;
+&lt;p&gt;愉快的迁移之旅！最后再提一句，整个过程不触发任何数据迁移，所以这些操作都能够在线执行，逐步推进，并且不会影响已连接的客户端。&lt;/p&gt;
+&lt;/blockquote&gt;
+</content>
+    
+    <summary type="html">
+    
+      将基于Ubuntu的Ceph集群迁移到RHEL系统，整个过程在线热迁移，不进行存储数据的手动迁移，不影响集群已连接的客户端的数据访问。
+    
+    </summary>
+    
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
+    
+    
+      <category term="tool" scheme="http://www.itzhoulin.com/tags/tool/"/>
+    
+      <category term="翻译" scheme="http://www.itzhoulin.com/tags/%E7%BF%BB%E8%AF%91/"/>
+    
+  </entry>
   
   <entry>
     <title>根据本地deb文件生成ubuntu本地安装源</title>
@@ -45,7 +102,7 @@
     <link href="http://www.itzhoulin.com/2016/04/24/blog-updates/"/>
     <id>http://www.itzhoulin.com/2016/04/24/blog-updates/</id>
     <published>2016-04-24T08:53:35.000Z</published>
-    <updated>2016-05-07T09:58:55.000Z</updated>
+    <updated>2016-05-28T06:54:53.000Z</updated>
     
     <content type="html">&lt;h3 id=&quot;TODO-List&quot;&gt;&lt;a href=&quot;#TODO-List&quot; class=&quot;headerlink&quot; title=&quot;TODO List&quot;&gt;&lt;/a&gt;TODO List&lt;/h3&gt;&lt;ol&gt;
 &lt;li&gt;Yelee主题学习：&lt;/li&gt;
@@ -319,9 +376,9 @@
       <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="rbd" scheme="http://www.itzhoulin.com/tags/rbd/"/>
-    
       <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
+    
+      <category term="rbd" scheme="http://www.itzhoulin.com/tags/rbd/"/>
     
       <category term="kernel" scheme="http://www.itzhoulin.com/tags/kernel/"/>
     
@@ -392,11 +449,11 @@
       <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
+      <category term="翻译" scheme="http://www.itzhoulin.com/tags/%E7%BF%BB%E8%AF%91/"/>
+    
       <category term="rbd" scheme="http://www.itzhoulin.com/tags/rbd/"/>
     
       <category term="jewel" scheme="http://www.itzhoulin.com/tags/jewel/"/>
-    
-      <category term="翻译" scheme="http://www.itzhoulin.com/tags/%E7%BF%BB%E8%AF%91/"/>
     
   </entry>
   
@@ -770,9 +827,9 @@ osd recovery op priority = 1
       <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="pg" scheme="http://www.itzhoulin.com/tags/pg/"/>
-    
       <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
+    
+      <category term="pg" scheme="http://www.itzhoulin.com/tags/pg/"/>
     
   </entry>
   
@@ -1513,128 +1570,6 @@ Session.configure(bind=engine)
     
     
       <category term="sqlalchemy" scheme="http://www.itzhoulin.com/tags/sqlalchemy/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Ceph V9.2.0版本(代号INFERNALIS)已发布</title>
-    <link href="http://www.itzhoulin.com/2015/11/24/ceph-release-infernalis/"/>
-    <id>http://www.itzhoulin.com/2015/11/24/ceph-release-infernalis/</id>
-    <published>2015-11-24T05:05:15.000Z</published>
-    <updated>2015-12-28T07:40:05.000Z</updated>
-    
-    <content type="html">&lt;p&gt;本文由Ceph中国社区-AmosG翻译 Thomas校稿&lt;/p&gt;
-&lt;p&gt;英文出处：&lt;a href=&quot;http://ceph.com/releases/v9-2-0-infernalis-released/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;官网releases栏&lt;/a&gt; 欢迎加入&lt;a href=&quot;http://7xj5dz.com1.z0.glb.clouddn.com/qun.png&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Ceph中国社区翻译组&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;http://ceph.com/release_images/infernalis-460x148.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
-&lt;p&gt;此次的主发版本将是Ceph下一个稳定系列的基石。自Hammer v0.94.x发布后，我们做了重大修改，这个更新过程很不简单。请仔细阅读以下的发行说明。&lt;/p&gt;
-&lt;h2 id=&quot;自Hammer版本以来所做的重要修改&quot;&gt;&lt;a href=&quot;#自Hammer版本以来所做的重要修改&quot; class=&quot;headerlink&quot; title=&quot;自Hammer版本以来所做的重要修改&quot;&gt;&lt;/a&gt;自Hammer版本以来所做的重要修改&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;General&lt;/strong&gt;&lt;ul&gt;
-&lt;li&gt;Ceph的守护进程现已通过systemd来管理(Ubuntu Trusty是个例外，仍沿用upstart来管理)&lt;/li&gt;
-&lt;li&gt;Ceph的守护进程以ceph用户而非root运行&lt;/li&gt;
-&lt;li&gt;在Red Hat的发行版本中，也存在SeLinux Policy&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;RADOS&lt;/strong&gt;&lt;ul&gt;
-&lt;li&gt;RADOS的cache层现在可通过代理将写操作发送到持久层(base tier)，允许直接处理写操作无需先强制将对象移至cache层&lt;/li&gt;
-&lt;li&gt;对SHEC 纠删码的支持已不再标记为实验性的。SHEC通过消耗一些额外的存储空间来换取更快的修复速度。&lt;/li&gt;
-&lt;li&gt;为（优化）客户端IO、数据恢复、数据清理、快照裁剪提供统一的队列。&lt;/li&gt;
-&lt;li&gt;对低层级的修复工具（ceph-objectstore-tool）做了许多改进&lt;/li&gt;
-&lt;li&gt;为方便使用新的存储后端（如NewStore），内部ObjectStore API已做了重大的修改&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;RGW&lt;/strong&gt;&lt;ul&gt;
-&lt;li&gt;Swift API现已支持对象过期机制&lt;/li&gt;
-&lt;li&gt;Swift API的兼容性方面做出了很大改善&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;RBD&lt;/strong&gt;&lt;ul&gt;
-&lt;li&gt;通过rbd du命令显示实际的使用（容量）信息（当object-map处于enabled状态时该操作很快）&lt;/li&gt;
-&lt;li&gt;对object-map特性的稳定性做了许多改善。&lt;/li&gt;
-&lt;li&gt;object-map和exclusive-lock特性可动态的开启或者关闭。&lt;/li&gt;
-&lt;li&gt;现在你可以依据个体镜像(individual image)来存储用户的元数据并设置持久的librbd选项。&lt;/li&gt;
-&lt;li&gt;新的深度扁平（deep-flatten）特性允许对一个克隆及其所有的快照进行扁平化处理（在此之前快照不能被扁平化。）&lt;/li&gt;
-&lt;li&gt;更快的export-diff命令（使用了aio）。另外新增了fast-diff特性。&lt;/li&gt;
-&lt;li&gt;可通过单位后缀指定-size参数大小（如–size 64G）。&lt;/li&gt;
-&lt;li&gt;有一个新的rbd status命令，现在可通过该命令来显示谁打开/映射了某个镜像。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;CephFS&lt;/strong&gt;&lt;ul&gt;
-&lt;li&gt;现已可对快照进行重命名操作&lt;/li&gt;
-&lt;li&gt;在管理、诊断、检查和修复工具上已作出了持续的改善&lt;/li&gt;
-&lt;li&gt;32位主机上，ceph-fuse客户端表现得更好&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&quot;发行版的兼容性&quot;&gt;&lt;a href=&quot;#发行版的兼容性&quot; class=&quot;headerlink&quot; title=&quot;发行版的兼容性&quot;&gt;&lt;/a&gt;发行版的兼容性&lt;/h2&gt;&lt;p&gt;我们已决定放弃对多个旧的Linux发行版的支持，这样一来我们就可以转用更新的编译器工具链（如C++11）。尽管通过安装向后兼容的开发工具来在旧版本中生成Ceph还是可能的，但我们不会在ceph.com上为这些发行版生成并发布release版本的安装包。&lt;/p&gt;
-&lt;p&gt;我们现在为以下的版本生成安装包：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;CentOS 7或更高的版本。我们已放弃对CentOS 6（以及其它RHEL 6的衍生系列，如Scientific Linux 6）的支持&lt;/li&gt;
-&lt;li&gt;Debian Jessie 8.x或后续版本。 Debian Wheezy 7.x的g++对C++11的支持并不完整（而且没有systemd）&lt;/li&gt;
-&lt;li&gt;Ubuntu Trusty 14.04或后续版本版本。 Ubuntu Precise 12.04已不再受支持&lt;/li&gt;
-&lt;li&gt;Fedora 22或后续版本版本&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&quot;从Firefly更新至Infernalis&quot;&gt;&lt;a href=&quot;#从Firefly更新至Infernalis&quot; class=&quot;headerlink&quot; title=&quot;从Firefly更新至Infernalis&quot;&gt;&lt;/a&gt;从Firefly更新至Infernalis&lt;/h2&gt;&lt;p&gt;我们不推荐从Firefly v0.80.z直接更新。虽然直接更新是可能的，但会存在停机时间。我们推荐先更新至Hammer v0.94.4或之后的v0.94.z的发行版，只有那样才能做到线上更新至Infernalis 9.2.z(见下文)。&lt;/p&gt;
-&lt;p&gt;若需线下直接从Firefly版更新至Infernalis版，那么在任一Infernalis OSD允许启动之前，必须停止所有的Firefly OSD并将其标记为down状态。通过Infernalis的监控器来保证这种隔离机制，因此，使用类似如下的升级步骤&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;在monitor主机上更新Ceph&lt;/li&gt;
-&lt;li&gt;重启所有的ceph-mon守护进程&lt;/li&gt;
-&lt;li&gt;在所有的OSD主机上更新Ceph&lt;/li&gt;
-&lt;li&gt;停止所有的ceph-osd守护进程&lt;/li&gt;
-&lt;li&gt;将所有的OSD标记为down，所用的执行命令类似于：&lt;code&gt;ceph osd down seq 0 1000&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;重启所有的ceph-osd守护进程&lt;/li&gt;
-&lt;li&gt;升级并重启余下的守护进程(ceph-mds, radosgw)&lt;/li&gt;
-&lt;/ol&gt;
-&lt;h2 id=&quot;从Hammer更新至Infernalis&quot;&gt;&lt;a href=&quot;#从Hammer更新至Infernalis&quot; class=&quot;headerlink&quot; title=&quot;从Hammer更新至Infernalis&quot;&gt;&lt;/a&gt;从Hammer更新至Infernalis&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;对支持systemd(CentOS 7, Fedora, Debian Jessie 8.x, OpenSUSE)的所有Linux发行版而言，Ceph守护进程现在使用原生的systemd文件而不是遗留的sysvinit脚本来进行管理。比如：&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;systemctl start ceph.target   # start all daemons&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;systemctl start ceph.target   # start all daemons&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;值得注意的是，主流的发行版中，Ubuntu trusty 14.04还未使用systemd。下一个Ubuntu LTS（即16.04）中，将会使用systemd替换upstart。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;p&gt;现在，默认情况下，Ceph守护进程将以ceph用户和组的身份运行。 在Fedora和Debian（以及其他诸如RHEL/CentOS和Ubuntu等衍生发行版）中ceph用户被赋予了一个静态UID。在SUSE中ceph用户会在其创建的时候被动态的赋予一个UID。&lt;/p&gt;
-&lt;p&gt;  如果你的系统中已有ceph用户，那么升级安装包的过程中将会出现问题。我们建议在升级前，先移除或重命名已有的ceph用户或ceph组。&lt;/p&gt;
-&lt;p&gt;  升级过程中，管理员有两个选择：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;p&gt;将如下行添加至所有主机的ceph.conf中：&lt;br&gt; &lt;code&gt;setuser match path = /var/lib/ceph/$type/$cluster-$id&lt;/code&gt;&lt;/p&gt;
-&lt;p&gt; 这将使得Ceph的守护进程以root身份运行（即：未放弃特权及切换至ceph用户），如果Ceph守护进程的数据目录的所有者仍是root。新部署的守护进程将以ceph用户来创建数据目录，并以非特权运行，但升级的守护进程仍以root身份运行。&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;升级过程中修复数据的所有权。这是我们所偏好的选择，但这个选择工作量大而且耗时。对每个主机，需做如下步骤的操作：&lt;/p&gt;
-&lt;p&gt; 1). 升级ceph安装包。这就创建了ceph用户和组。如：&lt;/p&gt;
-&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;ceph-deploy install --stable infernalis HOST&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt; 2). 停止守护进程&lt;/p&gt;
-&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;service ceph stop           # fedora, centos, rhel, debian&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;stop ceph-all               # ubuntu&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt; 3). 修复所有权&lt;/p&gt;
- &lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;chown -R ceph:ceph /var/lib/ceph&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt; 4). 重启守护进程&lt;/p&gt;
- &lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;start ceph-all                # ubuntu&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;systemctl start ceph.target   # debian, centos, fedora, rhel&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt; 另一个可行的方法是:相同的过程可以用单一的守护进程类型来完成，比如：只停止监控器并改变/var/lib/ceph/mon的所有者。&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;处于实验阶段的KeyValueStore OSD后端所采用的磁盘格式(on-disk format)已发生了变化。如果你所要升级的测试集群中用到了它，那么你需要移除所有用到该后端的OSD。&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;与集群满一样，当达到存储池的配额时，librados操作将会无限期阻塞。（而之前的版本中会返回-ENOSPC）。默认状态下，当一个集群或pool满了，就会发生阻塞。如果你的librados应用能优雅地处理ENOSPC或EDQUOT等错误，那么你可以通过使用lirados中新的OPERATION_FULL_TRY标记来获取错误返回码。&lt;/li&gt;
-&lt;li&gt;librbd的rbd_aio_read和Image::aio_read API方法在成功时将不再返回已读的字节数，而是在成功时返回0，失败时返回一个负值。&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;ceph scrub&lt;/code&gt;, &lt;code&gt;ceph compact&lt;/code&gt; 和 &lt;code&gt;ceph sync force&lt;/code&gt; 已弃用，取而代之的是 ‘ceph mon scrub’, ‘ceph mon compact’ 和 ‘ceph mon sync force’。&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;ceph mon_metadata&lt;/code&gt; 现在应写成 &lt;code&gt;ceph mon metadata&lt;/code&gt;。没有必要弃用这个命令（自引入以来一直存在）。&lt;/li&gt;
-&lt;li&gt;osdmaptool命令的–dump-json已由–dump json替换。&lt;/li&gt;
-&lt;li&gt;pg ls-by-{pool,primary,osd} 和 pg ls 这两命令中的recovery参数改为了recovering, 用来包含所列出的pg中正处于recovering状态的pg。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;更多变化内容请详见&lt;a href=&quot;http://ceph.com/releases/v9-2-0-infernalis-released/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;发行说明&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;转载自&lt;a href=&quot;http://bbs.ceph.org.cn/article/20&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;cph中国社区&lt;/a&gt;&lt;/p&gt;
-</content>
-    
-    <summary type="html">
-    
-      ceph的infernalis版更新记录
-    
-    </summary>
-    
-      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
-    
-    
-      <category term="infernalis" scheme="http://www.itzhoulin.com/tags/infernalis/"/>
-    
-      <category term="release" scheme="http://www.itzhoulin.com/tags/release/"/>
     
   </entry>
   
