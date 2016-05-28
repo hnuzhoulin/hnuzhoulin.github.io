@@ -66,9 +66,9 @@
       <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="tool" scheme="http://www.itzhoulin.com/tags/tool/"/>
-    
       <category term="翻译" scheme="http://www.itzhoulin.com/tags/%E7%BF%BB%E8%AF%91/"/>
+    
+      <category term="tool" scheme="http://www.itzhoulin.com/tags/tool/"/>
     
   </entry>
   
@@ -376,9 +376,9 @@
       <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
-    
       <category term="rbd" scheme="http://www.itzhoulin.com/tags/rbd/"/>
+    
+      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
     
       <category term="kernel" scheme="http://www.itzhoulin.com/tags/kernel/"/>
     
@@ -827,9 +827,9 @@ osd recovery op priority = 1
       <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
-    
       <category term="pg" scheme="http://www.itzhoulin.com/tags/pg/"/>
+    
+      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
     
   </entry>
   

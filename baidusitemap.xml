@@ -26,9 +26,9 @@
         <title>将Ceph集群从Ubuntu迁移到RHEL</title>
         <pubTime>2016-05-28T06:44:48.000Z</pubTime>
         
-        <tag>tool</tag>
-         
         <tag>翻译</tag>
+         
+        <tag>tool</tag>
          
          
            
@@ -142,9 +142,9 @@
         <title>因为ceph波动导致kernel rbd挂起</title>
         <pubTime>2016-04-18T02:44:27.000Z</pubTime>
         
-        <tag>排错</tag>
-         
         <tag>rbd</tag>
+         
+        <tag>排错</tag>
          
         <tag>kernel</tag>
          
@@ -212,9 +212,9 @@
         <title>调整pg数量的步骤</title>
         <pubTime>2016-01-06T08:59:18.000Z</pubTime>
         
-        <tag>排错</tag>
-         
         <tag>pg</tag>
+         
+        <tag>排错</tag>
          
          
            
@@ -351,14 +351,18 @@
 
     
   <url>
-    <loc>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</loc>
+    <loc>http://www.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</loc>
     <lastmod>2016-01-31T16:05:54.000Z</lastmod>
     <data>
         <display>
-        <title>Ceph的IO模式分析</title>
-        <pubTime>2015-12-28T07:37:40.000Z</pubTime>
+        <title>ceph的infernalis版本的五个很实用的新功能</title>
+        <pubTime>2015-11-24T04:42:46.000Z</pubTime>
         
         <tag>翻译</tag>
+         
+        <tag>infenalis</tag>
+         
+        <tag>tool</tag>
          
          
            
@@ -371,17 +375,13 @@
 
     
   <url>
-    <loc>http://www.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</loc>
+    <loc>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</loc>
     <lastmod>2016-01-31T16:05:54.000Z</lastmod>
     <data>
         <display>
-        <title>ceph的infernalis版本的五个很实用的新功能</title>
-        <pubTime>2015-11-24T04:42:46.000Z</pubTime>
+        <title>Ceph的IO模式分析</title>
+        <pubTime>2015-12-28T07:37:40.000Z</pubTime>
         
-        <tag>infenalis</tag>
-         
-        <tag>tool</tag>
-         
         <tag>翻译</tag>
          
          
