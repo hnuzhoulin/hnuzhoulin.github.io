@@ -9,20 +9,18 @@
 
   <meta charset="utf-8">
   
-  <title>Ceph里手动修复Object | 我的IT江湖之旅</title>
+  <title>httpproxy-tinypeoxy | 我的IT江湖之旅</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="翻译Sébastien的博客，手动修复scrub errors">
+  <meta name="description" content="使用tinyproxy在ubuntu下搭建http proxy服务器">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Ceph里手动修复Object">
-<meta property="og:url" content="http://www.itzhoulin.com/2015/11/24/ceph-manual-repair-object/index.html">
+<meta property="og:title" content="httpproxy-tinypeoxy">
+<meta property="og:url" content="http://www.itzhoulin.com/2016/06/04/httpproxy-tinypeoxy/index.html">
 <meta property="og:site_name" content="我的IT江湖之旅">
-<meta property="og:description" content="翻译Sébastien的博客，手动修复scrub errors">
-<meta property="og:image" content="http://sebastien-han.fr/images/ceph-manually-repair-objects.jpg">
-<meta property="og:updated_time" content="2016-01-31T16:05:50.000Z">
+<meta property="og:description" content="使用tinyproxy在ubuntu下搭建http proxy服务器">
+<meta property="og:updated_time" content="2016-06-04T06:44:24.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Ceph里手动修复Object">
-<meta name="twitter:description" content="翻译Sébastien的博客，手动修复scrub errors">
-<meta name="twitter:image" content="http://sebastien-han.fr/images/ceph-manually-repair-objects.jpg">
+<meta name="twitter:title" content="httpproxy-tinypeoxy">
+<meta name="twitter:description" content="使用tinyproxy在ubuntu下搭建http proxy服务器">
   
     <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
   
@@ -259,11 +257,11 @@
     </div>
     <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
 </nav>
-      <div class="body-wrap"><article id="post-ceph-manual-repair-object" class="article article-type-post" itemscope itemprop="blogPost">
+      <div class="body-wrap"><article id="post-httpproxy-tinypeoxy" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
-      <a href="/2015/11/24/ceph-manual-repair-object/" class="article-date">
-      <time datetime="2015-11-24T04:02:18.000Z" itemprop="datePublished">2015-11-24</time>
+      <a href="/2016/06/04/httpproxy-tinypeoxy/" class="article-date">
+      <time datetime="2016-06-04T06:40:48.000Z" itemprop="datePublished">2016-06-04</time>
 </a>
     </div>
   
@@ -276,7 +274,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      Ceph里手动修复Object
+      httpproxy-tinypeoxy
     </h1>
   
 
@@ -285,13 +283,13 @@
       <div class="article-info article-info-post">
         
     <div class="article-category tagcloud">
-    <a class="article-category-link" href="/categories/ceph/">ceph</a>
+    <a class="article-category-link" href="/categories/tool/">tool</a>
     </div>
 
 
         
     <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/pg/">pg</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/troubleshoot/">troubleshoot</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/翻译/">翻译</a></li></ul>
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/">linux</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/proxy/">proxy</a></li></ul>
     </div>
 
         <div class="clearfix"></div>
@@ -301,48 +299,31 @@
     <div class="article-entry" itemprop="articleBody">
       
           
-        <p><em>本文由 Ceph中国社区-半天河翻译，高华敏 校稿。</em></p>
-<p>英文出处：<a href="http://www.sebastien-han.fr/blog/2015/04/27/ceph-manually-repair-object/" target="_blank" rel="external">Sébastien Han</a>  欢迎加入 <a href="http://7xj5dz.com1.z0.glb.clouddn.com/qun.png" target="_blank" rel="external">ceph中国社区翻译组</a></p>
-<p><img src="http://sebastien-han.fr/images/ceph-manually-repair-objects.jpg" alt="ceph-manually-repair-objects"></p>
-<p>调试scrub错误有窍门，你甚至无需了解调试究竟是怎样进行的。</p>
-<p>假设你的集群状态信息类似下面的：</p>
-<pre><code>health HEALTH_ERR 1 pgs inconsistent; 2 scrub errors
-</code></pre><p>现在让我们开始对故障进行排错吧。</p>
-<h2 id="定位PG"><a href="#定位PG" class="headerlink" title="定位PG"></a>定位PG</h2><p>用下面这条简单的命令找到出问题的PG：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ sudo ceph health detail</span><br><span class="line">HEALTH_ERR 1 pgs inconsistent; 2 scrub errors</span><br><span class="line">pg 17.1c1 is active+clean+inconsistent, acting [21,25,30]</span><br><span class="line">2 scrub errors</span><br></pre></td></tr></table></figure>
-<p>由上可知，出问题的PG是 <code>17.1c1</code> ，该PG的acting OSD是 21、25和30 。</p>
-<p>你可以尝试运行 <code>ceph pg repair 17.1c1</code> ，后检查问题是否得以修复。这条命令有时可行，但如果不能修复故障的话，你就得深挖</p>
-<h2 id="定位故障"><a href="#定位故障" class="headerlink" title="定位故障"></a>定位故障</h2><p>为了找到故障的根本起因，我们需要到OSD的日志文件里仔细看看。使用这个简单命令：grep -Hn ‘ERR’ /var/log/ceph/ceph-osd.21.log，注意，如果日志文件是循环写入的，你需要使用zgrep替代grep。 </p>
-<p>日志中的这段话显示了故障的根本起因：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">log [ERR] : 17.1c1 shard 21: soid 58bcc1c1/rb.0.90213.238e1f29.00000001232d/head//17 digest 0 != known digest 3062795895</span><br><span class="line">log [ERR] : 17.1c1 shard 25: soid 58bcc1c1/rb.0.90213.238e1f29.00000001232d/head//17 digest 0 != known digest 3062795895</span><br></pre></td></tr></table></figure>
-<p>这些日志表明object digest应该是3062795895而现在实际情况是0 。</p>
-<h2 id="定位object"><a href="#定位object" class="headerlink" title="定位object"></a>定位object</h2><p>现在需要深入OSD.21的目录，幸运的是前面我们抓到的日志已经足够清晰简洁明了的表明对应object信息：</p>
-<ul>
-<li>问题PG：17.1c1</li>
-<li>OSD编号：21、25，30</li>
-<li>Object名字：rb.0.90213.238e1f29.00000001232d</li>
+        <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>关于为什么要玩玩HTTP代理就不用我多说了。</p>
+<h2 id="二、搭建环境"><a href="#二、搭建环境" class="headerlink" title="二、搭建环境"></a>二、搭建环境</h2><ul>
+<li>Linux Ubuntu</li>
+<li>tinyproxy</li>
 </ul>
-<p>接下来，我们搜索这个object：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo find /var/lib/ceph/osd/ceph-21/current/17.1c1_head/ -name &apos;rb.0.90213.238e1f29.00000001232d*&apos; -ls</span><br><span class="line">671193536 4096 -rw-r--r--   1 root     root      4194304 Feb 14 01:05 /var/lib/ceph/osd/ceph-21/current/17.1c1_head/DIR_1/DIR_C/DIR_1/DIR_C/rb.0.90213.238e1f29.00000001232d__head_58BCC1C1__11</span><br></pre></td></tr></table></figure>
-<p>还有一些其他事项需要检查：</p>
-<ul>
-<li>查看PG每个acting OSD上的该object的大小</li>
-<li>查看PG每个acting OSD上的该object的MD5</li>
+<h2 id="三、安装方法"><a href="#三、安装方法" class="headerlink" title="三、安装方法"></a>三、安装方法</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$sudo</span> apt-get install tinyproxy</span><br></pre></td></tr></table></figure>
+<p>安装后自动以root权限开启了tinyproxy服务，且默认监听端口是8888</p>
+<h2 id="四、启动帮助"><a href="#四、启动帮助" class="headerlink" title="四、启动帮助"></a>四、启动帮助</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$tinyproxy</span> --help</span><br><span class="line">Usage: tinyproxy [options]</span><br><span class="line">Options are:</span><br><span class="line"><span class="_">-d</span> Do not daemonize (run <span class="keyword">in</span> foreground).</span><br><span class="line">-c FILE Use an alternate configuration file.</span><br><span class="line">-h Display this usage information.</span><br><span class="line"><span class="_">-l</span> Display the license.</span><br><span class="line">-v Display version information.</span><br></pre></td></tr></table></figure>
+<h2 id="五、根用户的启动方法"><a href="#五、根用户的启动方法" class="headerlink" title="五、根用户的启动方法"></a>五、根用户的启动方法</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">* 默认启动</span><br><span class="line"><span class="variable">$sudo</span> service tinyproxy start</span><br><span class="line">* 重启</span><br><span class="line"><span class="variable">$sudo</span> service tinyproxy restart</span><br><span class="line">* 停止</span><br><span class="line"><span class="variable">$sudo</span> service tinyproxy stop</span><br></pre></td></tr></table></figure>
+<h2 id="六、DIY配置"><a href="#六、DIY配置" class="headerlink" title="六、DIY配置"></a>六、DIY配置</h2><h3 id="6-1-默认配置文件位置"><a href="#6-1-默认配置文件位置" class="headerlink" title="6.1 默认配置文件位置"></a>6.1 默认配置文件位置</h3><p>/etc/tinyproxy.conf<br>(可以从/etc/init.d/tinyproxy包装器脚本中查到)</p>
+<h3 id="6-2-默认配置说明"><a href="#6-2-默认配置说明" class="headerlink" title="6.2 默认配置说明"></a>6.2 默认配置说明</h3><ul>
+<li>以根用户启动时，在初始化完成后切换uid/gid为nobody/nogroup</li>
+<li>Port 默认监听端口为8888(该端口无需用root权限绑定)</li>
+<li>默认在所在网卡上监听</li>
+<li>Logfile (必须)日志文件, 默认/usr/var/log/tinyproxy/tinyproxy.log，在LogFile文件不存在时会警告，不会运行失败。</li>
+<li>Pidfile (必须)pid文件, 默认/usr/var/run/tinyproxy/tinyproxy.pid，在PidFile文件不存在时会运行失败。</li>
+<li>StartServers 初始启动的代理服务器子进程(默认是10个)</li>
+<li>Allow 允许使用tinyproxy进行HTTP代理的IP地址。默认是127.0.0.1，如果想要公开tinyproxy代理服务器，则把Allow一行注释掉。</li>
 </ul>
-<p>检查之后，对比所有这些object，找到出故障的那个object。</p>
-<h2 id="修复故障"><a href="#修复故障" class="headerlink" title="修复故障"></a>修复故障</h2><p>按照下面的方法移除故障object即可：</p>
-<ul>
-<li>停止错误的object所在OSD</li>
-<li>flush日志（<code>ceph-osd -i &lt;id&gt; --flush-journal</code> ）</li>
-<li>将故障object移到别的地方</li>
-<li>重新启动OSD服务</li>
-<li>执行命令 <code>ceph pg repair 17.1c1</code></li>
-</ul>
-<blockquote>
-<p>直接删除object看起来有些粗暴，但最终是由Ceph job做了一些工作。在有三个副本的情况下，以上方法显然能够正常使用，因为将其中两个版本和另一个版本进行对比是相当容易的。但如果只有2个副本，情况则有些不同。Ceph可能因无法解决版本冲突，导致故障依然存在。所以，一个简单的窍门是，选择一个最新版本的object，在集群上将其标记为 noout，停掉有错误版本object的OSD，稍等片刻后，重启OSD，并取消之前设置在最新版object上的noout标记。这时，集群就会将正确版本的object同步到有错误版本object的OSD。</p>
-</blockquote>
-<p>转载自：<a href="http://bbs.ceph.org.cn/article/17" target="_blank" rel="external">ceph中国社区</a></p>
-
+<h3 id="6-3-Diy配置说明"><a href="#6-3-Diy配置说明" class="headerlink" title="6.3 Diy配置说明"></a>6.3 Diy配置说明</h3><p>tinyproxy可以以普通用户权限运行，只要监听端口是公开的就可以了。具体Diy配置方法如下:</p>
+<h4 id="6-3-1-打包可执行程序与默认配置文件"><a href="#6-3-1-打包可执行程序与默认配置文件" class="headerlink" title="6.3.1 打包可执行程序与默认配置文件"></a>6.3.1 打包可执行程序与默认配置文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$which</span> tinyproxy</span><br><span class="line">/usr/sbin/tinyproxy</span><br><span class="line"><span class="variable">$cp</span> /usr/sbin/tinyproxy ~/bin</span><br><span class="line"><span class="variable">$cp</span> /etc/tinyproxy.conf ~/etc</span><br></pre></td></tr></table></figure>
+<h4 id="6-3-2修改配置"><a href="#6-3-2修改配置" class="headerlink" title="6.3.2修改配置"></a>6.3.2修改配置</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">将Port默认的8888改成你想要的端口(如ljysrv上面的8990 TCP端口)</span><br><span class="line">将Allow 127.0.0.1注释掉</span><br><span class="line">将Logfile改为/tmp/tinyproxy.log</span><br><span class="line">将PidFile改为/tmp/tinyproxy.pid</span><br></pre></td></tr></table></figure>
+<h4 id="6-3-3-启动"><a href="#6-3-3-启动" class="headerlink" title="6.3.3 启动"></a>6.3.3 启动</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$cd</span> ~/bin</span><br><span class="line">$./tinyproxy -c ~/etc/tinyproxy.conf</span><br></pre></td></tr></table></figure>
+<h4 id="6-3-4-关闭"><a href="#6-3-4-关闭" class="headerlink" title="6.3.4 关闭"></a>6.3.4 关闭</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$killall</span> tinyproxy</span><br></pre></td></tr></table></figure>
+<h2 id="七、设置代理"><a href="#七、设置代理" class="headerlink" title="七、设置代理"></a>七、设置代理</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> http_proxy=http://yourproxyaddress:proxyport</span><br></pre></td></tr></table></figure>
       
     </div>
     
@@ -350,13 +331,13 @@
   
     
     <div class="copyright">
-        <p><span>本文标题:</span><a href="/2015/11/24/ceph-manual-repair-object/">Ceph里手动修复Object</a></p>
+        <p><span>本文标题:</span><a href="/2016/06/04/httpproxy-tinypeoxy/">httpproxy-tinypeoxy</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">半天河(hnuzhoulin)</a></p>
-        <p><span>发布时间:</span>2015-11-24, 12:02:18</p>
-        <p><span>最后更新:</span>2016-02-01, 00:05:50</p>
+        <p><span>发布时间:</span>2016-06-04, 14:40:48</p>
+        <p><span>最后更新:</span>2016-06-04, 14:44:24</p>
         <p>
-            <span>原始链接:</span><a class="post-url" href="/2015/11/24/ceph-manual-repair-object/" title="Ceph里手动修复Object">http://www.itzhoulin.com/2015/11/24/ceph-manual-repair-object/</a>
-            <span class="copy-path" data-clipboard-text="原文: http://www.itzhoulin.com/2015/11/24/ceph-manual-repair-object/　　作者: 半天河(hnuzhoulin)" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <span>原始链接:</span><a class="post-url" href="/2016/06/04/httpproxy-tinypeoxy/" title="httpproxy-tinypeoxy">http://www.itzhoulin.com/2016/06/04/httpproxy-tinypeoxy/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://www.itzhoulin.com/2016/06/04/httpproxy-tinypeoxy/　　作者: 半天河(hnuzhoulin)" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
             <script> var clipboard = new Clipboard('.copy-path'); </script>
         </p>
         <p>
@@ -368,16 +349,10 @@
 
     <nav id="article-nav">
         
-            <div id="article-nav-newer" class="article-nav-title">
-                <a href="/2015/11/24/ceph-infernalis-five-useful-new-features/">
-                    ceph的infernalis版本的五个很实用的新功能
-                </a>
-            </div>
-        
         
             <div id="article-nav-older" class="article-nav-title">
-                <a href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">
-                    php-sdk访问ceph对象存储时405错误
+                <a href="/2016/05/28/migrate-ceph-cluster-from-one-distro-to-another/">
+                    将Ceph集群从Ubuntu迁移到RHEL
                 </a>
             </div>
         
@@ -388,7 +363,7 @@
 
     <div id="toc" class="toc-article">
     <strong class="toc-title">文章目录</strong>
-    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#定位PG"><span class="toc-number">1.</span> <span class="toc-text">定位PG</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#定位故障"><span class="toc-number">2.</span> <span class="toc-text">定位故障</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#定位object"><span class="toc-number">3.</span> <span class="toc-text">定位object</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#修复故障"><span class="toc-number">4.</span> <span class="toc-text">修复故障</span></a></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#一、前言"><span class="toc-number">1.</span> <span class="toc-text">一、前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#二、搭建环境"><span class="toc-number">2.</span> <span class="toc-text">二、搭建环境</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#三、安装方法"><span class="toc-number">3.</span> <span class="toc-text">三、安装方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#四、启动帮助"><span class="toc-number">4.</span> <span class="toc-text">四、启动帮助</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#五、根用户的启动方法"><span class="toc-number">5.</span> <span class="toc-text">五、根用户的启动方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#六、DIY配置"><span class="toc-number">6.</span> <span class="toc-text">六、DIY配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-默认配置文件位置"><span class="toc-number">6.1.</span> <span class="toc-text">6.1 默认配置文件位置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-默认配置说明"><span class="toc-number">6.2.</span> <span class="toc-text">6.2 默认配置说明</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-Diy配置说明"><span class="toc-number">6.3.</span> <span class="toc-text">6.3 Diy配置说明</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#6-3-1-打包可执行程序与默认配置文件"><span class="toc-number">6.3.1.</span> <span class="toc-text">6.3.1 打包可执行程序与默认配置文件</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-3-2修改配置"><span class="toc-number">6.3.2.</span> <span class="toc-text">6.3.2修改配置</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-3-3-启动"><span class="toc-number">6.3.3.</span> <span class="toc-text">6.3.3 启动</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-3-4-关闭"><span class="toc-number">6.3.4.</span> <span class="toc-text">6.3.4 关闭</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#七、设置代理"><span class="toc-number">7.</span> <span class="toc-text">七、设置代理</span></a></li></ol>
 </div>
 <style>
     .left-col .switch-btn {
@@ -445,7 +420,7 @@
         </div>
         <script>
             window._bd_share_config={
-                "common":{"bdSnsKey":{},"bdText":"Ceph里手动修复Object　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+                "common":{"bdSnsKey":{},"bdText":"httpproxy-tinypeoxy　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
         </script>
     
 
@@ -465,15 +440,13 @@
 
     <div class="scroll" id="post-nav-button">
         
-            <a href="/2015/11/24/ceph-infernalis-five-useful-new-features/" title="上一篇: ceph的infernalis版本的五个很实用的新功能">
-                <i class="fa fa-angle-left"></i>
-            </a>
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
         
 
         <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
 
         
-            <a href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/" title="下一篇: php-sdk访问ceph对象存储时405错误">
+            <a href="/2016/05/28/migrate-ceph-cluster-from-one-distro-to-another/" title="下一篇: 将Ceph集群从Ubuntu迁移到RHEL">
                 <i class="fa fa-angle-right"></i>
             </a>
         
