@@ -57,9 +57,9 @@
       <category term="tool" scheme="http://www.itzhoulin.com/categories/tool/"/>
     
     
-      <category term="proxy" scheme="http://www.itzhoulin.com/tags/proxy/"/>
-    
       <category term="linux" scheme="http://www.itzhoulin.com/tags/linux/"/>
+    
+      <category term="proxy" scheme="http://www.itzhoulin.com/tags/proxy/"/>
     
   </entry>
   
@@ -271,56 +271,6 @@
   </entry>
   
   <entry>
-    <title>ceph full或者nearfull的解决方法探究</title>
-    <link href="http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/"/>
-    <id>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</id>
-    <published>2016-04-20T06:43:57.000Z</published>
-    <updated>2016-04-23T09:18:35.000Z</updated>
-    
-    <content type="html">&lt;h2 id=&quot;1-问题&quot;&gt;&lt;a href=&quot;#1-问题&quot; class=&quot;headerlink&quot; title=&quot;1.问题&quot;&gt;&lt;/a&gt;1.问题&lt;/h2&gt;&lt;p&gt;昨晚在测试环境新建了7个rbd，然后在不同节点上向这些rbd执行fio，对rbd进行初始化。今早来发现fio没有按时完成，没有输出信息，一看集群状态如下：&lt;/p&gt;
-&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@console:~/CeTune/benchmarking&lt;span class=&quot;comment&quot;&gt;# ceph health detail&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;HEALTH_ERR 1 full osd(s); 3 near full osd(s)&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.4 is full at 95%&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.0 is near full at 87%&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.2 is near full at 90%&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.3 is near full at 90%&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;这个对于见过场面的我来说不是什么大事（PS：其实主要因为是测试环境），于是乎习惯性翻笔记，但是发现以前的操作处理记录没了，于是乎今天记录一下今天的解决步骤。&lt;/p&gt;
-&lt;h2 id=&quot;2-解决&quot;&gt;&lt;a href=&quot;#2-解决&quot; class=&quot;headerlink&quot; title=&quot;2.解决&quot;&gt;&lt;/a&gt;2.解决&lt;/h2&gt;&lt;h3 id=&quot;2-0-根本之道&quot;&gt;&lt;a href=&quot;#2-0-根本之道&quot; class=&quot;headerlink&quot; title=&quot;2.0.根本之道&quot;&gt;&lt;/a&gt;2.0.根本之道&lt;/h3&gt;&lt;p&gt;集群满了，说明空间不够用，因此添加OSD才是最终的出路，但是一旦集群有OSD达到full的级别，及时添加OSD，集群也不会进行数据平衡操作，因此先要能让集群动起来在根据实际情况选择添加OSD还是删除数据。&lt;/p&gt;
-&lt;h3 id=&quot;2-1-调整OSD的full比例&quot;&gt;&lt;a href=&quot;#2-1-调整OSD的full比例&quot; class=&quot;headerlink&quot; title=&quot;2.1.调整OSD的full比例&quot;&gt;&lt;/a&gt;2.1.调整OSD的full比例&lt;/h3&gt;&lt;p&gt;执行下面的命令调整OSD的full和nearfull的比例：&lt;/p&gt;
-&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;ceph tell osd.* injectargs &lt;span class=&quot;string&quot;&gt;&#39;--mon-osd-full-ratio 98&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;ceph tell osd.* injectargs &lt;span class=&quot;string&quot;&gt;&#39;--mon-osd-full-ratio 0.98&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;上面两个是最容易想到的，但是实际上调整这两个后并不能很好的解决我的这个问题，这个时候及时选择删除rbd以腾出空间依然弹出错误如下：&lt;/p&gt;
-&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@console:~/cluster&lt;span class=&quot;comment&quot;&gt;# rbd rm volume-b0d3175b-7e74-4f71-aae5-39a53eda11ad&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2016-04-08 08:56:27.911165 7f4cee0da7c0  0 client.104114.objecter  FULL, paused modify 0x1cc3a60 tid 2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;在回看我的场景，基本是所有的OSD的数据都满了，也就是说整个集群（包括pg和OSD）都是full的状态，因此还需要设置一个pg的full比例：&lt;/p&gt;
-&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;ceph pg &lt;span class=&quot;built_in&quot;&gt;set&lt;/span&gt;_full_ratio 0.98&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;此时再次执行删除rbd操作就会开始工作了，删除可能会比较慢&lt;/p&gt;
-&lt;p&gt;PS：&lt;strong&gt;不推荐的删除方式&lt;/strong&gt;，先解挂所有rbd，再删除所有rbd，最后直接删除OSD数据目录下current目录下的所有文件。即使是这样，由于我的集群整个满了，删除都消耗了十几分钟。&lt;/p&gt;
-&lt;h2 id=&quot;3-扩展&quot;&gt;&lt;a href=&quot;#3-扩展&quot; class=&quot;headerlink&quot; title=&quot;3.扩展&quot;&gt;&lt;/a&gt;3.扩展&lt;/h2&gt;&lt;p&gt;对于只有部分OSD用量满的情况跟前面的处理方式有很大不同。当然，&lt;strong&gt;让集群能够动起来是最开始要做的事&lt;/strong&gt; ，这里的情况跟前面第二节介绍的方法还是要所有区别，尤其是对于线上环境，因为一旦调整这个全局的比例，可能整个集群的数据都会动起来，可能会有更多的数据迁移。因此另一种解决方法是临时调整、单个调整。但是，但是，但是，最最重要也是最先要解决的就是找到为什么只有少数OSD空间用量会满。&lt;/p&gt;
-&lt;h3 id=&quot;3-1-数据分布不均匀的原因&quot;&gt;&lt;a href=&quot;#3-1-数据分布不均匀的原因&quot; class=&quot;headerlink&quot; title=&quot;3.1.数据分布不均匀的原因&quot;&gt;&lt;/a&gt;3.1.数据分布不均匀的原因&lt;/h3&gt;&lt;h4 id=&quot;3-1-1-crushmap问题&quot;&gt;&lt;a href=&quot;#3-1-1-crushmap问题&quot; class=&quot;headerlink&quot; title=&quot;3.1.1.crushmap问题&quot;&gt;&lt;/a&gt;3.1.1.crushmap问题&lt;/h4&gt;&lt;p&gt;出现这种问题的原因可能是你手动修改过crushmap，将某些OSD划到了单独的组；或者是数据分布规则设定有误等。这种情况就只能自己到处crushmap分析一下了。不好举例，有问题的欢迎沟通。&lt;/p&gt;
-&lt;p&gt;####3.1.2.pg数设置不合理&lt;br&gt;这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 &lt;strong&gt;file-&amp;gt;object-&amp;gt;pg-&amp;gt;OSD-&amp;gt;physics disk&lt;/strong&gt; 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 &lt;strong&gt;pg_num&lt;/strong&gt; 和 &lt;strong&gt;pgp_num&lt;/strong&gt; 。有关调整这部分的工作和注意事项等见我的另一篇博文：&lt;a href=&quot;http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num&quot;&gt;调整pg数量的步骤&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;有一个python程序可以看各个pool在各个OSD上的pg分布，由此可以判断一下pg是否分布均匀。进而使用上面的方法调整该pool的pg_num和pgp_num。脚本点击&lt;a href=&quot;https://gist.github.com/hnuzhoulin/fef193f5e26533fc08c86ad30209646d&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;这里&lt;/a&gt;&lt;/p&gt;
-&lt;h3 id=&quot;3-2-调整OSD的weight&quot;&gt;&lt;a href=&quot;#3-2-调整OSD的weight&quot; class=&quot;headerlink&quot; title=&quot;3.2.调整OSD的weight&quot;&gt;&lt;/a&gt;3.2.调整OSD的weight&lt;/h3&gt;&lt;p&gt;对于只是少数OSD容量满的情况下，不管是上一小节中的调整crushmap还是pg_num的方法解决，最首先也还是需要集群能够进行正常读写操作，因此可以设置单个OSD的full和nearfull比例，也可以使用调整weight的方法。&lt;/p&gt;
-&lt;p&gt;关于一个OSD的weght，一共有两种：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;一种就是在crush自动设置的weight，这个值是根据OSD所在硬盘空间大小算出来的，1T的硬盘可用空间，这个值为1.&lt;/li&gt;
-&lt;li&gt;另一种就是人为添加的用以表示数据分布权重值的 reweight，这个值介于0-1之间，越小表示分布权重越低。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;两种weoght都可以在命令 &lt;code&gt;ceph osd ree&lt;/code&gt; 中看到，如下：&lt;/p&gt;
-&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@node1:~&lt;span class=&quot;comment&quot;&gt;# ceph osd tree&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;# id    weight  type name       up/down reweight&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-1      13.65   root default&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-2      2.73            host node1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;0       2.73                    osd.0   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-3      2.73            host node2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;1       2.73                    osd.1   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-4      2.73            host node3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2       2.73                    osd.2   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-5      2.73            host node4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3       2.73                    osd.3   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-6      2.73            host node5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4       2.73                    osd.4   up      1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;从上面的额输出来看，第二列的weight就是crush根据硬盘可用容量计算出来的，最后一列的reweight就是这个OSD的数据分布权重。这里我们应对某一个OSD满的另一种方法就是调整reweight，以降低数据在该OSD上的分布，调整的效果可以看看这个&lt;a href=&quot;http://cephnotes.ksperis.com/blog/2013/12/09/ceph-osd-reweight/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;博文&lt;/a&gt;，此文ceph中国论坛有&lt;a href=&quot;http://bbs.ceph.org.cn/article/38&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;翻译稿&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;ceph提供有自动调节reweight的工具：&lt;code&gt;ceph osd reweight-by-utilization&lt;/code&gt;&lt;/p&gt;
-</content>
-    
-    <summary type="html">
-    
-      ceph full或者nearfull的解决方法探究
-    
-    </summary>
-    
-      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
-    
-    
-      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
-    
-      <category term="full" scheme="http://www.itzhoulin.com/tags/full/"/>
-    
-  </entry>
-  
-  <entry>
     <title>记一次日志所在SSD故障导致的object unfound</title>
     <link href="http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/"/>
     <id>http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</id>
@@ -367,6 +317,56 @@
       <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
     
       <category term="ssd" scheme="http://www.itzhoulin.com/tags/ssd/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>ceph full或者nearfull的解决方法探究</title>
+    <link href="http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/"/>
+    <id>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</id>
+    <published>2016-04-20T06:43:57.000Z</published>
+    <updated>2016-04-23T09:18:35.000Z</updated>
+    
+    <content type="html">&lt;h2 id=&quot;1-问题&quot;&gt;&lt;a href=&quot;#1-问题&quot; class=&quot;headerlink&quot; title=&quot;1.问题&quot;&gt;&lt;/a&gt;1.问题&lt;/h2&gt;&lt;p&gt;昨晚在测试环境新建了7个rbd，然后在不同节点上向这些rbd执行fio，对rbd进行初始化。今早来发现fio没有按时完成，没有输出信息，一看集群状态如下：&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@console:~/CeTune/benchmarking&lt;span class=&quot;comment&quot;&gt;# ceph health detail&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;HEALTH_ERR 1 full osd(s); 3 near full osd(s)&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.4 is full at 95%&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.0 is near full at 87%&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.2 is near full at 90%&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.3 is near full at 90%&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;这个对于见过场面的我来说不是什么大事（PS：其实主要因为是测试环境），于是乎习惯性翻笔记，但是发现以前的操作处理记录没了，于是乎今天记录一下今天的解决步骤。&lt;/p&gt;
+&lt;h2 id=&quot;2-解决&quot;&gt;&lt;a href=&quot;#2-解决&quot; class=&quot;headerlink&quot; title=&quot;2.解决&quot;&gt;&lt;/a&gt;2.解决&lt;/h2&gt;&lt;h3 id=&quot;2-0-根本之道&quot;&gt;&lt;a href=&quot;#2-0-根本之道&quot; class=&quot;headerlink&quot; title=&quot;2.0.根本之道&quot;&gt;&lt;/a&gt;2.0.根本之道&lt;/h3&gt;&lt;p&gt;集群满了，说明空间不够用，因此添加OSD才是最终的出路，但是一旦集群有OSD达到full的级别，及时添加OSD，集群也不会进行数据平衡操作，因此先要能让集群动起来在根据实际情况选择添加OSD还是删除数据。&lt;/p&gt;
+&lt;h3 id=&quot;2-1-调整OSD的full比例&quot;&gt;&lt;a href=&quot;#2-1-调整OSD的full比例&quot; class=&quot;headerlink&quot; title=&quot;2.1.调整OSD的full比例&quot;&gt;&lt;/a&gt;2.1.调整OSD的full比例&lt;/h3&gt;&lt;p&gt;执行下面的命令调整OSD的full和nearfull的比例：&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;ceph tell osd.* injectargs &lt;span class=&quot;string&quot;&gt;&#39;--mon-osd-full-ratio 98&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;ceph tell osd.* injectargs &lt;span class=&quot;string&quot;&gt;&#39;--mon-osd-full-ratio 0.98&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;上面两个是最容易想到的，但是实际上调整这两个后并不能很好的解决我的这个问题，这个时候及时选择删除rbd以腾出空间依然弹出错误如下：&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@console:~/cluster&lt;span class=&quot;comment&quot;&gt;# rbd rm volume-b0d3175b-7e74-4f71-aae5-39a53eda11ad&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2016-04-08 08:56:27.911165 7f4cee0da7c0  0 client.104114.objecter  FULL, paused modify 0x1cc3a60 tid 2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;在回看我的场景，基本是所有的OSD的数据都满了，也就是说整个集群（包括pg和OSD）都是full的状态，因此还需要设置一个pg的full比例：&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;ceph pg &lt;span class=&quot;built_in&quot;&gt;set&lt;/span&gt;_full_ratio 0.98&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;此时再次执行删除rbd操作就会开始工作了，删除可能会比较慢&lt;/p&gt;
+&lt;p&gt;PS：&lt;strong&gt;不推荐的删除方式&lt;/strong&gt;，先解挂所有rbd，再删除所有rbd，最后直接删除OSD数据目录下current目录下的所有文件。即使是这样，由于我的集群整个满了，删除都消耗了十几分钟。&lt;/p&gt;
+&lt;h2 id=&quot;3-扩展&quot;&gt;&lt;a href=&quot;#3-扩展&quot; class=&quot;headerlink&quot; title=&quot;3.扩展&quot;&gt;&lt;/a&gt;3.扩展&lt;/h2&gt;&lt;p&gt;对于只有部分OSD用量满的情况跟前面的处理方式有很大不同。当然，&lt;strong&gt;让集群能够动起来是最开始要做的事&lt;/strong&gt; ，这里的情况跟前面第二节介绍的方法还是要所有区别，尤其是对于线上环境，因为一旦调整这个全局的比例，可能整个集群的数据都会动起来，可能会有更多的数据迁移。因此另一种解决方法是临时调整、单个调整。但是，但是，但是，最最重要也是最先要解决的就是找到为什么只有少数OSD空间用量会满。&lt;/p&gt;
+&lt;h3 id=&quot;3-1-数据分布不均匀的原因&quot;&gt;&lt;a href=&quot;#3-1-数据分布不均匀的原因&quot; class=&quot;headerlink&quot; title=&quot;3.1.数据分布不均匀的原因&quot;&gt;&lt;/a&gt;3.1.数据分布不均匀的原因&lt;/h3&gt;&lt;h4 id=&quot;3-1-1-crushmap问题&quot;&gt;&lt;a href=&quot;#3-1-1-crushmap问题&quot; class=&quot;headerlink&quot; title=&quot;3.1.1.crushmap问题&quot;&gt;&lt;/a&gt;3.1.1.crushmap问题&lt;/h4&gt;&lt;p&gt;出现这种问题的原因可能是你手动修改过crushmap，将某些OSD划到了单独的组；或者是数据分布规则设定有误等。这种情况就只能自己到处crushmap分析一下了。不好举例，有问题的欢迎沟通。&lt;/p&gt;
+&lt;p&gt;####3.1.2.pg数设置不合理&lt;br&gt;这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 &lt;strong&gt;file-&amp;gt;object-&amp;gt;pg-&amp;gt;OSD-&amp;gt;physics disk&lt;/strong&gt; 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 &lt;strong&gt;pg_num&lt;/strong&gt; 和 &lt;strong&gt;pgp_num&lt;/strong&gt; 。有关调整这部分的工作和注意事项等见我的另一篇博文：&lt;a href=&quot;http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num&quot;&gt;调整pg数量的步骤&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;有一个python程序可以看各个pool在各个OSD上的pg分布，由此可以判断一下pg是否分布均匀。进而使用上面的方法调整该pool的pg_num和pgp_num。脚本点击&lt;a href=&quot;https://gist.github.com/hnuzhoulin/fef193f5e26533fc08c86ad30209646d&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;这里&lt;/a&gt;&lt;/p&gt;
+&lt;h3 id=&quot;3-2-调整OSD的weight&quot;&gt;&lt;a href=&quot;#3-2-调整OSD的weight&quot; class=&quot;headerlink&quot; title=&quot;3.2.调整OSD的weight&quot;&gt;&lt;/a&gt;3.2.调整OSD的weight&lt;/h3&gt;&lt;p&gt;对于只是少数OSD容量满的情况下，不管是上一小节中的调整crushmap还是pg_num的方法解决，最首先也还是需要集群能够进行正常读写操作，因此可以设置单个OSD的full和nearfull比例，也可以使用调整weight的方法。&lt;/p&gt;
+&lt;p&gt;关于一个OSD的weght，一共有两种：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;一种就是在crush自动设置的weight，这个值是根据OSD所在硬盘空间大小算出来的，1T的硬盘可用空间，这个值为1.&lt;/li&gt;
+&lt;li&gt;另一种就是人为添加的用以表示数据分布权重值的 reweight，这个值介于0-1之间，越小表示分布权重越低。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;两种weoght都可以在命令 &lt;code&gt;ceph osd ree&lt;/code&gt; 中看到，如下：&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@node1:~&lt;span class=&quot;comment&quot;&gt;# ceph osd tree&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;# id    weight  type name       up/down reweight&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-1      13.65   root default&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-2      2.73            host node1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;0       2.73                    osd.0   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-3      2.73            host node2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;1       2.73                    osd.1   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-4      2.73            host node3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2       2.73                    osd.2   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-5      2.73            host node4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3       2.73                    osd.3   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-6      2.73            host node5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4       2.73                    osd.4   up      1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;从上面的额输出来看，第二列的weight就是crush根据硬盘可用容量计算出来的，最后一列的reweight就是这个OSD的数据分布权重。这里我们应对某一个OSD满的另一种方法就是调整reweight，以降低数据在该OSD上的分布，调整的效果可以看看这个&lt;a href=&quot;http://cephnotes.ksperis.com/blog/2013/12/09/ceph-osd-reweight/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;博文&lt;/a&gt;，此文ceph中国论坛有&lt;a href=&quot;http://bbs.ceph.org.cn/article/38&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;翻译稿&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;ceph提供有自动调节reweight的工具：&lt;code&gt;ceph osd reweight-by-utilization&lt;/code&gt;&lt;/p&gt;
+</content>
+    
+    <summary type="html">
+    
+      ceph full或者nearfull的解决方法探究
+    
+    </summary>
+    
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
+    
+    
+      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
+    
+      <category term="full" scheme="http://www.itzhoulin.com/tags/full/"/>
     
   </entry>
   

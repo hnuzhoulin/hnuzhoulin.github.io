@@ -11,9 +11,9 @@
         <title>httpproxy-tinypeoxy</title>
         <pubTime>2016-06-04T06:40:48.000Z</pubTime>
         
-        <tag>proxy</tag>
-         
         <tag>linux</tag>
+         
+        <tag>proxy</tag>
          
          
            
@@ -89,16 +89,16 @@
     
     
   <url>
-    <loc>http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</loc>
+    <loc>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</loc>
     <lastmod>2016-04-23T09:18:35.000Z</lastmod>
     <data>
         <display>
-        <title>记一次日志所在SSD故障导致的object unfound</title>
+        <title>ceph full或者nearfull的解决方法探究</title>
         <pubTime>2016-04-20T06:43:57.000Z</pubTime>
         
         <tag>排错</tag>
          
-        <tag>ssd</tag>
+        <tag>full</tag>
          
          
            
@@ -111,16 +111,16 @@
 
     
   <url>
-    <loc>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</loc>
+    <loc>http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</loc>
     <lastmod>2016-04-23T09:18:35.000Z</lastmod>
     <data>
         <display>
-        <title>ceph full或者nearfull的解决方法探究</title>
+        <title>记一次日志所在SSD故障导致的object unfound</title>
         <pubTime>2016-04-20T06:43:57.000Z</pubTime>
         
         <tag>排错</tag>
          
-        <tag>full</tag>
+        <tag>ssd</tag>
          
          
            
@@ -373,26 +373,6 @@
 
     
   <url>
-    <loc>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</loc>
-    <lastmod>2016-01-31T16:05:54.000Z</lastmod>
-    <data>
-        <display>
-        <title>Ceph的IO模式分析</title>
-        <pubTime>2015-12-28T07:37:40.000Z</pubTime>
-        
-        <tag>翻译</tag>
-         
-         
-           
-             
-              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
-          
-        </display>
-    </data>
-    </url>
-
-    
-  <url>
     <loc>http://www.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</loc>
     <lastmod>2016-01-31T16:05:54.000Z</lastmod>
     <data>
@@ -405,6 +385,26 @@
         <tag>infenalis</tag>
          
         <tag>tool</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</loc>
+    <lastmod>2016-01-31T16:05:54.000Z</lastmod>
+    <data>
+        <display>
+        <title>Ceph的IO模式分析</title>
+        <pubTime>2015-12-28T07:37:40.000Z</pubTime>
+        
+        <tag>翻译</tag>
          
          
            
