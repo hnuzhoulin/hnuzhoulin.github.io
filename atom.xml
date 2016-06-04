@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.itzhoulin.com/"/>
-  <updated>2016-06-04T06:44:24.000Z</updated>
+  <updated>2016-06-04T09:29:51.000Z</updated>
   <id>http://www.itzhoulin.com/</id>
   
   <author>
@@ -14,6 +14,40 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>ceph-deploy</title>
+    <link href="http://www.itzhoulin.com/2016/06/04/ceph-deploy/"/>
+    <id>http://www.itzhoulin.com/2016/06/04/ceph-deploy/</id>
+    <published>2016-06-04T09:29:51.000Z</published>
+    <updated>2016-06-04T09:29:51.000Z</updated>
+    
+    <content type="html">&lt;h2 id=&quot;1-设置使用本地源安装ceph&quot;&gt;&lt;a href=&quot;#1-设置使用本地源安装ceph&quot; class=&quot;headerlink&quot; title=&quot;1.设置使用本地源安装ceph&quot;&gt;&lt;/a&gt;1.设置使用本地源安装ceph&lt;/h2&gt;&lt;p&gt;两种方式：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;一种就是如下文所述，直接在命令行中写&lt;/li&gt;
+&lt;li&gt;另一种是写配置文件 &lt;code&gt;cephdeploy.conf&lt;/code&gt; 见下文：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;[ceph-deploy-install]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;repo_url=http://10.1.70.18/ceph.com/debian-firefly&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;gpg_url=http://10.1.70.18/release.asc&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;release=firefly&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;&lt;strong&gt;注意：&lt;/strong&gt;这里最好是写在 &lt;code&gt;ceph-deploy-install&lt;/code&gt; 这个sction中，&lt;/p&gt;
+&lt;h2 id=&quot;2-使用本地源安装ceph&quot;&gt;&lt;a href=&quot;#2-使用本地源安装ceph&quot; class=&quot;headerlink&quot; title=&quot;2.使用本地源安装ceph&quot;&gt;&lt;/a&gt;2.使用本地源安装ceph&lt;/h2&gt;&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;ceph-deploy install autoceph3 autoceph4  --release=firefly --repo-url=http://10.1.70.18/ceph.com/debian-firefly --gpg-url=http://10.1.70.18/release.asc&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;执行上述命令会在 &lt;code&gt;apt-get update&lt;/code&gt; 的时候报错，因为本地源没有32位的，解决方法见下&lt;/p&gt;
+&lt;h3 id=&quot;本地只有x86源时的处理方法&quot;&gt;&lt;a href=&quot;#本地只有x86源时的处理方法&quot; class=&quot;headerlink&quot; title=&quot;本地只有x86源时的处理方法&quot;&gt;&lt;/a&gt;本地只有x86源时的处理方法&lt;/h3&gt;&lt;p&gt;如果使用的是本地源，而且仅仅有64位的软件包地址，这样在第二次安装到的时候会出现找不到i386包而报错，处理方法是修改文件 &lt;code&gt;/usr/local/lib/python2.7/dist-packages/ceph_deploy/hosts/remotes.py&lt;/code&gt; 文件的47行，修改为：&lt;/p&gt;
+&lt;figure class=&quot;highlight python&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;content = &lt;span class=&quot;string&quot;&gt;&#39;deb  [arch=amd64] &amp;#123;url&amp;#125; &amp;#123;codename&amp;#125; main\n&#39;&lt;/span&gt;.format(&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;即加入arch标签&lt;/p&gt;
+</content>
+    
+    <summary type="html">
+    
+      汇总ceph-deploy的相关学习积累
+    
+    </summary>
+    
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
+    
+    
+      <category term="部署" scheme="http://www.itzhoulin.com/tags/%E9%83%A8%E7%BD%B2/"/>
+    
+  </entry>
   
   <entry>
     <title>httpproxy-tinypeoxy</title>
@@ -1358,173 +1392,6 @@ e.g.rate=500k, 限制读到500KB/s
     
     
       <category term="linux" scheme="http://www.itzhoulin.com/tags/linux/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>文件目录树的python和shell生成方法</title>
-    <link href="http://www.itzhoulin.com/2015/12/23/using-python-or-shell-create-file-tree/"/>
-    <id>http://www.itzhoulin.com/2015/12/23/using-python-or-shell-create-file-tree/</id>
-    <published>2015-12-23T04:07:17.000Z</published>
-    <updated>2015-12-23T04:09:45.000Z</updated>
-    
-    <content type="html">&lt;h2 id=&quot;1-背景&quot;&gt;&lt;a href=&quot;#1-背景&quot; class=&quot;headerlink&quot; title=&quot;1.背景&quot;&gt;&lt;/a&gt;1.背景&lt;/h2&gt;&lt;p&gt;背景很明确，需要遍历一个目录下的所有文件和目录，生成目录树，输出样式为相对路径显示目录和目录下的文件&lt;/p&gt;
-&lt;h2 id=&quot;2-python实现&quot;&gt;&lt;a href=&quot;#2-python实现&quot; class=&quot;headerlink&quot; title=&quot;2.python实现&quot;&gt;&lt;/a&gt;2.python实现&lt;/h2&gt;&lt;h3 id=&quot;2-1-基础版&quot;&gt;&lt;a href=&quot;#2-1-基础版&quot; class=&quot;headerlink&quot; title=&quot;2.1.基础版&quot;&gt;&lt;/a&gt;2.1.基础版&lt;/h3&gt;&lt;pre&gt;&lt;code&gt;import os
-currentDir = &amp;apos;/home/ubuntu/data/user-config/Downloads/ceph&amp;apos;
-for dirName,subdirList,fileList in os.walk(currentDir):
-    print(&amp;apos;%s&amp;apos; % dirName)
-    for fname in fileList:
-        abspath=dirName+os.sep+fname
-        print(abspath)
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;输出如下：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;/home/ubuntu/data/user-config/Downloads/ceph
-/home/ubuntu/data/user-config/Downloads/ceph/.gitignore
-/home/ubuntu/data/user-config/Downloads/ceph/SUMMARY.md
-/home/ubuntu/data/user-config/Downloads/ceph/chapter1.md
-/home/ubuntu/data/user-config/Downloads/ceph/README.md
-/home/ubuntu/data/user-config/Downloads/ceph/.git
-/home/ubuntu/data/user-config/Downloads/ceph/.git/config
-/home/ubuntu/data/user-config/Downloads/ceph/.git/description
-/home/ubuntu/data/user-config/Downloads/ceph/.git/branches
-/home/ubuntu/data/user-config/Downloads/ceph/.git/refs
-/home/ubuntu/data/user-config/Downloads/ceph/.git/refs/tags
-/home/ubuntu/data/user-config/Downloads/ceph/.git/refs/remotes
-/home/ubuntu/data/user-config/Downloads/ceph/.git/refs/remotes/origin
-&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&quot;2-2-加入筛选功能版&quot;&gt;&lt;a href=&quot;#2-2-加入筛选功能版&quot; class=&quot;headerlink&quot; title=&quot;2.2.加入筛选功能版&quot;&gt;&lt;/a&gt;2.2.加入筛选功能版&lt;/h3&gt;&lt;p&gt;这里额外多了三个参数：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;pattern是匹配模式，寻找匹配这个匹配模式的文件和目录；&lt;/li&gt;
-&lt;li&gt;single_level指是否只显示定义目录根目录下的文件和目录，不递归遍历；&lt;/li&gt;
-&lt;li&gt;yield_folders：输出结果是否需要包含目录名&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;详细代码如下：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;import os,fnmatch
-
-def all_files(root,patterns=&amp;apos;*&amp;apos;,single_level=False,yield_folders=True):
-    &amp;quot;&amp;quot;&amp;quot;
-    Expand patterns from semicolon-separated string to list
-    pattern：use patterns to select files and dirs
-    single_level:if only show the root dir
-    yield_folders:the output contain dirs?
-    &amp;quot;&amp;quot;&amp;quot;
-    patterns = patterns.split(&amp;apos;;&amp;apos;)
-    for path,subdirs,files in os.walk(root):
-        if yield_folders:
-            files.extend(subdirs)
-        for name in files:
-            for pattern in patterns:
-                if fnmatch.fnmatch(name,pattern):
-                    yield os.path.join(path,name)
-            break
-        if single_level:
-            break
-
-thefiles = list(all_files(&amp;apos;/home/ubuntu/data/user-config/Downloads/ceph&amp;apos;))
-thefiles.sort()
-for i in thefiles:
-    print (i)
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;输出为：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;/home/ubuntu/data/user-config/Downloads/ceph/.git
-/home/ubuntu/data/user-config/Downloads/ceph/.git/HEAD
-/home/ubuntu/data/user-config/Downloads/ceph/.git/branches
-/home/ubuntu/data/user-config/Downloads/ceph/.git/config
-/home/ubuntu/data/user-config/Downloads/ceph/.git/description
-/home/ubuntu/data/user-config/Downloads/ceph/.git/logs/refs
-/home/ubuntu/data/user-config/Downloads/ceph/.git/logs/refs/heads
-/home/ubuntu/data/user-config/Downloads/ceph/.git/logs/refs/heads/master
-/home/ubuntu/data/user-config/Downloads/ceph/.git/logs/refs/remotes
-/home/ubuntu/data/user-config/Downloads/ceph/.git/logs/refs/remotes/origin
-/home/ubuntu/data/user-config/Downloads/ceph/.gitignore
-/home/ubuntu/data/user-config/Downloads/ceph/README.md
-/home/ubuntu/data/user-config/Downloads/ceph/SUMMARY.md
-&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&quot;2-3-版本3：获取文件的最近修改时间&quot;&gt;&lt;a href=&quot;#2-3-版本3：获取文件的最近修改时间&quot; class=&quot;headerlink&quot; title=&quot;2.3.版本3：获取文件的最近修改时间&quot;&gt;&lt;/a&gt;2.3.版本3：获取文件的最近修改时间&lt;/h3&gt;&lt;pre&gt;&lt;code&gt;import os,fnmatch
-
-def all_files(root,patterns=&amp;apos;*&amp;apos;,single_level=False,yield_folders=True):
-    &amp;quot;&amp;quot;&amp;quot;
-    Expand patterns from semicolon-separated string to list
-    pattern：use patterns to select files and dirs
-    single_level:if only show the root dir
-    yield_folders:the output contain dirs?
-    &amp;quot;&amp;quot;&amp;quot;
-    patterns = patterns.split(&amp;apos;;&amp;apos;)
-    for path,subdirs,files in os.walk(root):
-        if yield_folders:
-            files.extend(subdirs)
-        for name in files:
-            for pattern in patterns:
-                if fnmatch.fnmatch(name,pattern):
-                    file1=path+os.sep+name
-                    statinfo=os.stat(file1)
-                    name=name+&amp;apos; &amp;apos;+str(statinfo.st_mtime)
-                    yield os.path.join(path,name)
-            break
-        if single_level:
-            break
-
-thefiles = list(all_files(&amp;apos;/home/ubuntu/data/user-config/Downloads/ceph&amp;apos;))
-thefiles.sort()
-for i in thefiles:
-    print (i)
-&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&quot;2-4-os-walk函数详解&quot;&gt;&lt;a href=&quot;#2-4-os-walk函数详解&quot; class=&quot;headerlink&quot; title=&quot;2.4.os.walk函数详解&quot;&gt;&lt;/a&gt;2.4.os.walk函数详解&lt;/h3&gt;&lt;p&gt;使用 os.walk 方便很多了.这个方法返回的是一个三元tupple(dirpath, dirnames, filenames)：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;第一个为起始路径，是一个string，代表目录的路径,&lt;/li&gt;
-&lt;li&gt;第二个为起始路径下的文件夹,是一个list，包含了dirpath下所有子目录的名字,&lt;/li&gt;
-&lt;li&gt;第三个是起始路径下的文件，是一个list，包含了非目录文件的名字.这些名字不包含路径信息,如果需要得到全路径,需要使用 os.path.join(&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;详细的介绍看官方帮助： &lt;code&gt;help (os.walk)&lt;/code&gt;&lt;/p&gt;
-&lt;h2 id=&quot;3-shell实现&quot;&gt;&lt;a href=&quot;#3-shell实现&quot; class=&quot;headerlink&quot; title=&quot;3.shell实现&quot;&gt;&lt;/a&gt;3.shell实现&lt;/h2&gt;&lt;pre&gt;&lt;code&gt;#!/bin/bash
-#This script is used to list all files in a directory
-# including the sub-directory and the last modified time
-# then write this into files.
-
-if [ $# -eq 0 ]&amp;amp;&amp;amp;[ $# -lt 3 ];then
-    echo &amp;quot;listfiles.sh: running as listfiles.sh &amp;lt;directory&amp;gt; &amp;lt;timestamp&amp;gt; &amp;lt;level&amp;gt; &amp;quot;
-    echo&amp;quot;&amp;quot;
-    exit
-fi
-
-filelist=index_$2_$3
-declare statinfo=197900000000
-
-function ergostat(){
-    statinfo=`stat $1|grep Modify|awk -F. &amp;apos;{print $1}&amp;apos;
-    | awk &amp;apos;{print $2$3}&amp;apos;| awk -F- &amp;apos;{print $1$2$3}&amp;apos; | awk -F: &amp;apos;{print $1$2$3}&amp;apos;`
-    # echo -n $statinfo
-}
-
-function ergodic(){
-    for file in `ls $1`
-    do
-    if [ -d $1&amp;quot;/&amp;quot;$file ]
-    then
-    echo $1&amp;quot;/&amp;quot;$file&amp;gt;&amp;gt;$filelist
-
-    ergodic $1&amp;quot;/&amp;quot;$file
-    else
-    local path=$1&amp;quot;/&amp;quot;$file
-    ergostat $path
-    echo &amp;quot;$path $statinfo&amp;quot; &amp;gt;&amp;gt;$filelist
-    fi
-    done
-}
-
-#这个必须要，否则会在文件名中有空格时出错
-IFS=$&amp;apos;n&amp;apos; 
-#INIT_PATH=&amp;quot;.&amp;quot;;
-ergodic $1 $2 $3[/bash]
-&lt;/code&gt;&lt;/pre&gt;</content>
-    
-    <summary type="html">
-    
-      分别使用python和shell生成文件目录树，可自定义层级
-    
-    </summary>
-    
-      <category term="program" scheme="http://www.itzhoulin.com/categories/program/"/>
-    
-    
-      <category term="python" scheme="http://www.itzhoulin.com/tags/python/"/>
-    
-      <category term="shell" scheme="http://www.itzhoulin.com/tags/shell/"/>
     
   </entry>
   
