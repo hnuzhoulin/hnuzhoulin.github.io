@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.itzhoulin.com/"/>
-  <updated>2016-06-04T09:29:51.000Z</updated>
+  <updated>2016-06-11T02:26:42.000Z</updated>
   <id>http://www.itzhoulin.com/</id>
   
   <author>
@@ -14,6 +14,58 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Ceph-krbd-discard</title>
+    <link href="http://www.itzhoulin.com/2016/06/11/Ceph-krbd-discard/"/>
+    <id>http://www.itzhoulin.com/2016/06/11/Ceph-krbd-discard/</id>
+    <published>2016-06-11T02:26:42.000Z</published>
+    <updated>2016-06-11T02:26:42.000Z</updated>
+    
+    <content type="html">&lt;p&gt;本文英文出处：&lt;a href=&quot;http://www.sebastien-han.fr/blog/2015/01/26/ceph-and-krbd-discard/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Sébastien Han/ceph-and-krbd-discard&lt;/a&gt; &lt;/p&gt;
+&lt;p&gt;内核RBD模块的空间回收机制。对于运营商而言，有这样的支持是至关重要的，因为这能减轻你的容量规划。RBD镜像是稀疏的，因此创建后大小等于0 MB。稀疏镜像的主要问题在于增长，最终达到整个镜像的大小。问题是这是发生在块层面之上尤其是其上有文件系统的时候Ceph并不知道发生了什么。你可以很容易地向整个文件系统写入数据，然后删除一切，但是Ceph仍然相信这些块仍然被使用着，并持续度量。然而多亏在块设备层面支持了 discard，文件系统可以发送 discard flush 命令给块。最后，存储系统将释放这些上层已经删除的块。&lt;/p&gt;
+&lt;p&gt;这个特性自3.18版本的内核开始引入。&lt;/p&gt;
+&lt;p&gt;我们先新建一个 RBD 镜像&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;$ rbd create &lt;span class=&quot;_&quot;&gt;-s&lt;/span&gt; 10240 leseb&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;$ rbd info leseb&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;rbd image &lt;span class=&quot;string&quot;&gt;&#39;leseb&#39;&lt;/span&gt;:&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  size 10240 MB &lt;span class=&quot;keyword&quot;&gt;in&lt;/span&gt; 2560 objects&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  order 22 (4096 kB objects)&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  block_name_prefix: rb.0.1066.74b0dc51&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  format: 1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;$ rbd diff rbd/leseb | awk &lt;span class=&quot;string&quot;&gt;&#39;&amp;#123; SUM += $2 &amp;#125; END &amp;#123; print SUM/1024/1024 &quot; MB&quot; &amp;#125;&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;0 MB&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;将它映射到一个节点并在其上构建一个文件系统:&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;14&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;15&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;16&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;17&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;18&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;19&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;20&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;$ sudo rbd -p rbd map leseb&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;/dev/rbd0&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;$ sudo rbd showmapped&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;id pool image snap device&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;0  rbd  leseb -    /dev/rbd0&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;$ sudo mkfs.xfs /dev/rbd0&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;log&lt;/span&gt; stripe unit (4194304 bytes) is too large (maximum is 256KiB)&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;log&lt;/span&gt; stripe unit adjusted to 32KiB&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;meta-data=/dev/rbd0              isize=256    agcount=17, agsize=162816 blks&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;         =                       sectsz=512   attr=2, projid32bit=0&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;data     =                       bsize=4096   blocks=2621440, imaxpct=25&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;         =                       sunit=1024   swidth=1024 blks&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;naming   =version 2              bsize=4096   ascii-ci=0&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;log&lt;/span&gt;      =internal &lt;span class=&quot;built_in&quot;&gt;log&lt;/span&gt;           bsize=4096   blocks=2560, version=2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;         =                       sectsz=512   sunit=8 blks, lazy-count=1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;realtime =none                   extsz=4096   blocks=0, rtextents=0&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;$ sudo mount /dev/rbd0 /mnt&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;到这里所有的设置都已经完成，我们开始写入一些数据:&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;$ dd &lt;span class=&quot;keyword&quot;&gt;if&lt;/span&gt;=/dev/zero of=/mnt/leseb bs=1M count=128&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;128+0 records &lt;span class=&quot;keyword&quot;&gt;in&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;128+0 records out&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;134217728 bytes (134 MB) copied, 2.88215 s, 46.6 MB/s&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;$ df -h /mnt/&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;Filesystem      Size  Used Avail Use% Mounted on&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;/dev/rbd0        10G  161M  9.9G   2% /mnt&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;然后我们再次检测这个镜像占用的空间大小:&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;$ rbd diff rbd/leseb | awk &lt;span class=&quot;string&quot;&gt;&#39;&amp;#123; SUM += $2 &amp;#125; END &amp;#123; print SUM/1024/1024 &quot; MB&quot; &amp;#125;&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;142.406 MB&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;我们知道这里我们实际的数据是 128MB，文件系统的数据/元数据占用了约 ~14,406MB。检查这个份设备的 discard 属性已经启用:&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@ceph-mon0:~&lt;span class=&quot;comment&quot;&gt;# cat /sys/block/rbd0/queue/discard_*&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4194304&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4194304&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;现在让我们来检查当 discard 不支持时的默认行为，我们删除前面新建的所有 128MB 的文件以释放文件系统的一些空间。不幸的是Ceph什么也没检测到，仍然认为这 128MB 的数据仍然存在。&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;$ rm /mnt/leseb&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;$ rbd diff rbd/leseb | awk &lt;span class=&quot;string&quot;&gt;&#39;&amp;#123; SUM += $2 &amp;#125; END &amp;#123; print SUM/1024/1024 &quot; MB&quot; &amp;#125;&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;142.406 MB&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;现在让我们在挂载的文件系统上运行 fstrim 命令以指示块设备释放未使用的空间:&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;14&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;$ fstrim /mnt/&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;$ rbd diff rbd/leseb | awk &lt;span class=&quot;string&quot;&gt;&#39;&amp;#123; SUM += $2 &amp;#125; END &amp;#123; print SUM/1024/1024 &quot; MB&quot; &amp;#125;&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10.6406 MB&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;Et voilà ! Ceph 释放了我们删除的 128 MB。&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;If you want to run discard on the fly and &lt;span class=&quot;built_in&quot;&gt;let&lt;/span&gt; the filesystem check &lt;span class=&quot;keyword&quot;&gt;for&lt;/span&gt; discard all the time you can mount the filesystem with the discard option:&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;如果你想自动运行 discard，可以在挂载文件系统的时候加上 discard 选项，这样就可以让文件系统一直检测 discard:&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;```bash&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;$ mount -o discard /dev/rbd0 /mnt/&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;$ mount | grep rbd&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;/dev/rbd0 on /mnt &lt;span class=&quot;built_in&quot;&gt;type&lt;/span&gt; xfs (rw,discard)&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;blockquote&gt;
+&lt;p&gt;注意，使用 discard 的挂载选项会严重影响性能。所以，一般你可以通过一个每天与星的 cron 任务来触发 fstrim 命令。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;译者补充：&quot;&gt;&lt;a href=&quot;#译者补充：&quot; class=&quot;headerlink&quot; title=&quot;译者补充：&quot;&gt;&lt;/a&gt;译者补充：&lt;/h2&gt;&lt;p&gt;我的实际线上环境是：ubuntu12.04+Ceph 0.67.9&lt;/p&gt;
+&lt;p&gt;同时对于使用 KRBD 的都有感触，要保障业务不断的同时进行升级是相当麻烦的，但是这个存储系统已经稳定运行两年，Ceph检测到已用空间到了70%，但是实际业务系统层面统计还不到50%，因此执行 fstrim 势在必行。&lt;/p&gt;
+&lt;p&gt;经过本文作者的提示，我们的方案是在这个集群上使用kvm新建一个 ubuntu14.04.4 的虚拟机，依次将所有 RBD 在该虚拟机上映射后挂载到某一个目录，然后在这个目录上执行 fstrim 命令，达到清理的目的。&lt;/p&gt;
+&lt;p&gt;这个方案有以下几点表现：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;这里实际同一个 RBD 在两个不同节点映射并挂载，但是经过测试，执行 fstrim 命令不会造成业务的中断（使用死循环调dd进行写模拟业务），执行过程中是不是有性能影响没有监测；&lt;/li&gt;
+&lt;li&gt;如果该 RBD 在执行 fstrim 命令的时候仍然有写操作，会影响 fstrim 的效果，具体表现就是耗时显著增加、空间清理并没有预期的多。&lt;/li&gt;
+&lt;/ol&gt;
+</content>
+    
+    <summary type="html">
+    
+      Ceph的rbd块是精简制备的，只有真正有数据才会占用空间，但是存在上层文件系统删除文件，但是rbd占用空间不变的问题。Ceph的krbd模块的discard支持可以解决这个问题，实现前后端空间一致。上层文件系统删除文件后，ceph会清理底层对应的对象。
+    
+    </summary>
+    
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
+    
+    
+      <category term="翻译" scheme="http://www.itzhoulin.com/tags/%E7%BF%BB%E8%AF%91/"/>
+    
+      <category term="krbd" scheme="http://www.itzhoulin.com/tags/krbd/"/>
+    
+  </entry>
   
   <entry>
     <title>ceph-deploy</title>
@@ -184,11 +236,15 @@
     <link href="http://www.itzhoulin.com/2016/04/24/blog-updates/"/>
     <id>http://www.itzhoulin.com/2016/04/24/blog-updates/</id>
     <published>2016-04-24T08:53:35.000Z</published>
-    <updated>2016-05-28T06:58:18.000Z</updated>
+    <updated>2016-06-04T09:35:46.000Z</updated>
     
     <content type="html">&lt;h3 id=&quot;TODO-List&quot;&gt;&lt;a href=&quot;#TODO-List&quot; class=&quot;headerlink&quot; title=&quot;TODO List&quot;&gt;&lt;/a&gt;TODO List&lt;/h3&gt;&lt;ol&gt;
 &lt;li&gt;Yelee主题学习：&lt;/li&gt;
 &lt;li&gt;实现CND加速&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&quot;20160604&quot;&gt;&lt;a href=&quot;#20160604&quot; class=&quot;headerlink&quot; title=&quot;20160604&quot;&gt;&lt;/a&gt;20160604&lt;/h3&gt;&lt;ol&gt;
+&lt;li&gt;修改 &lt;code&gt;hexo new&lt;/code&gt; 默认模板，加入description、top、categories等标签&lt;/li&gt;
+&lt;li&gt;实现本地搜索，启动jQuery UI，安装hexo-generator-search&lt;/li&gt;
 &lt;/ol&gt;
 &lt;h3 id=&quot;20160507&quot;&gt;&lt;a href=&quot;#20160507&quot; class=&quot;headerlink&quot; title=&quot;20160507&quot;&gt;&lt;/a&gt;20160507&lt;/h3&gt;&lt;ol&gt;
 &lt;li&gt;主域名指向新的vps，&lt;a href=&quot;http://www.fyzhuji.com/hk_vps.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;枫叶主机，香港CN2机房&lt;/a&gt;&lt;/li&gt;
@@ -458,9 +514,9 @@
       <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="rbd" scheme="http://www.itzhoulin.com/tags/rbd/"/>
-    
       <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
+    
+      <category term="rbd" scheme="http://www.itzhoulin.com/tags/rbd/"/>
     
       <category term="kernel" scheme="http://www.itzhoulin.com/tags/kernel/"/>
     
@@ -1039,359 +1095,6 @@ actual 196334, ideal 122582, fragmentation factor 37.56%
     
     
       <category term="翻译" scheme="http://www.itzhoulin.com/tags/%E7%BF%BB%E8%AF%91/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>fio使用指南</title>
-    <link href="http://www.itzhoulin.com/2015/12/24/fio-man-guide/"/>
-    <id>http://www.itzhoulin.com/2015/12/24/fio-man-guide/</id>
-    <published>2015-12-24T07:52:48.000Z</published>
-    <updated>2015-12-24T07:59:05.000Z</updated>
-    
-    <content type="html">&lt;p&gt;这个文档是对fio-2.0.9 HOWTO文档的翻译，fio的参数太多了，翻译这个文档时并没有测试每一个参数的功能和使用方法，只有少量参数做了试验，大部分的参数采用的是根据字面翻译或是个人理解的翻译，必然有些出入，先发出来，以后有使用的时候再被充和修改。在另一个文档中会对fio自带的实例进行分析，可能会更为清晰一些。&lt;/p&gt;
-&lt;p&gt;fio这个工具实在太强大了，列举一下他的NB之处吧&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;支持十几种存储引擎，可以自定义&lt;/li&gt;
-&lt;li&gt;自带做图工具，调用gnuplot做图&lt;/li&gt;
-&lt;li&gt;支持几乎所有的存储描述参数&lt;/li&gt;
-&lt;li&gt;大量对CPU，内存，进程/线程，文件，IO特性的配置&lt;/li&gt;
-&lt;li&gt;压缩，trace回放，。。。这些都包含，灵活的配置&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&quot;简介&quot;&gt;&lt;a href=&quot;#简介&quot; class=&quot;headerlink&quot; title=&quot;简介&quot;&gt;&lt;/a&gt;简介&lt;/h2&gt;&lt;p&gt;fio最初是用来节省为特定负载写专门测试程序，或是进行性能测试，或是找到和重现bug的时间。写这么一个测试应用是非常浪费时间的。因此需要一个工具来模拟给定的io负载，而不用重复的写一个又一个的特定的测试程序。但是test负载很难定义。因为可能会产生很多进程或线程，他们每一个都用他们自己的方式产生io。fio需要足够灵活得来模拟这些case。&lt;/p&gt;
-&lt;p&gt;典型的fio的工作过程:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;写一个job文件来描述要访真的io负载。一个job文件可以控制产生任意数目的线程和文件。典型的job文件有一个global段（定义共享参数），一个或多少job段（描述具体要产生的job）。&lt;/li&gt;
-&lt;li&gt;运行时，fio从文件读这些参数，做处理，并根据这些参数描述，启动这些访真线程/进程&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&quot;运行fio&quot;&gt;&lt;a href=&quot;#运行fio&quot; class=&quot;headerlink&quot; title=&quot;运行fio&quot;&gt;&lt;/a&gt;运行fio&lt;/h2&gt;&lt;h3 id=&quot;运行方式：&quot;&gt;&lt;a href=&quot;#运行方式：&quot; class=&quot;headerlink&quot; title=&quot;运行方式：&quot;&gt;&lt;/a&gt;运行方式：&lt;/h3&gt;&lt;pre&gt;&lt;code&gt;$fio job_file
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;它会根据job_file的内容来运行。你可以在命令行中指定多个job file，fio进串行化运行这些文件。相当于在同一个job file不同的section之间使用了stonewall参数。&lt;/p&gt;
-&lt;p&gt;如果某个job file只包含一个job,可以在命令行中给出参数，来直接运行，不再需要读取job file。命令行参数同job file参数的格式是一样的。比如，在job file中的参数iodepth=2，在命令行中可以写为 &lt;code&gt;-iodepth 2 或是 --iodepth=2&lt;/code&gt;&lt;/p&gt;
-&lt;p&gt;fio不需要使用root来支行，除非使用到的文件或是设备需要root权限。一些选项可能会被限制，比如内存锁，io调度器切换，或是nice value降级。&lt;/p&gt;
-&lt;h3 id=&quot;job文件格式&quot;&gt;&lt;a href=&quot;#job文件格式&quot; class=&quot;headerlink&quot; title=&quot;job文件格式&quot;&gt;&lt;/a&gt;job文件格式&lt;/h3&gt;&lt;p&gt;job file格式采用经典的ini文件，[]中的值表示job name，可以采用任意的ASCII字符，‘global’除外，global有特殊的意义。Global section描述了job file中各个job的默认配置值。一个job section可以覆盖global section中的参数，一个job file可以包含几个global section.一个job只会受到它上面的global section的影响。&lt;code&gt;;&lt;/code&gt;和&lt;code&gt;#&lt;/code&gt;可以用作注释.&lt;/p&gt;
-&lt;p&gt;两个进程，分别从一个从128MB文件中，随机读的job file.&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;;–start job file–
-[global]
-rw=randread
-size=128m
-[job1]
-[job2]
-;–end job file–
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;job1和job2 section是空的，因为所有的描述参数是共享的。没有给出filename=选项，fio会为每一个job创建一个文件名，如果用命令写，则是：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;$fio –name=global –rw=randread –size=128m –name=job1 –name=job2
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;多个进程随机写文件的实例&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;;–start job file –
-[random-writers]
-ioengine=libaio
-iodepth=4
-rw=randwrite
-bs=32k
-direct=0
-size=64m
-numjobs=4
-;–end job file–
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;没有global section,只有一个job section.&lt;/p&gt;
-&lt;p&gt;上一个实例的说明：采用async,每一个文件的队列长度为4，采用随机写，采用32k的块，采用非direct io，共有4个进程，每个进程随机写64M的文件。也可以采用下面的命令&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;$fio –name=random-writers –ioengine=libaio –iodepth=4 –rw=randwrite –bs=32k –direct=0 –size=64m –numjobs=4
-&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&quot;环境变量&quot;&gt;&lt;a href=&quot;#环境变量&quot; class=&quot;headerlink&quot; title=&quot;环境变量&quot;&gt;&lt;/a&gt;环境变量&lt;/h3&gt;&lt;p&gt;在job file中支持环境变量扩展。类似于${VARNAME}可以作为选项的值（在=号右边）。&lt;br&gt;实例：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;$SIZE=64m NUMJOBS=4 fio jobfile,fio
-;–start job files–
-[random-writers]
-rw=randwrite
-size=${SIZE}
-numjobs=${NUMJOBS}
-;–end job file–
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;将被扩展为&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;；–start job file–
-[random-writers]
-rw=randwrite
-size=64m
-numjobs=4
-;–end job file–
-&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&quot;保留keywords&quot;&gt;&lt;a href=&quot;#保留keywords&quot; class=&quot;headerlink&quot; title=&quot;保留keywords&quot;&gt;&lt;/a&gt;保留keywords&lt;/h3&gt;&lt;p&gt;fio有一些保留keywords，在内部将其替换成合适的值，这些keywords是：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;$pagesize 当前系统的页大小&lt;/li&gt;
-&lt;li&gt;$mb_memory 系统的总内存的大小，以MB为单位&lt;/li&gt;
-&lt;li&gt;$ncpus 在线有效的cpu数&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;在命令行中和job file中都可以用，当job运行的时候，会自动的用当前系统的徝进行替换。支持简单的数学计算，如：&lt;code&gt;size=8*$mb_memory&lt;/code&gt;&lt;/p&gt;
-&lt;p&gt;###类型&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;str 字符串&lt;/li&gt;
-&lt;li&gt;time时间（int)&lt;/li&gt;
-&lt;li&gt;int 整数&lt;/li&gt;
-&lt;li&gt;bool&lt;/li&gt;
-&lt;li&gt;irange 整数范围&lt;/li&gt;
-&lt;li&gt;float_list 符点数列&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&quot;一个job包含的基本的参数&quot;&gt;&lt;a href=&quot;#一个job包含的基本的参数&quot; class=&quot;headerlink&quot; title=&quot;一个job包含的基本的参数&quot;&gt;&lt;/a&gt;一个job包含的基本的参数&lt;/h3&gt;&lt;h4 id=&quot;IO类型&quot;&gt;&lt;a href=&quot;#IO类型&quot; class=&quot;headerlink&quot; title=&quot;IO类型&quot;&gt;&lt;/a&gt;IO类型&lt;/h4&gt;&lt;p&gt;向文件发起的IO类型。&lt;/p&gt;
-&lt;h5 id=&quot;readwrite-str-rw-str&quot;&gt;&lt;a href=&quot;#readwrite-str-rw-str&quot; class=&quot;headerlink&quot; title=&quot;readwrite=str,rw=str&quot;&gt;&lt;/a&gt;readwrite=str,rw=str&lt;/h5&gt;&lt;ul&gt;
-&lt;li&gt;read 顺序读&lt;/li&gt;
-&lt;li&gt;write 顺序写&lt;/li&gt;
-&lt;li&gt;randwrite 随机写&lt;/li&gt;
-&lt;li&gt;randread 随机读&lt;/li&gt;
-&lt;li&gt;rw,readwrite 顺序混合读写&lt;/li&gt;
-&lt;li&gt;randrw 随机混合读写&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;[参数备注]&lt;br&gt;对于混合io类型，混认是50%的读，50%的写，对于特定的io类型，因为速度可能不同，结果可能会有稍有偏差.&lt;br&gt;通过在在str之后加“:”可以配置在执行一下获取offset操作之前要执行的IO次数。For a random read, it would lik ’rw=randread:8′ for passing in an offset modifier with a value of 8.如果后缀用于顺序IO类型的话，，那么将在每次IO之后，将这个值加到产生的offset之后。e.g. rw=write:4k每次写之后将会跳过4K。它将顺序的IO转化为带有洞的顺序IO。参考‘rw_sequencer’选项。&lt;/p&gt;
-&lt;h5 id=&quot;rw-sequencer-str&quot;&gt;&lt;a href=&quot;#rw-sequencer-str&quot; class=&quot;headerlink&quot; title=&quot;rw_sequencer=str&quot;&gt;&lt;/a&gt;rw_sequencer=str&lt;/h5&gt;&lt;p&gt;如果rw=后有offset修饰的话，这个选项可以控制这个数字如何修饰产生的IO offset.可以接收的值是：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;sequential 产生顺序的offset&lt;/li&gt;
-&lt;li&gt;identical 产生相同的offset&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;[参数备注]&lt;br&gt;‘sequential’仅用于随机IO。通常情况下，fio在每次IO之后，将会生成一个新的随机IO。e.g.rw=randread:8，将会在每8次IO之后执行seek，而不是每次IO之后。顺序IO已经是顺序的，再设置为‘sequential’将不会产生任何不同。‘identical’会产生同‘sequential’相似的行为，只是它会连续产生8次相同的offset，然后生成一个新的offset.&lt;/p&gt;
-&lt;h4 id=&quot;block-size&quot;&gt;&lt;a href=&quot;#block-size&quot; class=&quot;headerlink&quot; title=&quot;block size&quot;&gt;&lt;/a&gt;block size&lt;/h4&gt;&lt;p&gt;产生的IO单元的大小，可以是一个孤立的值，也可以是一个范围。&lt;/p&gt;
-&lt;h5 id=&quot;blocksize-int-bs-int&quot;&gt;&lt;a href=&quot;#blocksize-int-bs-int&quot; class=&quot;headerlink&quot; title=&quot;blocksize=int,bs=int&quot;&gt;&lt;/a&gt;blocksize=int,bs=int&lt;/h5&gt;&lt;p&gt;单次IO的block size,默认为4k。如果是单个值的话，将会对读写都生效。如果是一个逗号，再跟一个int值的话，则是仅对于写有效。也就是说，格式可以是bs=read_end_write或是bs=read,write。e.g. bs=4k,8k读使用4k的块，写使用8k的块。e.g.bs=,8k将使得写采用8k的块，读采用默认的值。&lt;/p&gt;
-&lt;h4 id=&quot;IO-size&quot;&gt;&lt;a href=&quot;#IO-size&quot; class=&quot;headerlink&quot; title=&quot;IO size&quot;&gt;&lt;/a&gt;IO size&lt;/h4&gt;&lt;p&gt;将会读/写多少数据&lt;/p&gt;
-&lt;h5 id=&quot;size-int&quot;&gt;&lt;a href=&quot;#size-int&quot; class=&quot;headerlink&quot; title=&quot;size=int&quot;&gt;&lt;/a&gt;size=int&lt;/h5&gt;&lt;p&gt;这个job IO总共要传输的数据的大小。FIO将会执行到所有的数据传输完成，除非设定了运行时间（‘runtime’选项）。除非有特定的‘nrfiles’选项和‘filesize’选项被设置，fio将会在job定义的文件中平分这个大小。如果这个值不设置的话，fio将会使用这个文件或设备的总大小。如果这些文件不存在的话，size选项一定要给出。也可以给出一个1到100的百分比。e.g. size=20%，fio将会使用给定的文件或设备的20%的空间。&lt;/p&gt;
-&lt;h4 id=&quot;IO引擎&quot;&gt;&lt;a href=&quot;#IO引擎&quot; class=&quot;headerlink&quot; title=&quot;IO引擎&quot;&gt;&lt;/a&gt;IO引擎&lt;/h4&gt;&lt;p&gt;发起IO的方式。&lt;/p&gt;
-&lt;h5 id=&quot;ioengine-str&quot;&gt;&lt;a href=&quot;#ioengine-str&quot; class=&quot;headerlink&quot; title=&quot;ioengine=str&quot;&gt;&lt;/a&gt;ioengine=str&lt;/h5&gt;&lt;p&gt;定义job向文件发起IO的方式&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;sync 基本的read,write.lseek用来作定位&lt;/li&gt;
-&lt;li&gt;psync 基本的pread,pwrite&lt;/li&gt;
-&lt;li&gt;vsync 基本的readv,writev&lt;/li&gt;
-&lt;li&gt;libaio Linux专有的异步IO。Linux仅支持非buffered IO的队列行为。&lt;/li&gt;
-&lt;li&gt;posixaio glibc posix异步IO&lt;/li&gt;
-&lt;li&gt;solarisaio solaris独有的异步IO&lt;br&gt;w- indowsaio windows独有的异步IO&lt;/li&gt;
-&lt;li&gt;mmap 文件通过内存映射到用户空间，使用memcpy写入和读出数据&lt;/li&gt;
-&lt;li&gt;splice 使用splice和vmsplice在用户空间和内核之间传输数据&lt;/li&gt;
-&lt;li&gt;syslet-rw 使用syslet 系统调用来构造普通的read/write异步IO&lt;/li&gt;
-&lt;li&gt;sg SCSI generic sg v3 io.可以是使用SG_IO ioctl来同步，或是目标是一个sg字符设备，我们使用read和write执行异步IO&lt;/li&gt;
-&lt;li&gt;null 不传输任何数据，只是伪装成这样。主要用于训练使用fio，或是基本debug/test的目的。&lt;/li&gt;
-&lt;li&gt;net 根据给定的host:port通过网络传输数据。根据具体的协议，hostname,port,listen,filename这些选项将被用来说明建立哪种连接，协议选项将决定哪种协议被使用。&lt;/li&gt;
-&lt;li&gt;netsplice 像net，但是使用splic/vmsplice来映射数据和发送/接收数据。&lt;/li&gt;
-&lt;li&gt;cpuio 不传输任何的数据，但是要根据cpuload=和cpucycle=选项占用CPU周期.e.g. - - cpuload=85将使用job不做任何的实际IO，但要占用85%的CPU周期。在SMP机器上，使用numjobs=来获取需要的CPU，因为cpuload仅会载入单个CPU，然后占用需要的比例。&lt;/li&gt;
-&lt;li&gt;guasi GUASI IO引擎是一般的用于异步IO的用户空间异步系统调用接口&lt;/li&gt;
-&lt;li&gt;rdma RDMA I/O引擎支持RDMA内存语义（RDMA_WRITE/RDMA_READ）和通道主义(Send/Recv）用于InfiniBand,RoCE和iWARP协议&lt;/li&gt;
-&lt;li&gt;external 指明要调用一个外部的IO引擎（二进制文件）。e.g. ioengine=external:/tmp/foo.o将载入/tmp下的foo.o这个IO引擎&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h4 id=&quot;IO-depth&quot;&gt;&lt;a href=&quot;#IO-depth&quot; class=&quot;headerlink&quot; title=&quot;IO depth&quot;&gt;&lt;/a&gt;IO depth&lt;/h4&gt;&lt;p&gt;如果IO引擎是异步的，这个指定我们需要保持的队列深度&lt;/p&gt;
-&lt;h5 id=&quot;iodepth-int&quot;&gt;&lt;a href=&quot;#iodepth-int&quot; class=&quot;headerlink&quot; title=&quot;iodepth=int&quot;&gt;&lt;/a&gt;iodepth=int&lt;/h5&gt;&lt;p&gt;加于文件之上的保持的IO单元。默认对于每个文件来说是1，可以设置一个更大的值来提供并发度。iodepth大于1不会影响同步IO引擎（除非verify_async这个选项被设置）。even async engines may impose OS restrictions causing the desired depth not to be achieved.这会在Linux使用libaio并且设置direct=1的时候发生，因为buffered io在OS中不是异步的。在外部通过类似于iostat这些工具来观察队列深度来保证这个IO队列深度是我们想要的。这个可以参考褚霸的博客&lt;a href=&quot;http://blog.yufeng.info/archives/2104&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://blog.yufeng.info/archives/2104&lt;/a&gt;&lt;/p&gt;
-&lt;h4 id=&quot;IO-type&quot;&gt;&lt;a href=&quot;#IO-type&quot; class=&quot;headerlink&quot; title=&quot;IO type&quot;&gt;&lt;/a&gt;IO type&lt;/h4&gt;&lt;h5 id=&quot;direct-bool&quot;&gt;&lt;a href=&quot;#direct-bool&quot; class=&quot;headerlink&quot; title=&quot;direct=bool&quot;&gt;&lt;/a&gt;direct=bool&lt;/h5&gt;&lt;p&gt;true,则标明采用non-buffered io.同O_DIRECT效果一样。ZFS和Solaris不支持direct io，在windows同步IO引擎不支持direct io&lt;/p&gt;
-&lt;h6 id=&quot;buffered-bool&quot;&gt;&lt;a href=&quot;#buffered-bool&quot; class=&quot;headerlink&quot; title=&quot;buffered=bool&quot;&gt;&lt;/a&gt;buffered=bool&lt;/h6&gt;&lt;p&gt;true,则标明采用buffered io。是direct的反义词，默认是true&lt;/p&gt;
-&lt;h4 id=&quot;Num-files&quot;&gt;&lt;a href=&quot;#Num-files&quot; class=&quot;headerlink&quot; title=&quot;Num files&quot;&gt;&lt;/a&gt;Num files&lt;/h4&gt;&lt;p&gt;负载将分发到几个文件之中&lt;/p&gt;
-&lt;h5 id=&quot;nrfiles-int&quot;&gt;&lt;a href=&quot;#nrfiles-int&quot; class=&quot;headerlink&quot; title=&quot;nrfiles=int&quot;&gt;&lt;/a&gt;nrfiles=int&lt;/h5&gt;&lt;p&gt;用于这个job的文件数目,默认为1&lt;/p&gt;
-&lt;h5 id=&quot;openfiles-int&quot;&gt;&lt;a href=&quot;#openfiles-int&quot; class=&quot;headerlink&quot; title=&quot;openfiles=int&quot;&gt;&lt;/a&gt;openfiles=int&lt;/h5&gt;&lt;p&gt;在同一时间可以同时打开的文件数目，默认同nrfiles相等，可以设置小一些，来限制同时打开的文件数目。&lt;/p&gt;
-&lt;h4 id=&quot;Num-threads&quot;&gt;&lt;a href=&quot;#Num-threads&quot; class=&quot;headerlink&quot; title=&quot;Num threads&quot;&gt;&lt;/a&gt;Num threads&lt;/h4&gt;&lt;p&gt;numjobs=int&lt;br&gt;创建特定数目的job副本。可能是创建大量的线程/进程来执行同一件事。我们将这样一系列的job，看作一个特定的group&lt;/p&gt;
-&lt;h2 id=&quot;详细参数：&quot;&gt;&lt;a href=&quot;#详细参数：&quot; class=&quot;headerlink&quot; title=&quot;详细参数：&quot;&gt;&lt;/a&gt;详细参数：&lt;/h2&gt;&lt;h3 id=&quot;1-name-str&quot;&gt;&lt;a href=&quot;#1-name-str&quot; class=&quot;headerlink&quot; title=&quot;1.name=str&quot;&gt;&lt;/a&gt;1.name=str&lt;/h3&gt;&lt;p&gt;job名，用于输出信息用的名字。如果不设置的话，fio输出信息时将采用job name，如果设置的话，将用设置的名字。在命令行中，这个参数有特殊的作用，标明一个新job的开始。&lt;/p&gt;
-&lt;h3 id=&quot;2-description-str&quot;&gt;&lt;a href=&quot;#2-description-str&quot; class=&quot;headerlink&quot; title=&quot;2.description=str&quot;&gt;&lt;/a&gt;2.description=str&lt;/h3&gt;&lt;p&gt;job的说明信息,在job运行的时候不起作用，只是在输出文件描述信息的时候才起作用。&lt;/p&gt;
-&lt;h3 id=&quot;3-directory-str&quot;&gt;&lt;a href=&quot;#3-directory-str&quot; class=&quot;headerlink&quot; title=&quot;3.directory=str&quot;&gt;&lt;/a&gt;3.directory=str&lt;/h3&gt;&lt;p&gt;使用的文件的路径前缀，默认是./&lt;/p&gt;
-&lt;h3 id=&quot;4-filename-str&quot;&gt;&lt;a href=&quot;#4-filename-str&quot; class=&quot;headerlink&quot; title=&quot;4.filename=str&quot;&gt;&lt;/a&gt;4.filename=str&lt;/h3&gt;&lt;p&gt;一般情况下，fio会根据job名，线程号，文件名来产生一个文件名。如果，想在多个job之间共享同一个文件的话，可以设定一个名字来代替默认的名字.如果ioengine是‘net’的话，文件名则是以这种格式=host,port,protocol.如果ioengine是基于文件的话，可以通过‘:’分割来设定一系列的文件。e.g. filename=/dev/sda:/dev/sdb 希望job打开/dev/sda和/dev/sdb作为两个工作文件。&lt;/p&gt;
-&lt;h3 id=&quot;5-opendir-str&quot;&gt;&lt;a href=&quot;#5-opendir-str&quot; class=&quot;headerlink&quot; title=&quot;5.opendir=str&quot;&gt;&lt;/a&gt;5.opendir=str&lt;/h3&gt;&lt;p&gt;让fio递归的添加目录下和子目录下的所有文件。&lt;/p&gt;
-&lt;h3 id=&quot;6-lockfile-str&quot;&gt;&lt;a href=&quot;#6-lockfile-str&quot; class=&quot;headerlink&quot; title=&quot;6.lockfile=str&quot;&gt;&lt;/a&gt;6.lockfile=str&lt;/h3&gt;&lt;p&gt;fio在文件上执行IO之前默认是不锁文件的，这样的话，当有多个线程在此文件上执行IO的话，会造成结果的不一致。这个选项可以用来共享文件的负载，支持的锁类型：&lt;br&gt;none 默认不使用锁&lt;br&gt;exclusive 排它锁&lt;br&gt;readwrite 读写锁&lt;br&gt;在后面可以加一个数字后缀，如果设置的话，每一个线程将会执行这个数字指定的IO后才会放弃锁，因为锁的开销是比较大的，所以这种方式可以加速IO。&lt;/p&gt;
-&lt;h3 id=&quot;7-kb-base-int&quot;&gt;&lt;a href=&quot;#7-kb-base-int&quot; class=&quot;headerlink&quot; title=&quot;7.kb_base=int&quot;&gt;&lt;/a&gt;7.kb_base=int&lt;/h3&gt;&lt;p&gt;size换算单位，1000/1024,默认为1024&lt;/p&gt;
-&lt;h3 id=&quot;8-randrepeat-bool&quot;&gt;&lt;a href=&quot;#8-randrepeat-bool&quot; class=&quot;headerlink&quot; title=&quot;8.randrepeat=bool&quot;&gt;&lt;/a&gt;8.randrepeat=bool&lt;/h3&gt;&lt;p&gt;对于随机IO负载，配置生成器的种子，使得路径是可以预估的，使得每次重复执行生成的序列是一样的。&lt;/p&gt;
-&lt;h3 id=&quot;9-use-os-rand-bool&quot;&gt;&lt;a href=&quot;#9-use-os-rand-bool&quot; class=&quot;headerlink&quot; title=&quot;9.use_os_rand=bool&quot;&gt;&lt;/a&gt;9.use_os_rand=bool&lt;/h3&gt;&lt;p&gt;fio可以使用操作系统的随机数产生器，也可以使用fio内部的随机数产生器（基于tausworthe），默认是采用fio内部的产生器,质量更数，速度更快。&lt;/p&gt;
-&lt;h3 id=&quot;7-fallocate-str&quot;&gt;&lt;a href=&quot;#7-fallocate-str&quot; class=&quot;headerlink&quot; title=&quot;7.fallocate=str&quot;&gt;&lt;/a&gt;7.fallocate=str&lt;/h3&gt;&lt;p&gt;如何准备测试文件&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;none 不执行预分配空间&lt;/li&gt;
-&lt;li&gt;posix 通过posix_fallocate()预分配空间&lt;/li&gt;
-&lt;li&gt;keep 通过fallocate()（设置FALLOC_FL_KEEP_SIZE）预分配空间&lt;/li&gt;
-&lt;li&gt;0 none的别名,出于兼容性&lt;/li&gt;
-&lt;li&gt;1 posix的别名，出于兼容性&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;并不是在所有的平台上都有效，&lt;code&gt;keep&lt;/code&gt;在linux上有效，ZFS不支持。默认为 &lt;code&gt;posix&lt;/code&gt;&lt;/p&gt;
-&lt;h3 id=&quot;8-fadvise-hint-bool&quot;&gt;&lt;a href=&quot;#8-fadvise-hint-bool&quot; class=&quot;headerlink&quot; title=&quot;8.fadvise_hint=bool&quot;&gt;&lt;/a&gt;8.fadvise_hint=bool&lt;/h3&gt;&lt;p&gt;默认fio将使用fadvise()来告知内核fio要产生的IO类型，如果不想告诉kernel来执行一些特定的IO类型的话，可行关闭这个选项。如果设置的话，fio将使用POSIX_FADV_SEWUENTIAL来作顺序IO，使用POSIX_FADV_RANDOM来做随机IO&lt;/p&gt;
-&lt;h3 id=&quot;9-filesize-int&quot;&gt;&lt;a href=&quot;#9-filesize-int&quot; class=&quot;headerlink&quot; title=&quot;9.filesize=int&quot;&gt;&lt;/a&gt;9.filesize=int&lt;/h3&gt;&lt;p&gt;单个文件的大小，可以是一个范围，在这种情况下，fio将会在一个范围内选择一个大小来决定单个文件大小，如果没有设置的话，所有的文件将会是同样的大小。&lt;/p&gt;
-&lt;h3 id=&quot;10-fill-device-bool-fill-fs-bool&quot;&gt;&lt;a href=&quot;#10-fill-device-bool-fill-fs-bool&quot; class=&quot;headerlink&quot; title=&quot;10.fill_device=bool,fill_fs=bool&quot;&gt;&lt;/a&gt;10.fill_device=bool,fill_fs=bool&lt;/h3&gt;&lt;p&gt;填满空间直到达到终止条件ENOSPC，只对顺序写有意义。对于读负载，首行要填满挂载点，然后再启动IO，对于裸设备结点，这个设置则没有什么意义，因为，它的大小已被被文件系统知道了，此外写的超出文件将不会返回ENOSPC.&lt;/p&gt;
-&lt;h3 id=&quot;11-blockalign-int-ba-int&quot;&gt;&lt;a href=&quot;#11-blockalign-int-ba-int&quot; class=&quot;headerlink&quot; title=&quot;11.blockalign=int,ba=int&quot;&gt;&lt;/a&gt;11.blockalign=int,ba=int&lt;/h3&gt;&lt;p&gt;配置随机io的对齐边界。默认是与blocksize的配置一致，对于direct_io，最小为512b,因为它与依赖的硬件块大小，对于使用文件的随机map来说，这个选项不起作用。&lt;/p&gt;
-&lt;h3 id=&quot;14-blocksize-range-irange-bsrange-irange&quot;&gt;&lt;a href=&quot;#14-blocksize-range-irange-bsrange-irange&quot; class=&quot;headerlink&quot; title=&quot;14.blocksize_range=irange,bsrange=irange&quot;&gt;&lt;/a&gt;14.blocksize_range=irange,bsrange=irange&lt;/h3&gt;&lt;p&gt;不再采用单一的块大小，而是定义一个范围，fio将采用混合io块大小.IO单元大小一般是给定最小值的备数。同时应用于读写，当然也可以通过‘,’来隔开分别配置读写。&lt;/p&gt;
-&lt;h3 id=&quot;15-bssplit-str&quot;&gt;&lt;a href=&quot;#15-bssplit-str&quot; class=&quot;headerlink&quot; title=&quot;15.bssplit=str&quot;&gt;&lt;/a&gt;15.bssplit=str&lt;/h3&gt;&lt;p&gt;可以更为精确的控制产生的block size.这个选项可以用来定义各个块大小所占的权重.格式是:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;bssplit=blocksize/percentage;blocksize/percentage
-bssplit=4k/10:64k/50;32k/40
-产生的这样的负载：50% 64k的块，10% 4k的块, 40% 32k的块
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;可以分别为读和写来设置&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;e.g. bssplit=2k/50:4k/50,4k/90:8k/10
-产生这样的负载：读（50% 64k的块，50% 4k的块），写（90% 4k的块, 10% 8k的块）
-&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&quot;16-blocksize-unaligned-bs-unaligned&quot;&gt;&lt;a href=&quot;#16-blocksize-unaligned-bs-unaligned&quot; class=&quot;headerlink&quot; title=&quot;16.blocksize_unaligned,bs_unaligned&quot;&gt;&lt;/a&gt;16.blocksize_unaligned,bs_unaligned&lt;/h3&gt;&lt;p&gt;如果这个选项被设置的，在bsrange范围内的大小都可以产生，这个选项对于direct io没有作用，因为对于direct io至少需要扇区对齐&lt;/p&gt;
-&lt;h3 id=&quot;17-zero-buffers&quot;&gt;&lt;a href=&quot;#17-zero-buffers&quot; class=&quot;headerlink&quot; title=&quot;17.zero_buffers&quot;&gt;&lt;/a&gt;17.zero_buffers&lt;/h3&gt;&lt;p&gt;如果这个选项设置的话，IO buffer全部位将被初始为0,如果没有置位的话，将会是随机数.&lt;/p&gt;
-&lt;h3 id=&quot;18-refill-buffers&quot;&gt;&lt;a href=&quot;#18-refill-buffers&quot; class=&quot;headerlink&quot; title=&quot;18.refill_buffers&quot;&gt;&lt;/a&gt;18.refill_buffers&lt;/h3&gt;&lt;p&gt;如果这个选项设置的话，fio将在每次submit之后都会将重新填满IO buffer,默认都会在初始是填满，以后重复利用。这个选项只有在zero_buffers没有设置的话，这个选项才有作用。&lt;/p&gt;
-&lt;h3 id=&quot;19-scramble-buffer-bool&quot;&gt;&lt;a href=&quot;#19-scramble-buffer-bool&quot; class=&quot;headerlink&quot; title=&quot;19.scramble_buffer=bool&quot;&gt;&lt;/a&gt;19.scramble_buffer=bool&lt;/h3&gt;&lt;p&gt;如果refilee_buffers成本太高的话，但是负载要求不使用重复数据块，设置这个选项的话，可以轻微的改动IO buffer内容，这种方法骗不过聪明的块压缩算法，但是可以骗过一些简单的算法。&lt;/p&gt;
-&lt;h3 id=&quot;20-buffer-compress-percentage-int&quot;&gt;&lt;a href=&quot;#20-buffer-compress-percentage-int&quot; class=&quot;headerlink&quot; title=&quot;20.buffer_compress_percentage=int&quot;&gt;&lt;/a&gt;20.buffer_compress_percentage=int&lt;/h3&gt;&lt;p&gt;如果这个设置的话，fio将会尝试提供可以压缩到特定级别的Buffer内容。FIO是能完提供混合的0和随机数来实现的。Note that this is per block size unit, for file/disk wide compression level that matches this setting, you’ll also want to set refill_buffers.&lt;/p&gt;
-&lt;h3 id=&quot;21-buffer-compress-chunk-int&quot;&gt;&lt;a href=&quot;#21-buffer-compress-chunk-int&quot; class=&quot;headerlink&quot; title=&quot;21.buffer_compress_chunk=int&quot;&gt;&lt;/a&gt;21.buffer_compress_chunk=int&lt;/h3&gt;&lt;p&gt;See buffer_compress_percentage. This setting allows fio to manage how big the ranges of random data and zeroed data is. Without this set, fio will provide buffer_compress_percentage of blocksize random data, followed by the remaining zeroed. With this set to some chunk size smaller than the block size, fio can alternate random and zeroed data throughout the IO buffer.&lt;/p&gt;
-&lt;h3 id=&quot;22-file-service-type-str&quot;&gt;&lt;a href=&quot;#22-file-service-type-str&quot; class=&quot;headerlink&quot; title=&quot;22.file_service_type=str&quot;&gt;&lt;/a&gt;22.file_service_type=str&lt;/h3&gt;&lt;p&gt;fio切换job时，如何选择文件，支持下面的选项:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;random 随机选择一个文件&lt;/li&gt;
-&lt;li&gt;roundrobin 循环使用打开的文件，默认&lt;/li&gt;
-&lt;li&gt;sequential 完成一个文件后，再移动到下一个文件&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;这个选项可以加后缀数字，标明切换到下一个新的频繁程度。&lt;/p&gt;
-&lt;p&gt;e.g. random:4 每4次IO后，将会切换到一下随机的文件&lt;/p&gt;
-&lt;h3 id=&quot;23-iodepth-batch-submit-int-iodepth-batch-int&quot;&gt;&lt;a href=&quot;#23-iodepth-batch-submit-int-iodepth-batch-int&quot; class=&quot;headerlink&quot; title=&quot;23.iodepth_batch_submit=int,iodepth_batch=int&quot;&gt;&lt;/a&gt;23.iodepth_batch_submit=int,iodepth_batch=int&lt;/h3&gt;&lt;p&gt;这个定义了一次性提交几个IO，默认是1，意味着一旦准备好就提交IO，这个选项可以用来一次性批量提交IO&lt;/p&gt;
-&lt;h3 id=&quot;24-iodepth-batch-complete-int&quot;&gt;&lt;a href=&quot;#24-iodepth-batch-complete-int&quot; class=&quot;headerlink&quot; title=&quot;24.iodepth_batch_complete=int&quot;&gt;&lt;/a&gt;24.iodepth_batch_complete=int&lt;/h3&gt;&lt;p&gt;这个选项定义了一次取回多少个IO，如果定义为1的话，意味着我们将向内核请求最小为1个IO.The IO retrieval will go on until we hit the limit set by iodetph_low.If this variable is set to 0, then fi will always check for completed events before quuing more IO.This helps reduce IO latency, at the cost of more retrieval sysstem calls.&lt;/p&gt;
-&lt;h3 id=&quot;25-iodepth-low-int&quot;&gt;&lt;a href=&quot;#25-iodepth-low-int&quot; class=&quot;headerlink&quot; title=&quot;25.iodepth_low=int&quot;&gt;&lt;/a&gt;25.iodepth_low=int&lt;/h3&gt;&lt;p&gt;这个水位标志标明什么时候开始重新填充这个队列，默认是同iodepth是一样的，意味着，每时每刻都在尝试填满这个队列。如果iodepth设置为16，而iodepth设置为4的话，那么fio将等到depth下降到4才开始重新填充&lt;/p&gt;
-&lt;h3 id=&quot;26-offset-int&quot;&gt;&lt;a href=&quot;#26-offset-int&quot; class=&quot;headerlink&quot; title=&quot;26.offset=int&quot;&gt;&lt;/a&gt;26.offset=int&lt;/h3&gt;&lt;p&gt;在文件特定的偏移开始读数据,在这个offset之前的数据将不会被使用，有效的文件大小=real_size-offset&lt;/p&gt;
-&lt;h3 id=&quot;27-offset-increment-int&quot;&gt;&lt;a href=&quot;#27-offset-increment-int&quot; class=&quot;headerlink&quot; title=&quot;27.offset_increment=int&quot;&gt;&lt;/a&gt;27.offset_increment=int&lt;/h3&gt;&lt;p&gt;如果这个选项被设置的话，实际的offset=offset+offset_increment * thread_number,线程号是从0开始的一个计数器，对于每一个job来说是递增的。这个选项对于几个job同时并行在不交界的地方操作一个文件是有用的。&lt;/p&gt;
-&lt;h3 id=&quot;28-fsync-int&quot;&gt;&lt;a href=&quot;#28-fsync-int&quot; class=&quot;headerlink&quot; title=&quot;28.fsync=int&quot;&gt;&lt;/a&gt;28.fsync=int&lt;/h3&gt;&lt;p&gt;如果写一个文件的话，每n次IO传输完block后，都会进行一次同步脏数据的操作。&lt;br&gt;e.g. fsync=int&lt;br&gt;fio每32次写之后，同步一次文件。如果采用non-buffered io，不需要使用sync同步文件&lt;br&gt;对于sg io引擎的话，可以在任何情况下同步磁盘cache.&lt;/p&gt;
-&lt;h3 id=&quot;29-fdatasync-int&quot;&gt;&lt;a href=&quot;#29-fdatasync-int&quot; class=&quot;headerlink&quot; title=&quot;29.fdatasync=int&quot;&gt;&lt;/a&gt;29.fdatasync=int&lt;/h3&gt;&lt;p&gt;同fsync，但是采用fdatasync()来同步数据，但不同步元数据&lt;/p&gt;
-&lt;h3 id=&quot;30-sync-file-range-str-val&quot;&gt;&lt;a href=&quot;#30-sync-file-range-str-val&quot; class=&quot;headerlink&quot; title=&quot;30.sync_file_range=str:val&quot;&gt;&lt;/a&gt;30.sync_file_range=str:val&lt;/h3&gt;&lt;p&gt;对于每&lt;code&gt;val&lt;/code&gt;个写操作，将执行sync_file_range()。FIO将跟踪从上次sync_file_range()调用之扣的写范围，&lt;code&gt;str&lt;/code&gt;可以是以下的选择:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;wait_before SYNC_FILE_RANGE_WAIT_BEFORE&lt;/li&gt;
-&lt;li&gt;write SYNC_FILE_RANGE_WRITE&lt;/li&gt;
-&lt;li&gt;wait_after SYNC_FILE_RANGE_WAIT_AFTER&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;e.g.sync_file_range=wait_before,write:8,fio将在每8次写后使用SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE&lt;/p&gt;
-&lt;h3 id=&quot;31-overwrite-bool&quot;&gt;&lt;a href=&quot;#31-overwrite-bool&quot; class=&quot;headerlink&quot; title=&quot;31.overwrite=bool&quot;&gt;&lt;/a&gt;31.overwrite=bool&lt;/h3&gt;&lt;p&gt;如果是true的话，写一个文件的话，将会覆盖已经存在的数据。如果文件不存在的话，它将会在写阶段开始的时候创建这个文件。&lt;/p&gt;
-&lt;h3 id=&quot;32-end-fsync-bool&quot;&gt;&lt;a href=&quot;#32-end-fsync-bool&quot; class=&quot;headerlink&quot; title=&quot;32.end_fsync=bool&quot;&gt;&lt;/a&gt;32.end_fsync=bool&lt;/h3&gt;&lt;p&gt;如果是true的话，当job退出的话，fsync将会同步文件内容&lt;/p&gt;
-&lt;h3 id=&quot;33-fsync-on-close-bool&quot;&gt;&lt;a href=&quot;#33-fsync-on-close-bool&quot; class=&quot;headerlink&quot; title=&quot;33.fsync_on_close=bool&quot;&gt;&lt;/a&gt;33.fsync_on_close=bool&lt;/h3&gt;&lt;p&gt;如果是true的话，关闭时，fio将会同步脏文件，不同于end_fsync的时，它将会在每个文件关闭时都会发生，而不是只在job结束时。&lt;/p&gt;
-&lt;h3 id=&quot;34-rwmixread-int&quot;&gt;&lt;a href=&quot;#34-rwmixread-int&quot; class=&quot;headerlink&quot; title=&quot;34.rwmixread=int&quot;&gt;&lt;/a&gt;34.rwmixread=int&lt;/h3&gt;&lt;p&gt;混合读写中，读占的百分比&lt;/p&gt;
-&lt;h3 id=&quot;35-rwmixwrite-int&quot;&gt;&lt;a href=&quot;#35-rwmixwrite-int&quot; class=&quot;headerlink&quot; title=&quot;35.rwmixwrite=int&quot;&gt;&lt;/a&gt;35.rwmixwrite=int&lt;/h3&gt;&lt;p&gt;混合读写中，写占的百分比；如果rwmixread=int和rwmixwrite=int同时使用的话并且相加不等于100%的话，第二个值将会覆盖第一个值。这可能要干扰比例的设定,如果要求fio来限制读和写到一定的比率。在果在这种情况下，那么分布会的有点的不同。&lt;/p&gt;
-&lt;h3 id=&quot;36-norandommap&quot;&gt;&lt;a href=&quot;#36-norandommap&quot; class=&quot;headerlink&quot; title=&quot;36.norandommap&quot;&gt;&lt;/a&gt;36.norandommap&lt;/h3&gt;&lt;p&gt;一般情况下，fio在做随机IO时，将会覆盖文件的每一个block.如果这个选项设置的话，fio将只是获取一个新的随机offset,而不会查询过去的历史。这意味着一些块可能没有读或写，一些块可能要读/写很多次。在个选项与verify=互斥，并只有多个块大小（bsrange=）正在使用，因为fio只会记录完整的块的重写。&lt;/p&gt;
-&lt;h3 id=&quot;37-softrandommap-bool&quot;&gt;&lt;a href=&quot;#37-softrandommap-bool&quot; class=&quot;headerlink&quot; title=&quot;37.softrandommap=bool&quot;&gt;&lt;/a&gt;37.softrandommap=bool&lt;/h3&gt;&lt;p&gt;See norandommap. If fio runs with the random block map enabled and it fails to allocate the map, if this option is set it will continue without a random block map. As coverage will not be as complete as with random maps, this option is disabled by default.&lt;/p&gt;
-&lt;h3 id=&quot;38-nice-int&quot;&gt;&lt;a href=&quot;#38-nice-int&quot; class=&quot;headerlink&quot; title=&quot;38.nice=int&quot;&gt;&lt;/a&gt;38.nice=int&lt;/h3&gt;&lt;p&gt;根据给定的nice值来运行这个job&lt;/p&gt;
-&lt;h3 id=&quot;39-prio-int&quot;&gt;&lt;a href=&quot;#39-prio-int&quot; class=&quot;headerlink&quot; title=&quot;39.prio=int&quot;&gt;&lt;/a&gt;39.prio=int&lt;/h3&gt;&lt;p&gt;设置job的优先级，linux将这个值限制在0-7之间，0是最高的。&lt;/p&gt;
-&lt;h3 id=&quot;40-prioclass-int&quot;&gt;&lt;a href=&quot;#40-prioclass-int&quot; class=&quot;headerlink&quot; title=&quot;40.prioclass=int&quot;&gt;&lt;/a&gt;40.prioclass=int&lt;/h3&gt;&lt;p&gt;设置优先级等级。&lt;/p&gt;
-&lt;h3 id=&quot;41-thinktime-int&quot;&gt;&lt;a href=&quot;#41-thinktime-int&quot; class=&quot;headerlink&quot; title=&quot;41.thinktime=int&quot;&gt;&lt;/a&gt;41.thinktime=int&lt;/h3&gt;&lt;p&gt;上一个IO完成之后，拖延x毫秒，然后跳到下一个。可以用来访真应用进行的处理。&lt;/p&gt;
-&lt;h3 id=&quot;42-thinktime-spin-int&quot;&gt;&lt;a href=&quot;#42-thinktime-spin-int&quot; class=&quot;headerlink&quot; title=&quot;42.thinktime_spin=int&quot;&gt;&lt;/a&gt;42.thinktime_spin=int&lt;/h3&gt;&lt;p&gt;只有在thinktime设置时才有效，在为了sleep完thinktime规定的时间之前，假装花费CPU时间来做一些与数据接收有关的事情。&lt;/p&gt;
-&lt;h3 id=&quot;43-thinktime-blocks&quot;&gt;&lt;a href=&quot;#43-thinktime-blocks&quot; class=&quot;headerlink&quot; title=&quot;43.thinktime_blocks&quot;&gt;&lt;/a&gt;43.thinktime_blocks&lt;/h3&gt;&lt;p&gt;只有在thinktime设置时才有效，控制在等等‘thinktime’的时间内产生多少个block，如果没有设置的话，这个值将是1，每次block后，都会将等待‘thinktime’us。&lt;/p&gt;
-&lt;h3 id=&quot;44-rate-int&quot;&gt;&lt;a href=&quot;#44-rate-int&quot; class=&quot;headerlink&quot; title=&quot;44.rate=int&quot;&gt;&lt;/a&gt;44.rate=int&lt;/h3&gt;&lt;p&gt;限制job的带宽。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;e.g.rate=500k,限制读和写到500k/s
-e.g.rate=1m,500k,限制读到1MB/s，限制写到500KB/s
-e.g.rate=,500k , 限制写到500kb/s
-e.g.rate=500k, 限制读到500KB/s
-&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&quot;45-ratemin-int&quot;&gt;&lt;a href=&quot;#45-ratemin-int&quot; class=&quot;headerlink&quot; title=&quot;45.ratemin=int&quot;&gt;&lt;/a&gt;45.ratemin=int&lt;/h3&gt;&lt;p&gt;告诉fio尽最在能力来保证这个最小的带宽，如果不能满足这个需要，将会导致程序退出。&lt;/p&gt;
-&lt;h3 id=&quot;46-rate-iops-int&quot;&gt;&lt;a href=&quot;#46-rate-iops-int&quot; class=&quot;headerlink&quot; title=&quot;46.rate_iops=int&quot;&gt;&lt;/a&gt;46.rate_iops=int&lt;/h3&gt;&lt;p&gt;将带宽限制到固定数目的IOPS，基本上同rate一样，只是独立于带宽，如果job是指定了一个block size范围，而不是一个固定的值的话，最小blocksize将会作为标准。&lt;/p&gt;
-&lt;h3 id=&quot;47-rate-iops-min-int&quot;&gt;&lt;a href=&quot;#47-rate-iops-min-int&quot; class=&quot;headerlink&quot; title=&quot;47.rate_iops_min=int&quot;&gt;&lt;/a&gt;47.rate_iops_min=int&lt;/h3&gt;&lt;p&gt;如果fio达不到这个IOPS的话，将会导致job退出。&lt;/p&gt;
-&lt;h3 id=&quot;48-ratecycle-int&quot;&gt;&lt;a href=&quot;#48-ratecycle-int&quot; class=&quot;headerlink&quot; title=&quot;48.ratecycle=int&quot;&gt;&lt;/a&gt;48.ratecycle=int&lt;/h3&gt;&lt;p&gt;几个毫秒内的平均带宽。用于‘rate’和‘ratemin’&lt;/p&gt;
-&lt;h3 id=&quot;49-cpumask-int&quot;&gt;&lt;a href=&quot;#49-cpumask-int&quot; class=&quot;headerlink&quot; title=&quot;49.cpumask=int&quot;&gt;&lt;/a&gt;49.cpumask=int&lt;/h3&gt;&lt;p&gt;设置job使用的CPU.给出的参数是一个掩码来设置job可以运行的CPU。所以，如果要允许CPU在1和5上的话，可以通过10进制数来设置（1&amp;lt;&amp;lt;1 | 1&amp;lt;&amp;lt;5），或是34。查看sched_setaffinity的man page。它可能并不是支持所有的操作系统和kernel版本。This option doesn’t work well for a higher CPU count than what you can store in an integer mask, so it can only control cpus 1-32. For boxes with larger CPU counts, use cpus_allowed.&lt;/p&gt;
-&lt;h3 id=&quot;50-cpus-allowed-str&quot;&gt;&lt;a href=&quot;#50-cpus-allowed-str&quot; class=&quot;headerlink&quot; title=&quot;50.cpus_allowed=str&quot;&gt;&lt;/a&gt;50.cpus_allowed=str&lt;/h3&gt;&lt;p&gt;功能同cpumask一样，但是允许通过一段文本来设置允许的CPU。e.g.上面的例子可是这样写cpus_allowed=1,5。这个选项允许设置一个CPU范围，如cpus_allowed=1,5,8-15&lt;/p&gt;
-&lt;h3 id=&quot;51-startdelay-time&quot;&gt;&lt;a href=&quot;#51-startdelay-time&quot; class=&quot;headerlink&quot; title=&quot;51.startdelay=time&quot;&gt;&lt;/a&gt;51.startdelay=time&lt;/h3&gt;&lt;p&gt;fio启动几秒后再启动job。只有在job文件包含几个jobs时才有效，是为了将某个job延时几秒后执行。&lt;/p&gt;
-&lt;h3 id=&quot;52-runtime-time&quot;&gt;&lt;a href=&quot;#52-runtime-time&quot; class=&quot;headerlink&quot; title=&quot;52.runtime=time&quot;&gt;&lt;/a&gt;52.runtime=time&lt;/h3&gt;&lt;p&gt;控制fio在执行设定的时间后退出执行。很难来控制单个job的运行时间，所以这个参数是用来控制总的运行时间。&lt;/p&gt;
-&lt;h3 id=&quot;53-time-based&quot;&gt;&lt;a href=&quot;#53-time-based&quot; class=&quot;headerlink&quot; title=&quot;53.time_based&quot;&gt;&lt;/a&gt;53.time_based&lt;/h3&gt;&lt;p&gt;如果设置的话，即使file已被完全读写或写完，也要执行完runtime规定的时间。它是通过循环执行相同的负载来实现的。&lt;/p&gt;
-&lt;h3 id=&quot;54-ramp-tim-time&quot;&gt;&lt;a href=&quot;#54-ramp-tim-time&quot; class=&quot;headerlink&quot; title=&quot;54.ramp_tim=time&quot;&gt;&lt;/a&gt;54.ramp_tim=time&lt;/h3&gt;&lt;p&gt;设定在记录任何性能信息之前要运行特定负载的时间。这个用来等性能稳定后，再记录日志结果，因此可以减少生成稳定的结果需要的运行时间。Note that the ramp_time is considered lead in time for a job, thus it will increase the total runtime if a special timeout or runtime is specified.&lt;/p&gt;
-&lt;h3 id=&quot;55-invalidate-bool&quot;&gt;&lt;a href=&quot;#55-invalidate-bool&quot; class=&quot;headerlink&quot; title=&quot;55.invalidate=bool&quot;&gt;&lt;/a&gt;55.invalidate=bool&lt;/h3&gt;&lt;p&gt;Invalidate the buffer/page cache parts for this file prior to starting io. Defaults to true.&lt;/p&gt;
-&lt;h3 id=&quot;56-sync-bool&quot;&gt;&lt;a href=&quot;#56-sync-bool&quot; class=&quot;headerlink&quot; title=&quot;56.sync=bool&quot;&gt;&lt;/a&gt;56.sync=bool&lt;/h3&gt;&lt;p&gt;使用sync来进行buffered写。对于多数引擎，这意味着使用O_SYNC&lt;/p&gt;
-&lt;h3 id=&quot;57-iomem-str-mem-str&quot;&gt;&lt;a href=&quot;#57-iomem-str-mem-str&quot; class=&quot;headerlink&quot; title=&quot;57.iomem=str,mem=str&quot;&gt;&lt;/a&gt;57.iomem=str,mem=str&lt;/h3&gt;&lt;p&gt;fio可以使用各种各样的类型的内存用来io单元buffer:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;malloc 使用malloc()&lt;br&gt;-shm 使用共享内存.通过shmget()分配&lt;br&gt;-shmhuge 同shm一样，可以使用huge pages&lt;br&gt;-mmap 使用mmap。可以是匿名内存，或是支持的文件，如果一个文件名在选项后面设置的话，格式是mem=mmap:/path/to/file&lt;br&gt;-mmaphuge 使用mmapped huge file.在mmaphuge扣面添加文件名，alamem=mmaphuge:/hugetlbfs/file&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;分配的区域是由job允许的最大block size * io 队列的长度。对于shmhuge和mmaphuge，系统应该有空闲的页来分配。这个可以通过检测和设置reading/writing /proc/sys/vm/nr_hugepages来实现（linux）。FIO假设一个huge page是4MB。所以要计算对于一个JOB文件需要的Huge page数量，加上所有jobs的队列长度再乘以最大块大小，然后除以每个huge page的大小。可以通过查看/proc/meminfo来看huge pages的大小。如果通过设置nr_hugepages=0来使得不允许分配huge pages，使用mmaphug或是shmhuge将会失败。&lt;/p&gt;
-&lt;p&gt;mmaphuge需要挂载hugelbfs而且要指定文件的位置，所以如果要挂载在/huge下的话，可以使用mem=mmaphuge:/huge/somefile&lt;/p&gt;
-&lt;h3 id=&quot;58-iomem-align-int&quot;&gt;&lt;a href=&quot;#58-iomem-align-int&quot; class=&quot;headerlink&quot; title=&quot;58.iomem_align=int&quot;&gt;&lt;/a&gt;58.iomem_align=int&lt;/h3&gt;&lt;p&gt;标明IO内存缓冲的内存对齐方式。Note that the given alignment is applied to the first IO unit buffer, if using iodepth the alignment of the following buffers are given by the bs used. In other words, if using a bs that is a multiple of the page sized in the system, all buffers will be aligned to this value. If using a bs that is not page aligned, the alignment of subsequent IO memory buffers is the sum of the iomem_align and bs used.&lt;/p&gt;
-&lt;h3 id=&quot;59-hugepage-size-int&quot;&gt;&lt;a href=&quot;#59-hugepage-size-int&quot; class=&quot;headerlink&quot; title=&quot;59.hugepage-size=int&quot;&gt;&lt;/a&gt;59.hugepage-size=int&lt;/h3&gt;&lt;p&gt;设置huge page的大小。至少要与系统的设定相等。默认是4MB，必然是MB的倍数，所以用hugepage-size=Xm是用来避免出现不是2的整数次方的情况。&lt;/p&gt;
-&lt;h3 id=&quot;60-exitall&quot;&gt;&lt;a href=&quot;#60-exitall&quot; class=&quot;headerlink&quot; title=&quot;60.exitall&quot;&gt;&lt;/a&gt;60.exitall&lt;/h3&gt;&lt;p&gt;当一个job退出时，会终止运行其它的job，默认是等待所有的job都完成，FIO才退出，但有时候这并不是我们想要的。&lt;/p&gt;
-&lt;h3 id=&quot;61-bwavgtime-int&quot;&gt;&lt;a href=&quot;#61-bwavgtime-int&quot; class=&quot;headerlink&quot; title=&quot;61.bwavgtime=int&quot;&gt;&lt;/a&gt;61.bwavgtime=int&lt;/h3&gt;&lt;p&gt;在给定时间内的平均带宽。值是以毫秒为单位的&lt;/p&gt;
-&lt;h3 id=&quot;62-iopsavgtime-int&quot;&gt;&lt;a href=&quot;#62-iopsavgtime-int&quot; class=&quot;headerlink&quot; title=&quot;62.iopsavgtime=int&quot;&gt;&lt;/a&gt;62.iopsavgtime=int&lt;/h3&gt;&lt;p&gt;在给定时间内的平均IOPS，值是以毫秒为单位的&lt;/p&gt;
-&lt;h3 id=&quot;63-create-serialize-bool&quot;&gt;&lt;a href=&quot;#63-create-serialize-bool&quot; class=&quot;headerlink&quot; title=&quot;63.create_serialize=bool&quot;&gt;&lt;/a&gt;63.create_serialize=bool&lt;/h3&gt;&lt;p&gt;job将会串行化创建job,这将会用来避免数据文件的交叉，这依赖于文件系统和系统的CPU数&lt;/p&gt;
-&lt;h3 id=&quot;64-create-fsync-bool&quot;&gt;&lt;a href=&quot;#64-create-fsync-bool&quot; class=&quot;headerlink&quot; title=&quot;64.create_fsync=bool&quot;&gt;&lt;/a&gt;64.create_fsync=bool&lt;/h3&gt;&lt;p&gt;创建后同步数据文件，这是默认的值&lt;/p&gt;
-&lt;h3 id=&quot;65-create-on-open-bool&quot;&gt;&lt;a href=&quot;#65-create-on-open-bool&quot; class=&quot;headerlink&quot; title=&quot;65.create_on_open=bool&quot;&gt;&lt;/a&gt;65.create_on_open=bool&lt;/h3&gt;&lt;p&gt;不会为IO预先创建文件，只是在要向文件发起IO的时候，才创建open()&lt;/p&gt;
-&lt;h3 id=&quot;66-create-only-bool&quot;&gt;&lt;a href=&quot;#66-create-only-bool&quot; class=&quot;headerlink&quot; title=&quot;66.create_only=bool&quot;&gt;&lt;/a&gt;66.create_only=bool&lt;/h3&gt;&lt;p&gt;如果设置为true的话，fio将只运行到job的配置阶段。如果文件需要部署或是更新的磁盘的话，只有上面的事才会做，实际的文件内容并没有执行。&lt;/p&gt;
-&lt;h3 id=&quot;67-pre-read-bool&quot;&gt;&lt;a href=&quot;#67-pre-read-bool&quot; class=&quot;headerlink&quot; title=&quot;67.pre_read=bool&quot;&gt;&lt;/a&gt;67.pre_read=bool&lt;/h3&gt;&lt;p&gt;如果这个选项被设置的话，在执行IO操作之前，文件将会被预读到内存.这会删除‘invalidate’标志，因为预读数据，然后丢弃cache中的数据的话，是没有意义的。这只是对可以seek的IO引擎有效，因为这允许读相同的数据多次。因此对于network和splice不起作用。&lt;/p&gt;
-&lt;h3 id=&quot;68-unlink-bool&quot;&gt;&lt;a href=&quot;#68-unlink-bool&quot; class=&quot;headerlink&quot; title=&quot;68.unlink=bool&quot;&gt;&lt;/a&gt;68.unlink=bool&lt;/h3&gt;&lt;p&gt;完成后将删除job产生的文件。默认是not,如果设置为true的话，将会花很多时间重复创建这些文件。&lt;/p&gt;
-&lt;h3 id=&quot;69-loops-int&quot;&gt;&lt;a href=&quot;#69-loops-int&quot; class=&quot;headerlink&quot; title=&quot;69.loops=int&quot;&gt;&lt;/a&gt;69.loops=int&lt;/h3&gt;&lt;p&gt;重复运行某个job多次，默认是1&lt;/p&gt;
-&lt;h3 id=&quot;70-do-verify-bool&quot;&gt;&lt;a href=&quot;#70-do-verify-bool&quot; class=&quot;headerlink&quot; title=&quot;70.do_verify=bool&quot;&gt;&lt;/a&gt;70.do_verify=bool&lt;/h3&gt;&lt;p&gt;写完成后，执行一个校验的阶段，只有当verify设置的时候才有效。默认是true&lt;/p&gt;
-&lt;h3 id=&quot;80-verify-str&quot;&gt;&lt;a href=&quot;#80-verify-str&quot; class=&quot;headerlink&quot; title=&quot;80.verify=str&quot;&gt;&lt;/a&gt;80.verify=str&lt;/h3&gt;&lt;p&gt;写一个文件时，每次执行完一个job扣，fio可以检验文件内容.允许的校验算法是：&lt;br&gt;md5,crc64,crc32c,crc32c-intel,crc32,crc16,crc7,sha512,sha256,sha1,meta,null.&lt;br&gt;这个选项可以用来执行重复的burn-in测试，来保证写数据已经正确的读回。如果是read或随机读，fio将假设它将会检验先前写的文件。如果是各种格式的写，verify将会是对新写入的数据进行校验。&lt;/p&gt;
-&lt;h3 id=&quot;81-verifysort-bool&quot;&gt;&lt;a href=&quot;#81-verifysort-bool&quot; class=&quot;headerlink&quot; title=&quot;81.verifysort=bool&quot;&gt;&lt;/a&gt;81.verifysort=bool&lt;/h3&gt;&lt;p&gt;如果设置的话，fio will sort written verify blocks when it deems it faster to read them back in a sorted manner. This is often the case when overwriting an existing file, since the blocks are already laid out in the file system. You can ignore this option unless doing huge amounts of really fast IO where the red-black tree sorting CPU time becomes significant.&lt;/p&gt;
-&lt;h3 id=&quot;82-verify-offset-int&quot;&gt;&lt;a href=&quot;#82-verify-offset-int&quot; class=&quot;headerlink&quot; title=&quot;82.verify_offset=int&quot;&gt;&lt;/a&gt;82.verify_offset=int&lt;/h3&gt;&lt;p&gt;Swap the verification header with data somewhere else in the block before writing. Its swapped back before verifying.&lt;/p&gt;
-&lt;h3 id=&quot;83-verify-interval-int&quot;&gt;&lt;a href=&quot;#83-verify-interval-int&quot; class=&quot;headerlink&quot; title=&quot;83.verify_interval=int&quot;&gt;&lt;/a&gt;83.verify_interval=int&lt;/h3&gt;&lt;p&gt;Write the verification header at a finer granularity than the blocksize. It will be written for chunks the size of header_interval. blocksize should divide this evenly&lt;/p&gt;
-&lt;h3 id=&quot;84-verify-pattern-str&quot;&gt;&lt;a href=&quot;#84-verify-pattern-str&quot; class=&quot;headerlink&quot; title=&quot;84.verify_pattern=str&quot;&gt;&lt;/a&gt;84.verify_pattern=str&lt;/h3&gt;&lt;h3 id=&quot;85-verify-fatal-bool&quot;&gt;&lt;a href=&quot;#85-verify-fatal-bool&quot; class=&quot;headerlink&quot; title=&quot;85.verify_fatal=bool&quot;&gt;&lt;/a&gt;85.verify_fatal=bool&lt;/h3&gt;&lt;h3 id=&quot;86-verify-dump-bool&quot;&gt;&lt;a href=&quot;#86-verify-dump-bool&quot; class=&quot;headerlink&quot; title=&quot;86.verify_dump=bool&quot;&gt;&lt;/a&gt;86.verify_dump=bool&lt;/h3&gt;&lt;h3 id=&quot;87-verify-async-int&quot;&gt;&lt;a href=&quot;#87-verify-async-int&quot; class=&quot;headerlink&quot; title=&quot;87.verify_async=int&quot;&gt;&lt;/a&gt;87.verify_async=int&lt;/h3&gt;&lt;h3 id=&quot;88-verify-async-cpus-str&quot;&gt;&lt;a href=&quot;#88-verify-async-cpus-str&quot; class=&quot;headerlink&quot; title=&quot;88.verify_async_cpus=str&quot;&gt;&lt;/a&gt;88.verify_async_cpus=str&lt;/h3&gt;&lt;h3 id=&quot;89-verify-backlog-int&quot;&gt;&lt;a href=&quot;#89-verify-backlog-int&quot; class=&quot;headerlink&quot; title=&quot;89.verify_backlog=int&quot;&gt;&lt;/a&gt;89.verify_backlog=int&lt;/h3&gt;&lt;h3 id=&quot;90-verify-backlog-batch-int&quot;&gt;&lt;a href=&quot;#90-verify-backlog-batch-int&quot; class=&quot;headerlink&quot; title=&quot;90.verify_backlog_batch=int&quot;&gt;&lt;/a&gt;90.verify_backlog_batch=int&lt;/h3&gt;&lt;h3 id=&quot;91-stonewall-wait-for-previous&quot;&gt;&lt;a href=&quot;#91-stonewall-wait-for-previous&quot; class=&quot;headerlink&quot; title=&quot;91.stonewall,wait_for_previous&quot;&gt;&lt;/a&gt;91.stonewall,wait_for_previous&lt;/h3&gt;&lt;p&gt;等待先前的job执行完成后，再启动一个新的job。可以用来在job文件中加入串行化的点。stone wall也用来启动一个新reporting group&lt;/p&gt;
-&lt;h3 id=&quot;92-new-group&quot;&gt;&lt;a href=&quot;#92-new-group&quot; class=&quot;headerlink&quot; title=&quot;92.new_group&quot;&gt;&lt;/a&gt;92.new_group&lt;/h3&gt;&lt;p&gt;启动一个新的reporting group。如果这个选项没有设置的话，在job文件中的job将属于相同的reporting group，除非通过stonewall隔开&lt;/p&gt;
-&lt;h3 id=&quot;93-group-reporting&quot;&gt;&lt;a href=&quot;#93-group-reporting&quot; class=&quot;headerlink&quot; title=&quot;93.group_reporting&quot;&gt;&lt;/a&gt;93.group_reporting&lt;/h3&gt;&lt;p&gt;如果‘numjobs’设置的话，我们感兴趣的可能是打印group的统计值，而不是一个单独的job。这在‘numjobs’的值很大时，一般是设置为true的，可以减少输出的信息量。如果‘group_reporting’设置的话，fio将会显示最终的per-groupreport而不是每一个job都会显示&lt;/p&gt;
-&lt;h3 id=&quot;94-thread&quot;&gt;&lt;a href=&quot;#94-thread&quot; class=&quot;headerlink&quot; title=&quot;94.thread&quot;&gt;&lt;/a&gt;94.thread&lt;/h3&gt;&lt;p&gt;fio默认会使用fork()创建job，如果这个选项设置的话，fio将使用pthread_create来创建线程&lt;/p&gt;
-&lt;h3 id=&quot;95-zonesize-int&quot;&gt;&lt;a href=&quot;#95-zonesize-int&quot; class=&quot;headerlink&quot; title=&quot;95.zonesize=int&quot;&gt;&lt;/a&gt;95.zonesize=int&lt;/h3&gt;&lt;p&gt;将一个文件分为设定的大小的zone&lt;/p&gt;
-&lt;h3 id=&quot;96-zoneskip-int&quot;&gt;&lt;a href=&quot;#96-zoneskip-int&quot; class=&quot;headerlink&quot; title=&quot;96.zoneskip=int&quot;&gt;&lt;/a&gt;96.zoneskip=int&lt;/h3&gt;&lt;p&gt;跳过这个zone的数据都被读完后，会跳过设定数目的zone.&lt;/p&gt;
-&lt;h3 id=&quot;97-write-iolog-str&quot;&gt;&lt;a href=&quot;#97-write-iolog-str&quot; class=&quot;headerlink&quot; title=&quot;97.write_iolog=str&quot;&gt;&lt;/a&gt;97.write_iolog=str&lt;/h3&gt;&lt;p&gt;将IO模式写到一个指定的文件中。为每一个job指定一个单独的文件，否则iolog将会分散的的，文件将会冲突。&lt;/p&gt;
-&lt;h3 id=&quot;98-read-iolog-str&quot;&gt;&lt;a href=&quot;#98-read-iolog-str&quot; class=&quot;headerlink&quot; title=&quot;98.read_iolog=str&quot;&gt;&lt;/a&gt;98.read_iolog=str&lt;/h3&gt;&lt;p&gt;将开一个指定的文件，回复里面的日志。这可以用来存储一个负载，并进行重放。给出的iolog也可以是一个二进制文件，允许fio来重放通过blktrace获取的负载。&lt;/p&gt;
-&lt;h3 id=&quot;99-replay-no-stall&quot;&gt;&lt;a href=&quot;#99-replay-no-stall&quot; class=&quot;headerlink&quot; title=&quot;99.replay_no_stall&quot;&gt;&lt;/a&gt;99.replay_no_stall&lt;/h3&gt;&lt;p&gt;当使用read_iolog重放I/O时，默认是尝试遵守这个时间戳，在每个IOPS之前会有适当的延迟。通过设置这个属性，将不会遵守这个时间戳，会根据期望的顺序，尝试回复，越快越好。结果就是相同类型的IO，但是不同的时间&lt;/p&gt;
-&lt;h3 id=&quot;101-replay-redirect&quot;&gt;&lt;a href=&quot;#101-replay-redirect&quot; class=&quot;headerlink&quot; title=&quot;101.replay_redirect&quot;&gt;&lt;/a&gt;101.replay_redirect&lt;/h3&gt;&lt;p&gt;当使用read_iolog回放IO时，默认的行为是在每一个IOP来源的major/minor设备上回放IOPS。这在有些情况是不是期望的，比如在另一台机器上回放，或是更换了硬件，使是major/minor映射关系发生了改变。Replay_redirect将会导致所有的IOPS回放到单个设备上，不管这些IO来源于哪里。e.g.replay_redirect=/dev/sdc将会使得所有的IO都会重定向到/dev/sdc.这就意味着多个设备的数据都会重放到一个设置，如果想来自己多个设备的数据重放到多个设置的话，需要处理我们的trace，生成独立的trace，再使用fio进行重放，不过这会破坏多个设备访问的严格次序。&lt;/p&gt;
-&lt;h3 id=&quot;102-write-bw-log-str&quot;&gt;&lt;a href=&quot;#102-write-bw-log-str&quot; class=&quot;headerlink&quot; title=&quot;102.write_bw_log=str&quot;&gt;&lt;/a&gt;102.write_bw_log=str&lt;/h3&gt;&lt;p&gt;在job file写这个job的带宽日志。可以在他们的生命周期内存储job的带宽数据。内部的fio_generate_plots脚本可以使用gnuplot将这些文本转化成图。&lt;/p&gt;
-&lt;h3 id=&quot;103-write-lat-log-str&quot;&gt;&lt;a href=&quot;#103-write-lat-log-str&quot; class=&quot;headerlink&quot; title=&quot;103.write_lat_log=str&quot;&gt;&lt;/a&gt;103.write_lat_log=str&lt;/h3&gt;&lt;p&gt;同write_bw_log类似，只是这个选项可以存储io提交，完成和总的响应时间。如果没有指定文件名，默认的文件名是jobname_type.log。即使给出了文件名，fio也会添加两种类型的log。&lt;br&gt;e.g.如果我们指定write_lat_log=foo&lt;br&gt;实际的log名将是foo_slat.log,foo_slat.log和foo_lat.log.这会帮助fio_generate_plot来自动处理log&lt;/p&gt;
-&lt;h3 id=&quot;104-write-iops-log-str&quot;&gt;&lt;a href=&quot;#104-write-iops-log-str&quot; class=&quot;headerlink&quot; title=&quot;104.write_iops_log=str&quot;&gt;&lt;/a&gt;104.write_iops_log=str&lt;/h3&gt;&lt;p&gt;类似于write_bw_log,但是写的是IOPS.如果没有给定文件名的话，默认的文件名是jobname_type.log。&lt;/p&gt;
-&lt;h3 id=&quot;105-log-avg-msec-int&quot;&gt;&lt;a href=&quot;#105-log-avg-msec-int&quot; class=&quot;headerlink&quot; title=&quot;105.log_avg_msec=int&quot;&gt;&lt;/a&gt;105.log_avg_msec=int&lt;/h3&gt;&lt;p&gt;默认，fio每完成一个IO将会记录一个日志（iops,latency,bw log）。当向磁盘写日志的时候，将会很快变的很大。设置这个选项的话，fio将会在一定的时期内平均这些值，指少日志的数量，默认是0&lt;/p&gt;
-&lt;h3 id=&quot;106-lockmem-int&quot;&gt;&lt;a href=&quot;#106-lockmem-int&quot; class=&quot;headerlink&quot; title=&quot;106.lockmem=int&quot;&gt;&lt;/a&gt;106.lockmem=int&lt;/h3&gt;&lt;p&gt;使用mlock可以指定特定的内存大小，用来访真少量内存&lt;/p&gt;
-&lt;h3 id=&quot;107-exec-preren-str&quot;&gt;&lt;a href=&quot;#107-exec-preren-str&quot; class=&quot;headerlink&quot; title=&quot;107.exec_preren=str&quot;&gt;&lt;/a&gt;107.exec_preren=str&lt;/h3&gt;&lt;p&gt;运行job之前，通过过system执行指定的命令&lt;/p&gt;
-&lt;h3 id=&quot;108-exec-postrun-str&quot;&gt;&lt;a href=&quot;#108-exec-postrun-str&quot; class=&quot;headerlink&quot; title=&quot;108.exec_postrun=str&quot;&gt;&lt;/a&gt;108.exec_postrun=str&lt;/h3&gt;&lt;p&gt;job执行完成后，通过system执行指定的命令&lt;/p&gt;
-&lt;h3 id=&quot;109-ioscheduler-str&quot;&gt;&lt;a href=&quot;#109-ioscheduler-str&quot; class=&quot;headerlink&quot; title=&quot;109.ioscheduler=str&quot;&gt;&lt;/a&gt;109.ioscheduler=str&lt;/h3&gt;&lt;p&gt;在运行之前，尝试将文件所在的设备切换到指定的调度器。&lt;/p&gt;
-&lt;h3 id=&quot;110-cpuload-int&quot;&gt;&lt;a href=&quot;#110-cpuload-int&quot; class=&quot;headerlink&quot; title=&quot;110.cpuload=int&quot;&gt;&lt;/a&gt;110.cpuload=int&lt;/h3&gt;&lt;p&gt;如果job是非常占用CPU周期的，可以指定战胜CPU周期的百分比。&lt;/p&gt;
-&lt;h3 id=&quot;120-cpuchunks-int&quot;&gt;&lt;a href=&quot;#120-cpuchunks-int&quot; class=&quot;headerlink&quot; title=&quot;120.cpuchunks=int&quot;&gt;&lt;/a&gt;120.cpuchunks=int&lt;/h3&gt;&lt;p&gt;如果job是非常战胜CPU周期的，将load分拆为时间的cycles，以毫秒为单位&lt;/p&gt;
-&lt;h3 id=&quot;121-disk-util-bool&quot;&gt;&lt;a href=&quot;#121-disk-util-bool&quot; class=&quot;headerlink&quot; title=&quot;121.disk_util=bool&quot;&gt;&lt;/a&gt;121.disk_util=bool&lt;/h3&gt;&lt;p&gt;产生磁盘利用率统计信息。默认是打开的&lt;/p&gt;
-&lt;h3 id=&quot;122-disable-lat-bool&quot;&gt;&lt;a href=&quot;#122-disable-lat-bool&quot; class=&quot;headerlink&quot; title=&quot;122.disable_lat=bool&quot;&gt;&lt;/a&gt;122.disable_lat=bool&lt;/h3&gt;&lt;p&gt;延迟的有效数字。Disable measurements of total latency numbers. Useful only for cutting back the number of calls to gettimeofday,as that does impact performance at really high IOPS rates.Note that to really get rid of a large amount of these calls, this option must be used with disable_slat and disable_bw as well.&lt;/p&gt;
-&lt;h3 id=&quot;123-disable-clat-bool&quot;&gt;&lt;a href=&quot;#123-disable-clat-bool&quot; class=&quot;headerlink&quot; title=&quot;123.disable_clat=bool&quot;&gt;&lt;/a&gt;123.disable_clat=bool&lt;/h3&gt;&lt;h3 id=&quot;124-disable-slat-bool&quot;&gt;&lt;a href=&quot;#124-disable-slat-bool&quot; class=&quot;headerlink&quot; title=&quot;124.disable_slat_bool&quot;&gt;&lt;/a&gt;124.disable_slat_bool&lt;/h3&gt;&lt;h3 id=&quot;125-disable-bw-bool&quot;&gt;&lt;a href=&quot;#125-disable-bw-bool&quot; class=&quot;headerlink&quot; title=&quot;125.disable_bw=bool&quot;&gt;&lt;/a&gt;125.disable_bw=bool&lt;/h3&gt;&lt;h3 id=&quot;126-clat-percentiles-bool&quot;&gt;&lt;a href=&quot;#126-clat-percentiles-bool&quot; class=&quot;headerlink&quot; title=&quot;126.clat_percentiles=bool&quot;&gt;&lt;/a&gt;126.clat_percentiles=bool&lt;/h3&gt;&lt;p&gt;允许报告完成完成响应时间的百分比&lt;/p&gt;
-&lt;h3 id=&quot;127-percentile-list-float-list&quot;&gt;&lt;a href=&quot;#127-percentile-list-float-list&quot; class=&quot;headerlink&quot; title=&quot;127.percentile_list=float_list&quot;&gt;&lt;/a&gt;127.percentile_list=float_list&lt;/h3&gt;&lt;h3 id=&quot;128-gtod-reduce-bool&quot;&gt;&lt;a href=&quot;#128-gtod-reduce-bool&quot; class=&quot;headerlink&quot; title=&quot;128.gtod_reduce=bool&quot;&gt;&lt;/a&gt;128.gtod_reduce=bool&lt;/h3&gt;&lt;h3 id=&quot;129-gtod-cpu-int&quot;&gt;&lt;a href=&quot;#129-gtod-cpu-int&quot; class=&quot;headerlink&quot; title=&quot;129.gtod_cpu=int&quot;&gt;&lt;/a&gt;129.gtod_cpu=int&lt;/h3&gt;&lt;h3 id=&quot;130-continue-on-error-str&quot;&gt;&lt;a href=&quot;#130-continue-on-error-str&quot; class=&quot;headerlink&quot; title=&quot;130.continue_on_error=str&quot;&gt;&lt;/a&gt;130.continue_on_error=str&lt;/h3&gt;&lt;p&gt;一般情况下，一旦检测到错误，fio将会退出这个job.如果这个选项设置的话，fio将会一直执行到有‘non-fatal错误‘（EIO或EILSEQ）或是执行时间耗完，或是指定的I/Osize完成。如果这个选项设置的话，将会添加两个状态，总的错误计数和第一个error。允许的值是:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;none 全部IO或检验错误后，都会退出&lt;/li&gt;
-&lt;li&gt;read 读错误时会继续执行，其它的错误会退出&lt;/li&gt;
-&lt;li&gt;write 写错误时会继续执行，其它的错误会退出&lt;/li&gt;
-&lt;li&gt;io 任何IO error时会继续执行，其它的错误会退出&lt;/li&gt;
-&lt;li&gt;verify 校验错误时会继续执行，其它的错误会退出&lt;/li&gt;
-&lt;li&gt;all 遇到所有的错误都会继续执行&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&quot;131-cgroup-str&quot;&gt;&lt;a href=&quot;#131-cgroup-str&quot; class=&quot;headerlink&quot; title=&quot;131.cgroup=str&quot;&gt;&lt;/a&gt;131.cgroup=str&lt;/h3&gt;&lt;h3 id=&quot;132-cgroup-weitht-int&quot;&gt;&lt;a href=&quot;#132-cgroup-weitht-int&quot; class=&quot;headerlink&quot; title=&quot;132.cgroup_weitht=int&quot;&gt;&lt;/a&gt;132.cgroup_weitht=int&lt;/h3&gt;&lt;h3 id=&quot;133-cgroup-weight-int&quot;&gt;&lt;a href=&quot;#133-cgroup-weight-int&quot; class=&quot;headerlink&quot; title=&quot;133.cgroup_weight=int&quot;&gt;&lt;/a&gt;133.cgroup_weight=int&lt;/h3&gt;&lt;h3 id=&quot;134-cgroup-nodelete-bool&quot;&gt;&lt;a href=&quot;#134-cgroup-nodelete-bool&quot; class=&quot;headerlink&quot; title=&quot;134.cgroup_nodelete=bool&quot;&gt;&lt;/a&gt;134.cgroup_nodelete=bool&lt;/h3&gt;&lt;h3 id=&quot;135-uid-int&quot;&gt;&lt;a href=&quot;#135-uid-int&quot; class=&quot;headerlink&quot; title=&quot;135.uid=int&quot;&gt;&lt;/a&gt;135.uid=int&lt;/h3&gt;&lt;p&gt;不是使用调用者的用户来执行，而是指定用户ID&lt;/p&gt;
-&lt;h3 id=&quot;136-gid-int&quot;&gt;&lt;a href=&quot;#136-gid-int&quot; class=&quot;headerlink&quot; title=&quot;136.gid=int&quot;&gt;&lt;/a&gt;136.gid=int&lt;/h3&gt;&lt;p&gt;设置group id&lt;/p&gt;
-&lt;h3 id=&quot;137-flow-id-int&quot;&gt;&lt;a href=&quot;#137-flow-id-int&quot; class=&quot;headerlink&quot; title=&quot;137.flow_id=int&quot;&gt;&lt;/a&gt;137.flow_id=int&lt;/h3&gt;&lt;h3 id=&quot;138-flow-int&quot;&gt;&lt;a href=&quot;#138-flow-int&quot; class=&quot;headerlink&quot; title=&quot;138.flow=int&quot;&gt;&lt;/a&gt;138.flow=int&lt;/h3&gt;&lt;h3 id=&quot;139-flow-watermark-int&quot;&gt;&lt;a href=&quot;#139-flow-watermark-int&quot; class=&quot;headerlink&quot; title=&quot;139.flow_watermark=int&quot;&gt;&lt;/a&gt;139.flow_watermark=int&lt;/h3&gt;&lt;h3 id=&quot;140-flow-sleep-int&quot;&gt;&lt;a href=&quot;#140-flow-sleep-int&quot; class=&quot;headerlink&quot; title=&quot;140.flow_sleep=int&quot;&gt;&lt;/a&gt;140.flow_sleep=int&lt;/h3&gt;&lt;h2 id=&quot;下面的参数只对指定的IO引擎有效：&quot;&gt;&lt;a href=&quot;#下面的参数只对指定的IO引擎有效：&quot; class=&quot;headerlink&quot; title=&quot;下面的参数只对指定的IO引擎有效：&quot;&gt;&lt;/a&gt;下面的参数只对指定的IO引擎有效：&lt;/h2&gt;&lt;pre&gt;&lt;code&gt;[libaio] userspace_reap
-[netsplice]hostname=str
-[net]hostname=str
-[netsplice]port=int
-[netsplice]proto=str
-[net]protocol=str
-[net]proto=str
-[net]listen
-&lt;/code&gt;&lt;/pre&gt;&lt;h2 id=&quot;输出&quot;&gt;&lt;a href=&quot;#输出&quot; class=&quot;headerlink&quot; title=&quot;输出&quot;&gt;&lt;/a&gt;输出&lt;/h2&gt;&lt;p&gt;在运行时，fio将打印当前job创建的状态:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;Threads: 1: [_r] [24.8% done] [ 13509/ 8334 kb/s] [eta 00h:01m:31s]
-&lt;/code&gt;&lt;/pre&gt;&lt;ul&gt;
-&lt;li&gt;生命周期&lt;/li&gt;
-&lt;li&gt;P 线程已经启动，还没有启动&lt;/li&gt;
-&lt;li&gt;C 线程启动&lt;/li&gt;
-&lt;li&gt;I 纯种已经初始化，等待中&lt;/li&gt;
-&lt;li&gt;p 线程运行中，预读文件&lt;/li&gt;
-&lt;li&gt;R 顺序读&lt;/li&gt;
-&lt;li&gt;r 随机读&lt;/li&gt;
-&lt;li&gt;W 顺序写&lt;/li&gt;
-&lt;li&gt;w 随机写&lt;/li&gt;
-&lt;li&gt;M 混合顺序读写&lt;/li&gt;
-&lt;li&gt;m 混合随机读写&lt;/li&gt;
-&lt;li&gt;F 等待执行fsync()&lt;/li&gt;
-&lt;li&gt;V 运行，检验写的数据&lt;/li&gt;
-&lt;li&gt;E 线程退出,还没有被主线程获取状态&lt;/li&gt;
-&lt;li&gt;_ Thread reaped, or&lt;/li&gt;
-&lt;li&gt;X Thread reaped, exited with an error.&lt;/li&gt;
-&lt;li&gt;K Thread reaped, exited due to signal.&lt;/li&gt;
-&lt;li&gt;其它的值都是可以自解释的：&lt;/li&gt;
-&lt;li&gt;当前正在运行的IO线程数。&lt;/li&gt;
-&lt;li&gt;从上次检查之后的IO速度（读速度/写速度）&lt;/li&gt;
-&lt;li&gt;估计的完成百分比&lt;/li&gt;
-&lt;li&gt;整个group的估计完成时间&lt;/li&gt;
-&lt;li&gt;当fio完成的时候（或是通过ctrl-c终止的时候），将会打印每一个线程的数据，每个group的数据，和磁盘数据。&lt;/li&gt;
-&lt;li&gt;io= 执行了多少M的IO&lt;/li&gt;
-&lt;li&gt;bw= 平均IO带宽&lt;/li&gt;
-&lt;li&gt;iops= IOPS&lt;/li&gt;
-&lt;li&gt;runt= 线程运行时间&lt;/li&gt;
-&lt;li&gt;slat 提交延迟&lt;/li&gt;
-&lt;li&gt;clat 完成延迟&lt;/li&gt;
-&lt;li&gt;lat响应时间&lt;/li&gt;
-&lt;li&gt;bw 带宽&lt;/li&gt;
-&lt;li&gt;cpu利用率&lt;/li&gt;
-&lt;li&gt;IO depths=io队列&lt;/li&gt;
-&lt;li&gt;IO submit=单个IO提交要提交的IO数&lt;/li&gt;
-&lt;li&gt;IO complete= Like the above submit number, but for completions instead.&lt;/li&gt;
-&lt;li&gt;IO issued= The number of read/write requests issued, and how many of them were short.&lt;/li&gt;
-&lt;li&gt;IO latencies=IO完延迟的分布&lt;/li&gt;
-&lt;li&gt;io= 总共执行了多少size的IO&lt;/li&gt;
-&lt;li&gt;aggrb= group总带宽&lt;/li&gt;
-&lt;li&gt;minb= 最小平均带宽.&lt;/li&gt;
-&lt;li&gt;maxb= 最大平均带宽.&lt;/li&gt;
-&lt;li&gt;mint= group中线程的最短运行时间.&lt;/li&gt;
-&lt;li&gt;maxt= group中线程的最长运行时间.&lt;/li&gt;
-&lt;li&gt;ios= 所有group总共执行的IO数.&lt;/li&gt;
-&lt;li&gt;merge= 总共发生的IO合并数.&lt;/li&gt;
-&lt;li&gt;ticks= Number of ticks we kept the disk busy.&lt;/li&gt;
-&lt;li&gt;io_queue= 花费在队列上的总共时间.&lt;/li&gt;
-&lt;li&gt;util= 磁盘利用率&lt;/li&gt;
-&lt;li&gt;为了便于脚本分析，可能需要将结果生成表或图，fio可以生成以分号分割的结果。&lt;/li&gt;
-&lt;li&gt;trace文件格式&lt;/li&gt;
-&lt;/ul&gt;
-</content>
-    
-    <summary type="html">
-    
-      fio用户使用指南，帮助手册汉化版
-    
-    </summary>
-    
-      <category term="tool" scheme="http://www.itzhoulin.com/categories/tool/"/>
-    
-    
-      <category term="linux" scheme="http://www.itzhoulin.com/tags/linux/"/>
     
   </entry>
   

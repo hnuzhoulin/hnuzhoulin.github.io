@@ -9,12 +9,12 @@
 
   <meta charset="utf-8">
   
-  <title>Category: program | 我的IT江湖之旅</title>
+  <title>Tag: krbd | 我的IT江湖之旅</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="每周至少一篇博客回顾总结遇到的问题">
 <meta property="og:type" content="website">
 <meta property="og:title" content="我的IT江湖之旅">
-<meta property="og:url" content="http://www.itzhoulin.com/categories/program/index.html">
+<meta property="og:url" content="http://www.itzhoulin.com/tags/krbd/index.html">
 <meta property="og:site_name" content="我的IT江湖之旅">
 <meta property="og:description" content="每周至少一篇博客回顾总结遇到的问题">
 <meta name="twitter:card" content="summary">
@@ -50,8 +50,8 @@
           isHome: false,
           isPost: false,
           isArchive: false,
-          isTag: false,
-          isCategory: true,
+          isTag: true,
+          isCategory: false,
           open_in_new: false,
           fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
           scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
@@ -268,11 +268,11 @@
 </nav>
       <div class="body-wrap">
   
-    <article id="post-using-python-or-shell-create-file-tree" class="article article-type-post" itemscope itemprop="blogPost">
+    <article id="post-Ceph-krbd-discard" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
-      <a href="/2015/12/23/using-python-or-shell-create-file-tree/" class="article-date">
-      <time datetime="2015-12-23T04:07:17.000Z" itemprop="datePublished">2015-12-23</time>
+      <a href="/2016/06/11/Ceph-krbd-discard/" class="article-date">
+      <time datetime="2016-06-11T02:26:42.000Z" itemprop="datePublished">2016-06-11</time>
 </a>
     </div>
   
@@ -285,7 +285,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2015/12/23/using-python-or-shell-create-file-tree/">文件目录树的python和shell生成方法</a>
+      <a class="article-title" href="/2016/06/11/Ceph-krbd-discard/">Ceph-krbd-discard</a>
     </h1>
   
 
@@ -295,7 +295,7 @@
     <div class="article-entry" itemprop="articleBody">
       
           
-              分别使用python和shell生成文件目录树，可自定义层级
+              Ceph的rbd块是精简制备的，只有真正有数据才会占用空间，但是存在上层文件系统删除文件，但是rbd占用空间不变的问题。Ceph的krbd模块的discard支持可以解决这个问题，实现前后端空间一致。上层文件系统删除文件后，ceph会清理底层对应的对象。
           
       
     </div>
@@ -304,18 +304,18 @@
       
       
     <div class="article-category tagcloud">
-    <a class="article-category-link" href="/categories/program/">program</a>
+    <a class="article-category-link" href="/categories/ceph/">ceph</a>
     </div>
 
 
       
     <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/python/">python</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/shell/">shell</a></li></ul>
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/krbd/">krbd</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/翻译/">翻译</a></li></ul>
     </div>
 
       
         <p class="article-more-link">
-          <a href="/2015/12/23/using-python-or-shell-create-file-tree/#more">more >></a>
+          <a href="/2016/06/11/Ceph-krbd-discard/#more">more >></a>
         </p>
       
       <div class="clearfix"></div>

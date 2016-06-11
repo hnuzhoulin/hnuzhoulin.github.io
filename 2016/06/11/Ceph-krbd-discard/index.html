@@ -9,18 +9,18 @@
 
   <meta charset="utf-8">
   
-  <title>php-sdk访问ceph对象存储时405错误 | 我的IT江湖之旅</title>
+  <title>Ceph-krbd-discard | 我的IT江湖之旅</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="php-sdk访问ceph对象存储时405错误">
+  <meta name="description" content="Ceph的rbd块是精简制备的，只有真正有数据才会占用空间，但是存在上层文件系统删除文件，但是rbd占用空间不变的问题。Ceph的krbd模块的discard支持可以解决这个问题，实现前后端空间一致。上层文件系统删除文件后，ceph会清理底层对应的对象。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="php-sdk访问ceph对象存储时405错误">
-<meta property="og:url" content="http://www.itzhoulin.com/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/index.html">
+<meta property="og:title" content="Ceph-krbd-discard">
+<meta property="og:url" content="http://www.itzhoulin.com/2016/06/11/Ceph-krbd-discard/index.html">
 <meta property="og:site_name" content="我的IT江湖之旅">
-<meta property="og:description" content="php-sdk访问ceph对象存储时405错误">
-<meta property="og:updated_time" content="2015-11-22T14:10:06.000Z">
+<meta property="og:description" content="Ceph的rbd块是精简制备的，只有真正有数据才会占用空间，但是存在上层文件系统删除文件，但是rbd占用空间不变的问题。Ceph的krbd模块的discard支持可以解决这个问题，实现前后端空间一致。上层文件系统删除文件后，ceph会清理底层对应的对象。">
+<meta property="og:updated_time" content="2016-06-11T02:26:42.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="php-sdk访问ceph对象存储时405错误">
-<meta name="twitter:description" content="php-sdk访问ceph对象存储时405错误">
+<meta name="twitter:title" content="Ceph-krbd-discard">
+<meta name="twitter:description" content="Ceph的rbd块是精简制备的，只有真正有数据才会占用空间，但是存在上层文件系统删除文件，但是rbd占用空间不变的问题。Ceph的krbd模块的discard支持可以解决这个问题，实现前后端空间一致。上层文件系统删除文件后，ceph会清理底层对应的对象。">
   
     <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
   
@@ -267,11 +267,11 @@
     </div>
     <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
 </nav>
-      <div class="body-wrap"><article id="post-solve-405-error-when-using-php-sdk-access-ceph-rgw" class="article article-type-post" itemscope itemprop="blogPost">
+      <div class="body-wrap"><article id="post-Ceph-krbd-discard" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
-      <a href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/" class="article-date">
-      <time datetime="2015-11-22T14:09:04.000Z" itemprop="datePublished">2015-11-22</time>
+      <a href="/2016/06/11/Ceph-krbd-discard/" class="article-date">
+      <time datetime="2016-06-11T02:26:42.000Z" itemprop="datePublished">2016-06-11</time>
 </a>
     </div>
   
@@ -284,7 +284,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      php-sdk访问ceph对象存储时405错误
+      Ceph-krbd-discard
     </h1>
   
 
@@ -299,7 +299,7 @@
 
         
     <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/dns/">dns</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/rgw/">rgw</a></li></ul>
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/krbd/">krbd</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/翻译/">翻译</a></li></ul>
     </div>
 
         <div class="clearfix"></div>
@@ -309,22 +309,34 @@
     <div class="article-entry" itemprop="articleBody">
       
           
-        <h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><p>在使用ceph对象存储的php sdk备份数据到ceph时，在对象存储创建bucket失败，错误如下：</p>
-<pre><code>[Code] =&gt; MethodNotAllowed
-</code></pre><p>查看rgw日志错误代码是 <strong>405</strong></p>
-<p>但是使用cloudberry访问S3是没问题的，使用IP</p>
-<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>尝试过F版和H版，rgw使用civetweb创建，在ceph.conf中使用下面的配置修改端口为80：</p>
-<pre><code>[client.rgw.gcibackup]
-host = gcibackup
-log file = /var/log/ceph/client.rgw.gcibackup.log
-rgw_frontends =civetweb port=80
-rgw print continue = false
-</code></pre><p>php这里使用的是域名访问云存储，域名解析是自己用dnsmasq搭的，设置为s3.storage.com</p>
-<h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><p>再次尝试备份到生产环境云存储中，这个以前是测过没问题的，同样的错误。</p>
-<p>总结一下发现唯一的问题就是域名和rgw的配置问题，同时搜索邮件列表从 <a href="http://www.spinics.net/lists/ceph-devel/msg12135.html" target="_blank" rel="external">radosgw: “MethodNotAllowed” response</a> 中获得启发。</p>
-<p>首先是将rgw的配置加上 <strong>rgw dns name =backup</strong></p>
-<p>然后将域名修改为主机名一致即： <strong>backup.storage.com</strong></p>
-<p>再次尝试一切OK。</p>
+        <p>本文英文出处：<a href="http://www.sebastien-han.fr/blog/2015/01/26/ceph-and-krbd-discard/" target="_blank" rel="external">Sébastien Han/ceph-and-krbd-discard</a> </p>
+<p>内核RBD模块的空间回收机制。对于运营商而言，有这样的支持是至关重要的，因为这能减轻你的容量规划。RBD镜像是稀疏的，因此创建后大小等于0 MB。稀疏镜像的主要问题在于增长，最终达到整个镜像的大小。问题是这是发生在块层面之上尤其是其上有文件系统的时候Ceph并不知道发生了什么。你可以很容易地向整个文件系统写入数据，然后删除一切，但是Ceph仍然相信这些块仍然被使用着，并持续度量。然而多亏在块设备层面支持了 discard，文件系统可以发送 discard flush 命令给块。最后，存储系统将释放这些上层已经删除的块。</p>
+<p>这个特性自3.18版本的内核开始引入。</p>
+<p>我们先新建一个 RBD 镜像</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ rbd create <span class="_">-s</span> 10240 leseb</span><br><span class="line">$ rbd info leseb</span><br><span class="line">rbd image <span class="string">'leseb'</span>:</span><br><span class="line">  size 10240 MB <span class="keyword">in</span> 2560 objects</span><br><span class="line">  order 22 (4096 kB objects)</span><br><span class="line">  block_name_prefix: rb.0.1066.74b0dc51</span><br><span class="line">  format: 1</span><br><span class="line"></span><br><span class="line">$ rbd diff rbd/leseb | awk <span class="string">'&#123; SUM += $2 &#125; END &#123; print SUM/1024/1024 " MB" &#125;'</span></span><br><span class="line">0 MB</span><br></pre></td></tr></table></figure>
+<p>将它映射到一个节点并在其上构建一个文件系统:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">$ sudo rbd -p rbd map leseb</span><br><span class="line">/dev/rbd0</span><br><span class="line"></span><br><span class="line">$ sudo rbd showmapped</span><br><span class="line">id pool image snap device</span><br><span class="line">0  rbd  leseb -    /dev/rbd0</span><br><span class="line"></span><br><span class="line">$ sudo mkfs.xfs /dev/rbd0</span><br><span class="line"><span class="built_in">log</span> stripe unit (4194304 bytes) is too large (maximum is 256KiB)</span><br><span class="line"><span class="built_in">log</span> stripe unit adjusted to 32KiB</span><br><span class="line">meta-data=/dev/rbd0              isize=256    agcount=17, agsize=162816 blks</span><br><span class="line">         =                       sectsz=512   attr=2, projid32bit=0</span><br><span class="line">data     =                       bsize=4096   blocks=2621440, imaxpct=25</span><br><span class="line">         =                       sunit=1024   swidth=1024 blks</span><br><span class="line">naming   =version 2              bsize=4096   ascii-ci=0</span><br><span class="line"><span class="built_in">log</span>      =internal <span class="built_in">log</span>           bsize=4096   blocks=2560, version=2</span><br><span class="line">         =                       sectsz=512   sunit=8 blks, lazy-count=1</span><br><span class="line">realtime =none                   extsz=4096   blocks=0, rtextents=0</span><br><span class="line"></span><br><span class="line">$ sudo mount /dev/rbd0 /mnt</span><br></pre></td></tr></table></figure>
+<p>到这里所有的设置都已经完成，我们开始写入一些数据:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ dd <span class="keyword">if</span>=/dev/zero of=/mnt/leseb bs=1M count=128</span><br><span class="line">128+0 records <span class="keyword">in</span></span><br><span class="line">128+0 records out</span><br><span class="line">134217728 bytes (134 MB) copied, 2.88215 s, 46.6 MB/s</span><br><span class="line"></span><br><span class="line">$ df -h /mnt/</span><br><span class="line">Filesystem      Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/rbd0        10G  161M  9.9G   2% /mnt</span><br></pre></td></tr></table></figure>
+<p>然后我们再次检测这个镜像占用的空间大小:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ rbd diff rbd/leseb | awk <span class="string">'&#123; SUM += $2 &#125; END &#123; print SUM/1024/1024 " MB" &#125;'</span></span><br><span class="line">142.406 MB</span><br></pre></td></tr></table></figure>
+<p>我们知道这里我们实际的数据是 128MB，文件系统的数据/元数据占用了约 ~14,406MB。检查这个份设备的 discard 属性已经启用:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@ceph-mon0:~<span class="comment"># cat /sys/block/rbd0/queue/discard_*</span></span><br><span class="line">4194304</span><br><span class="line">4194304</span><br><span class="line">1</span><br></pre></td></tr></table></figure>
+<p>现在让我们来检查当 discard 不支持时的默认行为，我们删除前面新建的所有 128MB 的文件以释放文件系统的一些空间。不幸的是Ceph什么也没检测到，仍然认为这 128MB 的数据仍然存在。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ rm /mnt/leseb</span><br><span class="line">$ rbd diff rbd/leseb | awk <span class="string">'&#123; SUM += $2 &#125; END &#123; print SUM/1024/1024 " MB" &#125;'</span></span><br><span class="line">142.406 MB</span><br></pre></td></tr></table></figure>
+<p>现在让我们在挂载的文件系统上运行 fstrim 命令以指示块设备释放未使用的空间:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">$ fstrim /mnt/</span><br><span class="line">$ rbd diff rbd/leseb | awk <span class="string">'&#123; SUM += $2 &#125; END &#123; print SUM/1024/1024 " MB" &#125;'</span></span><br><span class="line">10.6406 MB</span><br><span class="line"></span><br><span class="line">Et voilà ! Ceph 释放了我们删除的 128 MB。</span><br><span class="line"></span><br><span class="line">If you want to run discard on the fly and <span class="built_in">let</span> the filesystem check <span class="keyword">for</span> discard all the time you can mount the filesystem with the discard option:</span><br><span class="line">如果你想自动运行 discard，可以在挂载文件系统的时候加上 discard 选项，这样就可以让文件系统一直检测 discard:</span><br><span class="line"></span><br><span class="line">```bash</span><br><span class="line">$ mount -o discard /dev/rbd0 /mnt/</span><br><span class="line"></span><br><span class="line">$ mount | grep rbd</span><br><span class="line">/dev/rbd0 on /mnt <span class="built_in">type</span> xfs (rw,discard)</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意，使用 discard 的挂载选项会严重影响性能。所以，一般你可以通过一个每天与星的 cron 任务来触发 fstrim 命令。</p>
+</blockquote>
+<h2 id="译者补充："><a href="#译者补充：" class="headerlink" title="译者补充："></a>译者补充：</h2><p>我的实际线上环境是：ubuntu12.04+Ceph 0.67.9</p>
+<p>同时对于使用 KRBD 的都有感触，要保障业务不断的同时进行升级是相当麻烦的，但是这个存储系统已经稳定运行两年，Ceph检测到已用空间到了70%，但是实际业务系统层面统计还不到50%，因此执行 fstrim 势在必行。</p>
+<p>经过本文作者的提示，我们的方案是在这个集群上使用kvm新建一个 ubuntu14.04.4 的虚拟机，依次将所有 RBD 在该虚拟机上映射后挂载到某一个目录，然后在这个目录上执行 fstrim 命令，达到清理的目的。</p>
+<p>这个方案有以下几点表现：</p>
+<ol>
+<li>这里实际同一个 RBD 在两个不同节点映射并挂载，但是经过测试，执行 fstrim 命令不会造成业务的中断（使用死循环调dd进行写模拟业务），执行过程中是不是有性能影响没有监测；</li>
+<li>如果该 RBD 在执行 fstrim 命令的时候仍然有写操作，会影响 fstrim 的效果，具体表现就是耗时显著增加、空间清理并没有预期的多。</li>
+</ol>
 
       
     </div>
@@ -333,13 +345,13 @@ rgw print continue = false
   
     
     <div class="copyright">
-        <p><span>本文标题:</span><a href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">php-sdk访问ceph对象存储时405错误</a></p>
+        <p><span>本文标题:</span><a href="/2016/06/11/Ceph-krbd-discard/">Ceph-krbd-discard</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">半天河(hnuzhoulin)</a></p>
-        <p><span>发布时间:</span>2015-11-22, 22:09:04</p>
-        <p><span>最后更新:</span>2015-11-22, 22:10:06</p>
+        <p><span>发布时间:</span>2016-06-11, 10:26:42</p>
+        <p><span>最后更新:</span>2016-06-11, 10:26:42</p>
         <p>
-            <span>原始链接:</span><a class="post-url" href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/" title="php-sdk访问ceph对象存储时405错误">http://www.itzhoulin.com/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/</a>
-            <span class="copy-path" data-clipboard-text="原文: http://www.itzhoulin.com/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/　　作者: 半天河(hnuzhoulin)" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <span>原始链接:</span><a class="post-url" href="/2016/06/11/Ceph-krbd-discard/" title="Ceph-krbd-discard">http://www.itzhoulin.com/2016/06/11/Ceph-krbd-discard/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://www.itzhoulin.com/2016/06/11/Ceph-krbd-discard/　　作者: 半天河(hnuzhoulin)" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
             <script> var clipboard = new Clipboard('.copy-path'); </script>
         </p>
         <p>
@@ -351,16 +363,10 @@ rgw print continue = false
 
     <nav id="article-nav">
         
-            <div id="article-nav-newer" class="article-nav-title">
-                <a href="/2015/11/24/ceph-manual-repair-object/">
-                    Ceph里手动修复Object
-                </a>
-            </div>
-        
         
             <div id="article-nav-older" class="article-nav-title">
-                <a href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/">
-                    一次硬盘被重新分区并写入数据后的整体恢复
+                <a href="/2016/06/04/ceph-deploy/">
+                    ceph-deploy
                 </a>
             </div>
         
@@ -371,7 +377,7 @@ rgw print continue = false
 
     <div id="toc" class="toc-article">
     <strong class="toc-title">文章目录</strong>
-    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#现象"><span class="toc-number">1.</span> <span class="toc-text">现象</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#环境"><span class="toc-number">2.</span> <span class="toc-text">环境</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#解决"><span class="toc-number">3.</span> <span class="toc-text">解决</span></a></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#译者补充："><span class="toc-number">1.</span> <span class="toc-text">译者补充：</span></a></li></ol>
 </div>
 <style>
     .left-col .switch-btn {
@@ -428,7 +434,7 @@ rgw print continue = false
         </div>
         <script>
             window._bd_share_config={
-                "common":{"bdSnsKey":{},"bdText":"php-sdk访问ceph对象存储时405错误　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+                "common":{"bdSnsKey":{},"bdText":"Ceph-krbd-discard　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
         </script>
     
 
@@ -444,7 +450,7 @@ rgw print continue = false
     
       <div class="duoshuo" id="comments">
     <!-- 多说评论框 start -->
-    <div class="ds-thread" data-thread-key="2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/" data-title="php-sdk访问ceph对象存储时405错误" data-url="http://www.itzhoulin.com/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/"></div>
+    <div class="ds-thread" data-thread-key="2016/06/11/Ceph-krbd-discard/" data-title="Ceph-krbd-discard" data-url="http://www.itzhoulin.com/2016/06/11/Ceph-krbd-discard/"></div>
     <!-- 多说评论框 end -->
     <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
     <script type="text/javascript">
@@ -468,15 +474,13 @@ rgw print continue = false
 
     <div class="scroll" id="post-nav-button">
         
-            <a href="/2015/11/24/ceph-manual-repair-object/" title="上一篇: Ceph里手动修复Object">
-                <i class="fa fa-angle-left"></i>
-            </a>
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
         
 
         <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
 
         
-            <a href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/" title="下一篇: 一次硬盘被重新分区并写入数据后的整体恢复">
+            <a href="/2016/06/04/ceph-deploy/" title="下一篇: ceph-deploy">
                 <i class="fa fa-angle-right"></i>
             </a>
         
