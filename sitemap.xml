@@ -4,7 +4,7 @@
   <url>
     <loc>http://www.itzhoulin.com/2016/06/11/Ceph-krbd-discard/</loc>
     
-    <lastmod>2016-06-11T02:26:42.000Z</lastmod>
+    <lastmod>2016-06-16T01:11:42.000Z</lastmod>
     
   </url>
   
@@ -72,14 +72,14 @@
   </url>
   
   <url>
-    <loc>http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</loc>
+    <loc>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</loc>
     
     <lastmod>2016-04-23T09:18:35.000Z</lastmod>
     
   </url>
   
   <url>
-    <loc>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</loc>
+    <loc>http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</loc>
     
     <lastmod>2016-04-23T09:18:35.000Z</lastmod>
     
