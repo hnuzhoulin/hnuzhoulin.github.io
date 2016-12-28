@@ -9,18 +9,26 @@
 
   <meta charset="utf-8">
   
-  <title>fio应用 | 我的IT江湖之旅</title>
+  <title>Redmine与Gitlab深度集成 | 我的IT江湖之旅</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="fio的具体应用实例，比如如何输出过程曲线并画图">
+  <meta name="description" content="深度集成Redmine和gitlab，使得可以在redmine页面看到gitlab提交的信息，可以通过gitlab的commit message来控制redmine任务的状态、等级任务耗时等。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="fio应用">
-<meta property="og:url" content="http://www.itzhoulin.com/2016/04/01/fio-usage-example/index.html">
+<meta property="og:title" content="Redmine与Gitlab深度集成">
+<meta property="og:url" content="http://www.itzhoulin.com/2016/12/28/migrate-redmine-with-gitlab/index.html">
 <meta property="og:site_name" content="我的IT江湖之旅">
-<meta property="og:description" content="fio的具体应用实例，比如如何输出过程曲线并画图">
-<meta property="og:updated_time" content="2016-04-06T02:51:03.000Z">
+<meta property="og:description" content="深度集成Redmine和gitlab，使得可以在redmine页面看到gitlab提交的信息，可以通过gitlab的commit message来控制redmine任务的状态、等级任务耗时等。">
+<meta property="og:image" content="http://ww4.sinaimg.cn/large/006tNbRwgw1faskvyscm4j30yo0ndju6.jpg">
+<meta property="og:image" content="http://ww3.sinaimg.cn/large/006tNbRwgw1faslefy9s3j30dx0esgme.jpg">
+<meta property="og:image" content="http://ww4.sinaimg.cn/large/006tNbRwgw1faslw0iygbj30dr0bmdgp.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006tNbRwgw1fasm9881ipj30r80c7myq.jpg">
+<meta property="og:image" content="http://ww3.sinaimg.cn/large/006tNbRwgw1fasm7r9hdlj312i0pxwml.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006tNbRwgw1fasmj7e1qmj30yb0jh772.jpg">
+<meta property="og:image" content="http://ww2.sinaimg.cn/large/006tNbRwgw1fasmz8mkskj30to0gwdij.jpg">
+<meta property="og:updated_time" content="2016-12-28T14:57:56.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="fio应用">
-<meta name="twitter:description" content="fio的具体应用实例，比如如何输出过程曲线并画图">
+<meta name="twitter:title" content="Redmine与Gitlab深度集成">
+<meta name="twitter:description" content="深度集成Redmine和gitlab，使得可以在redmine页面看到gitlab提交的信息，可以通过gitlab的commit message来控制redmine任务的状态、等级任务耗时等。">
+<meta name="twitter:image" content="http://ww4.sinaimg.cn/large/006tNbRwgw1faskvyscm4j30yo0ndju6.jpg">
   
     <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
   
@@ -267,11 +275,11 @@
     </div>
     <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
 </nav>
-      <div class="body-wrap"><article id="post-fio-usage-example" class="article article-type-post" itemscope itemprop="blogPost">
+      <div class="body-wrap"><article id="post-migrate-redmine-with-gitlab" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
-      <a href="/2016/04/01/fio-usage-example/" class="article-date">
-      <time datetime="2016-04-01T06:13:24.000Z" itemprop="datePublished">2016-04-01</time>
+      <a href="/2016/12/28/migrate-redmine-with-gitlab/" class="article-date">
+      <time datetime="2016-12-28T14:57:56.000Z" itemprop="datePublished">2016-12-28</time>
 </a>
     </div>
   
@@ -284,7 +292,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      fio应用
+      Redmine与Gitlab深度集成
     </h1>
   
 
@@ -299,7 +307,7 @@
 
         
     <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/fio/">fio</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/">linux</a></li></ul>
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/gitlab/">gitlab</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/redmine/">redmine</a></li></ul>
     </div>
 
         <div class="clearfix"></div>
@@ -309,17 +317,92 @@
     <div class="article-entry" itemprop="articleBody">
       
           
-        <h2 id="1-输出bw，lat和iops数据并画图"><a href="#1-输出bw，lat和iops数据并画图" class="headerlink" title="1.输出bw，lat和iops数据并画图"></a>1.输出bw，lat和iops数据并画图</h2><p>fio安装完后自带有一个高级脚本<code>fio_generate_plots</code>能够根据fio输出的数据进行画图。操作流程如下：</p>
-<h3 id="1-1设置fio输出详细日志"><a href="#1-1设置fio输出详细日志" class="headerlink" title="1.1设置fio输出详细日志"></a>1.1设置fio输出详细日志</h3><p>fio的输出日志主要包含三种：<strong>bw</strong>，<strong>lat</strong>和<strong>iops</strong>，设置这三种的参数如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">write_bw_<span class="built_in">log</span>=rw</span><br><span class="line">write_lat_<span class="built_in">log</span>=rw</span><br><span class="line">write_iops_<span class="built_in">log</span>=rw</span><br></pre></td></tr></table></figure>
-<p>这里需要强调的一点是，后面接的参数<strong>rw</strong>，是输出日志文件名的<strong>prefix</strong>，如最终会生成的日志文件如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">rw_iops.log</span><br><span class="line">rw_clat.log</span><br><span class="line">rw_slat.log</span><br><span class="line">rw_lat.log</span><br><span class="line">rw_bw.log</span><br></pre></td></tr></table></figure>
-<p>这个参数在后面画图的时候也要用到。</p>
-<h3 id="1-2-画图"><a href="#1-2-画图" class="headerlink" title="1.2 画图"></a>1.2 画图</h3><p>前提是还需要安装好<code>gnuplot</code>，然后使用下面的命令即可自动画图：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:/tmp&gt; fio_generate_plots bw</span><br></pre></td></tr></table></figure>
-<p>发现没有，<code>fio_generate_plots</code>接受的唯一参数就是这个日志文件名的prefix。</p>
-<p>本例中生成的图片文件有：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">bw-bw.svg  </span><br><span class="line">bw-clat.svg  </span><br><span class="line">bw-iops.svg  </span><br><span class="line">bw-lat.svg  </span><br><span class="line">bw-slat.svg</span><br></pre></td></tr></table></figure>
+        <h1 id="一-要求"><a href="#一-要求" class="headerlink" title="一.要求"></a>一.要求</h1><ol>
+<li>在redmine的issue页面能够看到该问题相关的提交记录</li>
+<li>gitlab有提交后自动触发Redmine获取更新</li>
+<li>通过commit message能够关联Redmine的issue，设置issue状态，设置任务耗时</li>
+</ol>
+<h1 id="二-实现"><a href="#二-实现" class="headerlink" title="二.实现"></a>二.实现</h1><h2 id="2-1-redmine设置启用版本库"><a href="#2-1-redmine设置启用版本库" class="headerlink" title="2.1.redmine设置启用版本库"></a>2.1.redmine设置启用版本库</h2><p>设置如下图：</p>
+<p><img src="http://ww4.sinaimg.cn/large/006tNbRwgw1faskvyscm4j30yo0ndju6.jpg" alt="redmine设置启用版本库"></p>
+<ol>
+<li>启用SCM：本地只安装了git，所以其他的取消掉</li>
+<li>启用用于版本库管理的Web Service：需要勾选，实现gitlab的web_hook访问</li>
+<li>版本库管理网页服务API密钥：点击生成或者手动输入，记录一下后面配置gitlab需要用到</li>
+<li>允许引用/修复所有其他项目的问题：勾选后就可以在commit message中使用上一项定义的关键字实现git提交和redmine issue的关联，如 <code>refs:#123</code>  表示将本次提交关联到redmine的123号任务</li>
+<li>激活时间日志：勾选后可以在commit message中设置当前提交耗时记录，方式为 <code>Implement feature #1234 @2h 或者 Implement feature #1234 @15m</code> </li>
+<li>最下面一个设置框中就是自定义关键字，实现commit message控制remine中的issue的状态，比如我这里预设了解决、进行中和关闭三个，在commit message中的用法为： <code>ok:#123  或  start #123  或  close:#123 @2</code> ，这最后一个实例还把时间也带上了。</li>
+</ol>
+<h2 id="2-2-redmine服务器克隆代码版本库"><a href="#2-2-redmine服务器克隆代码版本库" class="headerlink" title="2.2.redmine服务器克隆代码版本库"></a>2.2.redmine服务器克隆代码版本库</h2><p>为了redmine能够读取到代码版本库，需要在redmine服务器上克隆gitlab上的项目的代码版本库。同时由于我是单独挂了一块盘在目录 <strong>/git-repo</strong> ，同时redmine运行时使用的用户是daemon，所以我需要设置合理的权限。</p>
+<ul>
+<li><p>设置代码库所在目录的用户和用户组均未daemon</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /git-repo</span><br><span class="line">chown daemon:daemon /git-repo</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>给daemon用户生成ssh key</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir /usr/sbin/.ssh</span><br><span class="line">chown daemon:daemon /usr/sbin/.ssh</span><br><span class="line">sudo -u daemon -H ssh-keygen -t rsa</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>将上一步生成的文件/usr/sbin/.ssh/id_rsa.pub的内容添加到自己gitlab的SSH Keys中，以便无密码获取代码库</p>
+</li>
+<li><p>克隆代码版本库</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo -u daemon -H git <span class="built_in">clone</span> --mirror git@git.gcidesign.com:zhoulin/markdown-test.git markdown-test</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="2-3-redmine的项目启用版本库"><a href="#2-3-redmine的项目启用版本库" class="headerlink" title="2.3.redmine的项目启用版本库"></a>2.3.redmine的项目启用版本库</h2><ul>
+<li>在redmine的项中配置中启用版本库这个模块：</li>
+</ul>
+<p><img src="http://ww3.sinaimg.cn/large/006tNbRwgw1faslefy9s3j30dx0esgme.jpg" alt=""></p>
+<ul>
+<li><p>在 <strong>配置—版本库</strong> 中新建版本库，配置信息如下：</p>
+<p><img src="http://ww4.sinaimg.cn/large/006tNbRwgw1faslw0iygbj30dr0bmdgp.jpg" alt=""></p>
+<ol>
+<li>SCM：选择git，在 <strong>2.1的设置</strong> 中只勾选了git</li>
+<li>主版本库：如果勾选了这个在项目的导航条上就会新增一个tab—版本库，不勾选，就需要通过 <strong>配置—版本库</strong> 查看</li>
+<li>标识：是版本库的一个名字</li>
+<li>库路径：就是前面执行git clone生成的目录的路径，<strong>注意：redmine需要有该目录的读写权限，否则点击版本库会出现404错误</strong> </li>
+<li>路径编码：优选UTF-8</li>
+<li>报告最后一次文件/目录提交：建议勾选，选上后打开版本库会看到相关文件最后一次提交的相关信息如作者、commit message等，不勾选的效果如下图，勾选的效果见第7点。<br><img src="http://ww1.sinaimg.cn/large/006tNbRwgw1fasm9881ipj30r80c7myq.jpg" alt=""><br>7.设置完成后点击设置好的版本详情如下图：<br><img src="http://ww3.sinaimg.cn/large/006tNbRwgw1fasm7r9hdlj312i0pxwml.jpg" alt="739258E85F7D5FE441E0D2044D824783"></li>
+</ol>
+</li>
+</ul>
+<h2 id="2-4-利用gitlab的web-hook和redmine的插件实现自动更新"><a href="#2-4-利用gitlab的web-hook和redmine的插件实现自动更新" class="headerlink" title="2.4.利用gitlab的web_hook和redmine的插件实现自动更新"></a>2.4.利用gitlab的web_hook和redmine的插件实现自动更新</h2><p>经过前面几步的配置我们已经基本实现了要求里面的功能，但是有一点很关键目前还没有实现，那就是如何实现咋我们提交代码之后redmine本地的代码版本库能够自动同步获取更新以便实时显示在redmine上呢？目前的解决方案有如下几种：</p>
+<ol>
+<li><p>本地利用cron定时获取更新，</p>
+</li>
+<li><p>redmine官方有 <strong>Fetch commits automatically</strong>，我没有实现</p>
+</li>
+<li><p>利用redmine的插件和gitlab的web_hook，我觉得这是最好的方式，也是本文介绍的方式</p>
+</li>
+</ol>
+<h3 id="2-4-1-gitlab的web-hook配置"><a href="#2-4-1-gitlab的web-hook配置" class="headerlink" title="2.4.1.gitlab的web_hook配置"></a>2.4.1.gitlab的web_hook配置</h3><p>web_hook的配置其实十分简单，只需要知道redmine中的项目名和API密钥，如下图：</p>
+<p><img src="http://ww1.sinaimg.cn/large/006tNbRwgw1fasmj7e1qmj30yb0jh772.jpg" alt=""></p>
+<ol>
+<li>URL：url连接形如 <code>https://10.1.35.57/redmine/gitlab_hook?project_id=testgit&amp;key=qVfKU2vk3hZyWeH0lD49</code><ul>
+<li><code>https://10.1.35.57/redmine</code> :表示当前redmine的url地址，<strong>注意：这里的https需要跟你的redmine设置一致，否则容易出现404错误，当然如果你设置了所有http自动转为https，你这里写http也没有问题；其次是这里的redmine，如果你没有更改默认的域名设置，务必加上redmine，否则也是404，<a href="https://docs.bitnami.com/installer/apps/redmine/#how-to-configure-the-application-to-run-at-the-root-url-of-the-domains" title="set redmine default root url" target="_blank" rel="external">修改根域名方式</a>。</strong></li>
+<li>project_id：这个就是redmine中项目的名称</li>
+<li>key：这个是前面的 <strong>2.1节</strong> 设置中的 <strong>启用用于版本库管理的Web Service</strong></li>
+</ul>
+</li>
+<li>Trigger：这个很好理解，哪些操作触发这个hook，默认都勾选就好。</li>
+</ol>
+<h3 id="2-4-2-redmine-gitlab-hook插件"><a href="#2-4-2-redmine-gitlab-hook插件" class="headerlink" title="2.4.2.redmine_gitlab_hook插件"></a>2.4.2.redmine_gitlab_hook插件</h3><p>这个插件出自github，代码地址见：<a href="https://github.com/phlegx/redmine_gitlab_hook" title="redmine_gitlab_hook" target="_blank" rel="external">redmine_gitlab_hook</a>   ，插件的安装按照Redmine常规插件安装即可，插件配置页面如下：</p>
+<p><img src="http://ww2.sinaimg.cn/large/006tNbRwgw1fasmz8mkskj30to0gwdij.jpg" alt=""></p>
+<p>这里我只启用了这两项，说明已经很详细了，我就不赘述了。</p>
+<h1 id="三-错误"><a href="#三-错误" class="headerlink" title="三.错误"></a>三.错误</h1><p>在整个配置过程中我碰到了下面几个错误，可能解决途径不是最优或者其实只是瞎碰上的，仅供参考</p>
+<h2 id="3-1-点击redmine版本库出现404"><a href="#3-1-点击redmine版本库出现404" class="headerlink" title="3.1.点击redmine版本库出现404"></a>3.1.点击redmine版本库出现404</h2><p>出现这个问题有两个原因：</p>
+<ol>
+<li>权限：redmine没有足够权限读写你配置的目录。更换目录或者修改目录权限</li>
+<li>版本库：你指定的目录是实际的代码而不是版本库，常规克隆出来的版本库在隐藏文件夹 <strong>.git</strong> 下，或者clone是添加 <strong>–mirror</strong>  参数</li>
+</ol>
+<h2 id="3-2-测试gitlab的web-hook时404"><a href="#3-2-测试gitlab的web-hook时404" class="headerlink" title="3.2.测试gitlab的web_hook时404"></a>3.2.测试gitlab的web_hook时404</h2><p>这又要分两种情况：</p>
+<h3 id="3-2-1-redmine的日志里面没有任何错误信息"><a href="#3-2-1-redmine的日志里面没有任何错误信息" class="headerlink" title="3.2.1.redmine的日志里面没有任何错误信息"></a>3.2.1.redmine的日志里面没有任何错误信息</h3><p>在apache的error_log日志中有一条404记录，这个说明你配置的Web_hook的url错了，可能原因：</p>
+<ol>
+<li>你启用了https，但是url写的是http，而且没有<a href="https://docs.bitnami.com/installer/components/apache/#how-to-force-https-for-all-applications" title="force http redirect to https" target="_blank" rel="external">设置所有http自动跳转到https</a></li>
+<li>你没有修改默认的根URL指向，默认要访问redmine，地址是：<a href="http://IP-or-domain/redmine" target="_blank" rel="external">http://IP-or-domain/redmine</a> ，你的url中忘记了这个redmine，或者请<a href="https://docs.bitnami.com/installer/apps/redmine/#how-to-configure-the-application-to-run-at-the-root-url-of-the-domains" title="set redmine default root url" target="_blank" rel="external">修改redmine默认根URL</a>。</li>
+</ol>
+<h3 id="3-2-3-redmine的日志有错误信息，提示处理index时404"><a href="#3-2-3-redmine的日志有错误信息，提示处理index时404" class="headerlink" title="3.2.3.redmine的日志有错误信息，提示处理index时404"></a>3.2.3.redmine的日志有错误信息，提示处理index时404</h3><p>在production.log中的错误日志如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Started GET &quot;/gitlab_hook?project_id=storage&amp;key=2CivrlkuhwEOl2DmaCJ9&quot; for 10.1.41.165 at 2016-12-15 17:46:23 +0800</span><br><span class="line">Processing by GitlabHookController#index as HTML</span><br><span class="line">  Parameters: &#123;&quot;before&quot;=&gt;&quot;8e279a1daed291d059bf626246a0165e7cc83940&quot;, &quot;after&quot;=&gt;&quot;7c6e0d14d4b96fe0f908f326da51629230fd1428&quot;, &quot;ref&quot;=&gt;&quot;refs/heads/master&quot;, &quot;user_id&quot;=&gt;3, &quot;user_name&quot;=&gt;&quot;周林&quot;, &quot;project_id&quot;=&gt;</span><br><span class="line">&quot;storage&quot;, &quot;repository&quot;=&gt;&#123;&quot;name&quot;=&gt;&quot;translations&quot;, &quot;url&quot;=&gt;&quot;git@git.gcidesign.com:zhoulin/translations.git&quot;, &quot;description&quot;=&gt;&quot;&quot;, &quot;homepage&quot;=&gt;&quot;http://git.gcidesign.com:9002/zhoulin/translations&quot;&#125;, &quot;commi</span><br><span class="line">ts&quot;=&gt;[&#123;&quot;id&quot;=&gt;&quot;7c6e0d14d4b96fe0f908f326da51629230fd1428&quot;, &quot;message&quot;=&gt;&quot;fix:auto fetch2\n\ntest auto fetch between redmine and gitlab.\nrefs:#1268 @2\nclose:#1268\n\nSigned-off-by: zhoulin &lt;zhoulin@gcid</span><br><span class="line">esign.com&gt;&quot;, &quot;timestamp&quot;=&gt;&quot;2016-12-15T17:47:51+08:00&quot;, &quot;url&quot;=&gt;&quot;http://git.gcidesign.com:9002/zhoulin/translations/commit/7c6e0d14d4b96fe0f908f326da51629230fd1428&quot;, &quot;author&quot;=&gt;&#123;&quot;name&quot;=&gt;&quot;unknown&quot;, &quot;emai</span><br><span class="line">l&quot;=&gt;&quot;zhoulin@gcidesign.com&quot;&#125;&#125;], &quot;total_commits_count&quot;=&gt;1, &quot;key&quot;=&gt;&quot;2CivrlkuhwEOl2DmaCJ9&quot;&#125;</span><br><span class="line">Completed 404 Not Found in 1ms (ActiveRecord: 0.0ms)</span><br></pre></td></tr></table></figure>
+<p>这个错误也是在仔细阅读插件文档后发现，错误原因是gitlab的web_hook发送过来的请求是GET，而不是插件要求的POST。这个问题我也是偶然发现的，因为我部署了两个redmine测试，同一个gitlab，其中一个redmine就正确的，一直是POST方式。还没有搞明白为啥有个时候是GET，有个时候是POST，我的解决方法是修改插件代码，去掉判断request的类型，修改如下：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">## 修改文件 redmine_gitlab_hook/app/controllers/gitlab_hook_controller.rb</span></span><br><span class="line"><span class="comment">## def index 函数修改如下： 注释掉4行</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">index</span></span></span><br><span class="line"><span class="comment">#    if request.post?</span></span><br><span class="line">      repositories = find_repositories</span><br><span class="line">      <span class="keyword">if</span> repositories.empty?</span><br><span class="line">        render(<span class="symbol">:text</span> =&gt; <span class="string">'No repository configured!'</span>, <span class="symbol">:status</span> =&gt; <span class="symbol">:not_found</span>)</span><br><span class="line">      <span class="keyword">else</span></span><br><span class="line">        errors = []</span><br><span class="line">        repositories.each <span class="keyword">do</span> <span class="params">|repository|</span></span><br><span class="line">          <span class="comment"># Fetch the changes from GitLab</span></span><br><span class="line">          <span class="keyword">if</span> Setting.plugin_redmine_gitlab_hook[<span class="string">'fetch_updates'</span>] == <span class="string">'yes'</span></span><br><span class="line">            git_success = update_repository(repository)</span><br><span class="line">            <span class="keyword">unless</span> git_success</span><br><span class="line">              errors.push(repository.identifier)</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">              <span class="comment"># Fetch the new changesets into Redmine</span></span><br><span class="line">              repository.fetch_changesets</span><br><span class="line">            <span class="keyword">end</span></span><br><span class="line">          <span class="keyword">else</span></span><br><span class="line">            <span class="comment"># Fetch the new changesets into Redmine</span></span><br><span class="line">            repository.fetch_changesets</span><br><span class="line">          <span class="keyword">end</span></span><br><span class="line">        <span class="keyword">end</span></span><br><span class="line">        <span class="keyword">if</span> errors.empty?</span><br><span class="line">          render(<span class="symbol">:text</span> =&gt; <span class="string">'OK'</span>, <span class="symbol">:status</span> =&gt; <span class="symbol">:ok</span>)</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">          render(<span class="symbol">:text</span> =&gt; <span class="string">"Git command failed on repository: <span class="subst">#&#123;errors.join(<span class="string">', '</span>)&#125;</span>!"</span>, <span class="symbol">:status</span> =&gt; <span class="symbol">:not_acceptable</span>)</span><br><span class="line">        <span class="keyword">end</span></span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line"><span class="comment">#    else</span></span><br><span class="line"><span class="comment">#      raise ActionController::RoutingError.new('Not Found')</span></span><br><span class="line"><span class="comment">#    end</span></span><br><span class="line">  <span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+
       
     </div>
     
@@ -327,13 +410,13 @@
   
     
     <div class="copyright">
-        <p><span>本文标题:</span><a href="/2016/04/01/fio-usage-example/">fio应用</a></p>
+        <p><span>本文标题:</span><a href="/2016/12/28/migrate-redmine-with-gitlab/">Redmine与Gitlab深度集成</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">半天河(hnuzhoulin)</a></p>
-        <p><span>发布时间:</span>2016-04-01, 14:13:24</p>
-        <p><span>最后更新:</span>2016-04-06, 10:51:03</p>
+        <p><span>发布时间:</span>2016-12-28, 22:57:56</p>
+        <p><span>最后更新:</span>2016-12-28, 22:57:56</p>
         <p>
-            <span>原始链接:</span><a class="post-url" href="/2016/04/01/fio-usage-example/" title="fio应用">http://www.itzhoulin.com/2016/04/01/fio-usage-example/</a>
-            <span class="copy-path" data-clipboard-text="原文: http://www.itzhoulin.com/2016/04/01/fio-usage-example/　　作者: 半天河(hnuzhoulin)" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <span>原始链接:</span><a class="post-url" href="/2016/12/28/migrate-redmine-with-gitlab/" title="Redmine与Gitlab深度集成">http://www.itzhoulin.com/2016/12/28/migrate-redmine-with-gitlab/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://www.itzhoulin.com/2016/12/28/migrate-redmine-with-gitlab/　　作者: 半天河(hnuzhoulin)" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
             <script> var clipboard = new Clipboard('.copy-path'); </script>
         </p>
         <p>
@@ -345,16 +428,10 @@
 
     <nav id="article-nav">
         
-            <div id="article-nav-newer" class="article-nav-title">
-                <a href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">
-                    Ceph Jewel版功能预览---RBD mirroring
-                </a>
-            </div>
-        
         
             <div id="article-nav-older" class="article-nav-title">
-                <a href="/2016/03/04/cetune-performance-metric/">
-                    CeTune抓取性能数据的代码段分析
+                <a href="/2016/06/11/Ceph-krbd-discard/">
+                    Ceph-krbd-discard
                 </a>
             </div>
         
@@ -365,7 +442,7 @@
 
     <div id="toc" class="toc-article">
     <strong class="toc-title">文章目录</strong>
-    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-输出bw，lat和iops数据并画图"><span class="toc-number">1.</span> <span class="toc-text">1.输出bw，lat和iops数据并画图</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1设置fio输出详细日志"><span class="toc-number">1.1.</span> <span class="toc-text">1.1设置fio输出详细日志</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-画图"><span class="toc-number">1.2.</span> <span class="toc-text">1.2 画图</span></a></li></ol></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#一-要求"><span class="toc-number">1.</span> <span class="toc-text">一.要求</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#二-实现"><span class="toc-number">2.</span> <span class="toc-text">二.实现</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-redmine设置启用版本库"><span class="toc-number">2.1.</span> <span class="toc-text">2.1.redmine设置启用版本库</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-redmine服务器克隆代码版本库"><span class="toc-number">2.2.</span> <span class="toc-text">2.2.redmine服务器克隆代码版本库</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-3-redmine的项目启用版本库"><span class="toc-number">2.3.</span> <span class="toc-text">2.3.redmine的项目启用版本库</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-4-利用gitlab的web-hook和redmine的插件实现自动更新"><span class="toc-number">2.4.</span> <span class="toc-text">2.4.利用gitlab的web_hook和redmine的插件实现自动更新</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-4-1-gitlab的web-hook配置"><span class="toc-number">2.4.1.</span> <span class="toc-text">2.4.1.gitlab的web_hook配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-4-2-redmine-gitlab-hook插件"><span class="toc-number">2.4.2.</span> <span class="toc-text">2.4.2.redmine_gitlab_hook插件</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#三-错误"><span class="toc-number">3.</span> <span class="toc-text">三.错误</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-点击redmine版本库出现404"><span class="toc-number">3.1.</span> <span class="toc-text">3.1.点击redmine版本库出现404</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-测试gitlab的web-hook时404"><span class="toc-number">3.2.</span> <span class="toc-text">3.2.测试gitlab的web_hook时404</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-1-redmine的日志里面没有任何错误信息"><span class="toc-number">3.2.1.</span> <span class="toc-text">3.2.1.redmine的日志里面没有任何错误信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-3-redmine的日志有错误信息，提示处理index时404"><span class="toc-number">3.2.2.</span> <span class="toc-text">3.2.3.redmine的日志有错误信息，提示处理index时404</span></a></li></ol></li></ol></li></ol>
 </div>
 <style>
     .left-col .switch-btn {
@@ -422,7 +499,7 @@
         </div>
         <script>
             window._bd_share_config={
-                "common":{"bdSnsKey":{},"bdText":"fio应用　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+                "common":{"bdSnsKey":{},"bdText":"Redmine与Gitlab深度集成　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
         </script>
     
 
@@ -438,7 +515,7 @@
     
       <div class="duoshuo" id="comments">
     <!-- 多说评论框 start -->
-    <div class="ds-thread" data-thread-key="2016/04/01/fio-usage-example/" data-title="fio应用" data-url="http://www.itzhoulin.com/2016/04/01/fio-usage-example/"></div>
+    <div class="ds-thread" data-thread-key="2016/12/28/migrate-redmine-with-gitlab/" data-title="Redmine与Gitlab深度集成" data-url="http://www.itzhoulin.com/2016/12/28/migrate-redmine-with-gitlab/"></div>
     <!-- 多说评论框 end -->
     <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
     <script type="text/javascript">
@@ -462,15 +539,13 @@
 
     <div class="scroll" id="post-nav-button">
         
-            <a href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/" title="上一篇: Ceph Jewel版功能预览---RBD mirroring">
-                <i class="fa fa-angle-left"></i>
-            </a>
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
         
 
         <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
 
         
-            <a href="/2016/03/04/cetune-performance-metric/" title="下一篇: CeTune抓取性能数据的代码段分析">
+            <a href="/2016/06/11/Ceph-krbd-discard/" title="下一篇: Ceph-krbd-discard">
                 <i class="fa fa-angle-right"></i>
             </a>
         

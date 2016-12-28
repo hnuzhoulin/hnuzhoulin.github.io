@@ -4,6 +4,97 @@
   
     
     <entry>
+      <title><![CDATA[Redmine与Gitlab深度集成]]></title>
+      <url>http://www.itzhoulin.com/2016/12/28/migrate-redmine-with-gitlab/</url>
+      <content type="html"><![CDATA[<h1 id="一-要求"><a href="#一-要求" class="headerlink" title="一.要求"></a>一.要求</h1><ol>
+<li>在redmine的issue页面能够看到该问题相关的提交记录</li>
+<li>gitlab有提交后自动触发Redmine获取更新</li>
+<li>通过commit message能够关联Redmine的issue，设置issue状态，设置任务耗时</li>
+</ol>
+<h1 id="二-实现"><a href="#二-实现" class="headerlink" title="二.实现"></a>二.实现</h1><h2 id="2-1-redmine设置启用版本库"><a href="#2-1-redmine设置启用版本库" class="headerlink" title="2.1.redmine设置启用版本库"></a>2.1.redmine设置启用版本库</h2><p>设置如下图：</p>
+<p><img src="http://ww4.sinaimg.cn/large/006tNbRwgw1faskvyscm4j30yo0ndju6.jpg" alt="redmine设置启用版本库"></p>
+<ol>
+<li>启用SCM：本地只安装了git，所以其他的取消掉</li>
+<li>启用用于版本库管理的Web Service：需要勾选，实现gitlab的web_hook访问</li>
+<li>版本库管理网页服务API密钥：点击生成或者手动输入，记录一下后面配置gitlab需要用到</li>
+<li>允许引用/修复所有其他项目的问题：勾选后就可以在commit message中使用上一项定义的关键字实现git提交和redmine issue的关联，如 <code>refs:#123</code>  表示将本次提交关联到redmine的123号任务</li>
+<li>激活时间日志：勾选后可以在commit message中设置当前提交耗时记录，方式为 <code>Implement feature #1234 @2h 或者 Implement feature #1234 @15m</code> </li>
+<li>最下面一个设置框中就是自定义关键字，实现commit message控制remine中的issue的状态，比如我这里预设了解决、进行中和关闭三个，在commit message中的用法为： <code>ok:#123  或  start #123  或  close:#123 @2</code> ，这最后一个实例还把时间也带上了。</li>
+</ol>
+<h2 id="2-2-redmine服务器克隆代码版本库"><a href="#2-2-redmine服务器克隆代码版本库" class="headerlink" title="2.2.redmine服务器克隆代码版本库"></a>2.2.redmine服务器克隆代码版本库</h2><p>为了redmine能够读取到代码版本库，需要在redmine服务器上克隆gitlab上的项目的代码版本库。同时由于我是单独挂了一块盘在目录 <strong>/git-repo</strong> ，同时redmine运行时使用的用户是daemon，所以我需要设置合理的权限。</p>
+<ul>
+<li><p>设置代码库所在目录的用户和用户组均未daemon</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /git-repo</span><br><span class="line">chown daemon:daemon /git-repo</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>给daemon用户生成ssh key</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir /usr/sbin/.ssh</span><br><span class="line">chown daemon:daemon /usr/sbin/.ssh</span><br><span class="line">sudo -u daemon -H ssh-keygen -t rsa</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>将上一步生成的文件/usr/sbin/.ssh/id_rsa.pub的内容添加到自己gitlab的SSH Keys中，以便无密码获取代码库</p>
+</li>
+<li><p>克隆代码版本库</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo -u daemon -H git <span class="built_in">clone</span> --mirror git@git.gcidesign.com:zhoulin/markdown-test.git markdown-test</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="2-3-redmine的项目启用版本库"><a href="#2-3-redmine的项目启用版本库" class="headerlink" title="2.3.redmine的项目启用版本库"></a>2.3.redmine的项目启用版本库</h2><ul>
+<li>在redmine的项中配置中启用版本库这个模块：</li>
+</ul>
+<p><img src="http://ww3.sinaimg.cn/large/006tNbRwgw1faslefy9s3j30dx0esgme.jpg" alt=""></p>
+<ul>
+<li><p>在 <strong>配置—版本库</strong> 中新建版本库，配置信息如下：</p>
+<p><img src="http://ww4.sinaimg.cn/large/006tNbRwgw1faslw0iygbj30dr0bmdgp.jpg" alt=""></p>
+<ol>
+<li>SCM：选择git，在 <strong>2.1的设置</strong> 中只勾选了git</li>
+<li>主版本库：如果勾选了这个在项目的导航条上就会新增一个tab—版本库，不勾选，就需要通过 <strong>配置—版本库</strong> 查看</li>
+<li>标识：是版本库的一个名字</li>
+<li>库路径：就是前面执行git clone生成的目录的路径，<strong>注意：redmine需要有该目录的读写权限，否则点击版本库会出现404错误</strong> </li>
+<li>路径编码：优选UTF-8</li>
+<li>报告最后一次文件/目录提交：建议勾选，选上后打开版本库会看到相关文件最后一次提交的相关信息如作者、commit message等，不勾选的效果如下图，勾选的效果见第7点。<br><img src="http://ww1.sinaimg.cn/large/006tNbRwgw1fasm9881ipj30r80c7myq.jpg" alt=""><br>7.设置完成后点击设置好的版本详情如下图：<br><img src="http://ww3.sinaimg.cn/large/006tNbRwgw1fasm7r9hdlj312i0pxwml.jpg" alt="739258E85F7D5FE441E0D2044D824783"></li>
+</ol>
+</li>
+</ul>
+<h2 id="2-4-利用gitlab的web-hook和redmine的插件实现自动更新"><a href="#2-4-利用gitlab的web-hook和redmine的插件实现自动更新" class="headerlink" title="2.4.利用gitlab的web_hook和redmine的插件实现自动更新"></a>2.4.利用gitlab的web_hook和redmine的插件实现自动更新</h2><p>经过前面几步的配置我们已经基本实现了要求里面的功能，但是有一点很关键目前还没有实现，那就是如何实现咋我们提交代码之后redmine本地的代码版本库能够自动同步获取更新以便实时显示在redmine上呢？目前的解决方案有如下几种：</p>
+<ol>
+<li><p>本地利用cron定时获取更新，</p>
+</li>
+<li><p>redmine官方有 <strong>Fetch commits automatically</strong>，我没有实现</p>
+</li>
+<li><p>利用redmine的插件和gitlab的web_hook，我觉得这是最好的方式，也是本文介绍的方式</p>
+</li>
+</ol>
+<h3 id="2-4-1-gitlab的web-hook配置"><a href="#2-4-1-gitlab的web-hook配置" class="headerlink" title="2.4.1.gitlab的web_hook配置"></a>2.4.1.gitlab的web_hook配置</h3><p>web_hook的配置其实十分简单，只需要知道redmine中的项目名和API密钥，如下图：</p>
+<p><img src="http://ww1.sinaimg.cn/large/006tNbRwgw1fasmj7e1qmj30yb0jh772.jpg" alt=""></p>
+<ol>
+<li>URL：url连接形如 <code>https://10.1.35.57/redmine/gitlab_hook?project_id=testgit&amp;key=qVfKU2vk3hZyWeH0lD49</code><ul>
+<li><code>https://10.1.35.57/redmine</code> :表示当前redmine的url地址，<strong>注意：这里的https需要跟你的redmine设置一致，否则容易出现404错误，当然如果你设置了所有http自动转为https，你这里写http也没有问题；其次是这里的redmine，如果你没有更改默认的域名设置，务必加上redmine，否则也是404，<a href="https://docs.bitnami.com/installer/apps/redmine/#how-to-configure-the-application-to-run-at-the-root-url-of-the-domains" title="set redmine default root url" target="_blank" rel="external">修改根域名方式</a>。</strong></li>
+<li>project_id：这个就是redmine中项目的名称</li>
+<li>key：这个是前面的 <strong>2.1节</strong> 设置中的 <strong>启用用于版本库管理的Web Service</strong></li>
+</ul>
+</li>
+<li>Trigger：这个很好理解，哪些操作触发这个hook，默认都勾选就好。</li>
+</ol>
+<h3 id="2-4-2-redmine-gitlab-hook插件"><a href="#2-4-2-redmine-gitlab-hook插件" class="headerlink" title="2.4.2.redmine_gitlab_hook插件"></a>2.4.2.redmine_gitlab_hook插件</h3><p>这个插件出自github，代码地址见：<a href="https://github.com/phlegx/redmine_gitlab_hook" title="redmine_gitlab_hook" target="_blank" rel="external">redmine_gitlab_hook</a>   ，插件的安装按照Redmine常规插件安装即可，插件配置页面如下：</p>
+<p><img src="http://ww2.sinaimg.cn/large/006tNbRwgw1fasmz8mkskj30to0gwdij.jpg" alt=""></p>
+<p>这里我只启用了这两项，说明已经很详细了，我就不赘述了。</p>
+<h1 id="三-错误"><a href="#三-错误" class="headerlink" title="三.错误"></a>三.错误</h1><p>在整个配置过程中我碰到了下面几个错误，可能解决途径不是最优或者其实只是瞎碰上的，仅供参考</p>
+<h2 id="3-1-点击redmine版本库出现404"><a href="#3-1-点击redmine版本库出现404" class="headerlink" title="3.1.点击redmine版本库出现404"></a>3.1.点击redmine版本库出现404</h2><p>出现这个问题有两个原因：</p>
+<ol>
+<li>权限：redmine没有足够权限读写你配置的目录。更换目录或者修改目录权限</li>
+<li>版本库：你指定的目录是实际的代码而不是版本库，常规克隆出来的版本库在隐藏文件夹 <strong>.git</strong> 下，或者clone是添加 <strong>–mirror</strong>  参数</li>
+</ol>
+<h2 id="3-2-测试gitlab的web-hook时404"><a href="#3-2-测试gitlab的web-hook时404" class="headerlink" title="3.2.测试gitlab的web_hook时404"></a>3.2.测试gitlab的web_hook时404</h2><p>这又要分两种情况：</p>
+<h3 id="3-2-1-redmine的日志里面没有任何错误信息"><a href="#3-2-1-redmine的日志里面没有任何错误信息" class="headerlink" title="3.2.1.redmine的日志里面没有任何错误信息"></a>3.2.1.redmine的日志里面没有任何错误信息</h3><p>在apache的error_log日志中有一条404记录，这个说明你配置的Web_hook的url错了，可能原因：</p>
+<ol>
+<li>你启用了https，但是url写的是http，而且没有<a href="https://docs.bitnami.com/installer/components/apache/#how-to-force-https-for-all-applications" title="force http redirect to https" target="_blank" rel="external">设置所有http自动跳转到https</a></li>
+<li>你没有修改默认的根URL指向，默认要访问redmine，地址是：<a href="http://IP-or-domain/redmine" target="_blank" rel="external">http://IP-or-domain/redmine</a> ，你的url中忘记了这个redmine，或者请<a href="https://docs.bitnami.com/installer/apps/redmine/#how-to-configure-the-application-to-run-at-the-root-url-of-the-domains" title="set redmine default root url" target="_blank" rel="external">修改redmine默认根URL</a>。</li>
+</ol>
+<h3 id="3-2-3-redmine的日志有错误信息，提示处理index时404"><a href="#3-2-3-redmine的日志有错误信息，提示处理index时404" class="headerlink" title="3.2.3.redmine的日志有错误信息，提示处理index时404"></a>3.2.3.redmine的日志有错误信息，提示处理index时404</h3><p>在production.log中的错误日志如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Started GET &quot;/gitlab_hook?project_id=storage&amp;key=2CivrlkuhwEOl2DmaCJ9&quot; for 10.1.41.165 at 2016-12-15 17:46:23 +0800</span><br><span class="line">Processing by GitlabHookController#index as HTML</span><br><span class="line">  Parameters: &#123;&quot;before&quot;=&gt;&quot;8e279a1daed291d059bf626246a0165e7cc83940&quot;, &quot;after&quot;=&gt;&quot;7c6e0d14d4b96fe0f908f326da51629230fd1428&quot;, &quot;ref&quot;=&gt;&quot;refs/heads/master&quot;, &quot;user_id&quot;=&gt;3, &quot;user_name&quot;=&gt;&quot;周林&quot;, &quot;project_id&quot;=&gt;</span><br><span class="line">&quot;storage&quot;, &quot;repository&quot;=&gt;&#123;&quot;name&quot;=&gt;&quot;translations&quot;, &quot;url&quot;=&gt;&quot;git@git.gcidesign.com:zhoulin/translations.git&quot;, &quot;description&quot;=&gt;&quot;&quot;, &quot;homepage&quot;=&gt;&quot;http://git.gcidesign.com:9002/zhoulin/translations&quot;&#125;, &quot;commi</span><br><span class="line">ts&quot;=&gt;[&#123;&quot;id&quot;=&gt;&quot;7c6e0d14d4b96fe0f908f326da51629230fd1428&quot;, &quot;message&quot;=&gt;&quot;fix:auto fetch2\n\ntest auto fetch between redmine and gitlab.\nrefs:#1268 @2\nclose:#1268\n\nSigned-off-by: zhoulin &lt;zhoulin@gcid</span><br><span class="line">esign.com&gt;&quot;, &quot;timestamp&quot;=&gt;&quot;2016-12-15T17:47:51+08:00&quot;, &quot;url&quot;=&gt;&quot;http://git.gcidesign.com:9002/zhoulin/translations/commit/7c6e0d14d4b96fe0f908f326da51629230fd1428&quot;, &quot;author&quot;=&gt;&#123;&quot;name&quot;=&gt;&quot;unknown&quot;, &quot;emai</span><br><span class="line">l&quot;=&gt;&quot;zhoulin@gcidesign.com&quot;&#125;&#125;], &quot;total_commits_count&quot;=&gt;1, &quot;key&quot;=&gt;&quot;2CivrlkuhwEOl2DmaCJ9&quot;&#125;</span><br><span class="line">Completed 404 Not Found in 1ms (ActiveRecord: 0.0ms)</span><br></pre></td></tr></table></figure>
+<p>这个错误也是在仔细阅读插件文档后发现，错误原因是gitlab的web_hook发送过来的请求是GET，而不是插件要求的POST。这个问题我也是偶然发现的，因为我部署了两个redmine测试，同一个gitlab，其中一个redmine就正确的，一直是POST方式。还没有搞明白为啥有个时候是GET，有个时候是POST，我的解决方法是修改插件代码，去掉判断request的类型，修改如下：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">## 修改文件 redmine_gitlab_hook/app/controllers/gitlab_hook_controller.rb</span></span><br><span class="line"><span class="comment">## def index 函数修改如下： 注释掉4行</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">index</span></span></span><br><span class="line"><span class="comment">#    if request.post?</span></span><br><span class="line">      repositories = find_repositories</span><br><span class="line">      <span class="keyword">if</span> repositories.empty?</span><br><span class="line">        render(<span class="symbol">:text</span> =&gt; <span class="string">'No repository configured!'</span>, <span class="symbol">:status</span> =&gt; <span class="symbol">:not_found</span>)</span><br><span class="line">      <span class="keyword">else</span></span><br><span class="line">        errors = []</span><br><span class="line">        repositories.each <span class="keyword">do</span> <span class="params">|repository|</span></span><br><span class="line">          <span class="comment"># Fetch the changes from GitLab</span></span><br><span class="line">          <span class="keyword">if</span> Setting.plugin_redmine_gitlab_hook[<span class="string">'fetch_updates'</span>] == <span class="string">'yes'</span></span><br><span class="line">            git_success = update_repository(repository)</span><br><span class="line">            <span class="keyword">unless</span> git_success</span><br><span class="line">              errors.push(repository.identifier)</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">              <span class="comment"># Fetch the new changesets into Redmine</span></span><br><span class="line">              repository.fetch_changesets</span><br><span class="line">            <span class="keyword">end</span></span><br><span class="line">          <span class="keyword">else</span></span><br><span class="line">            <span class="comment"># Fetch the new changesets into Redmine</span></span><br><span class="line">            repository.fetch_changesets</span><br><span class="line">          <span class="keyword">end</span></span><br><span class="line">        <span class="keyword">end</span></span><br><span class="line">        <span class="keyword">if</span> errors.empty?</span><br><span class="line">          render(<span class="symbol">:text</span> =&gt; <span class="string">'OK'</span>, <span class="symbol">:status</span> =&gt; <span class="symbol">:ok</span>)</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">          render(<span class="symbol">:text</span> =&gt; <span class="string">"Git command failed on repository: <span class="subst">#&#123;errors.join(<span class="string">', '</span>)&#125;</span>!"</span>, <span class="symbol">:status</span> =&gt; <span class="symbol">:not_acceptable</span>)</span><br><span class="line">        <span class="keyword">end</span></span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line"><span class="comment">#    else</span></span><br><span class="line"><span class="comment">#      raise ActionController::RoutingError.new('Not Found')</span></span><br><span class="line"><span class="comment">#    end</span></span><br><span class="line">  <span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[Ceph-krbd-discard]]></title>
       <url>http://www.itzhoulin.com/2016/06/11/Ceph-krbd-discard/</url>
       <content type="html"><![CDATA[<p>本文英文出处：<a href="http://www.sebastien-han.fr/blog/2015/01/26/ceph-and-krbd-discard/" target="_blank" rel="external">Sébastien Han/ceph-and-krbd-discard</a> </p>
@@ -32,12 +123,8 @@
 <h2 id="译者补充："><a href="#译者补充：" class="headerlink" title="译者补充："></a>译者补充：</h2><p>我的实际线上环境是：ubuntu12.04+Ceph 0.67.9</p>
 <p>同时对于使用 KRBD 的都有感触，要保障业务不断的同时进行升级是相当麻烦的，但是这个存储系统已经稳定运行两年，Ceph检测到已用空间到了70%，但是实际业务系统层面统计还不到50%，因此执行 fstrim 势在必行。</p>
 <p>经过本文作者的提示，我们的方案是在这个集群上使用kvm新建一个 ubuntu14.04.4 的虚拟机，依次将所有 RBD 在该虚拟机上映射后挂载到某一个目录，然后在这个目录上执行 fstrim 命令，达到清理的目的。</p>
-<p>(<strong>注意：Ceph中国社区微信群有网友提醒我，这种另一个地点挂载执行fstrim的操作会对数据有损坏的可能，到底会不会有影响是否确定需要原挂载点先unmount和unmap还需进一步论证。</strong>)</p>
-<p>这个方案有以下几点表现：</p>
-<ol>
-<li>这里实际同一个 RBD 在两个不同节点映射并挂载，但是经过测试，执行 fstrim 命令不会造成业务的中断（使用死循环调dd进行写模拟业务），执行过程中是不是有性能影响没有监测；</li>
-<li>如果该 RBD 在执行 fstrim 命令的时候仍然有写操作，会影响 fstrim 的效果，具体表现就是耗时显著增加、空间清理并没有预期的多。</li>
-</ol>
+<p>这个方案有需要注意：</p>
+<p>推荐的步骤是原挂载点先 <strong>umount</strong> ，再在该虚拟机上mount再执行fstrim。（原来的做法没有在原挂载点先umount，而是同一个 RBD 在两个不同节点映射并挂载，这样做存在新写入数据丢失的风险，一部分块被标记删除但是此时又有新数据写入就会有这种风险，再具体的需要对rbd的fstrim的机制进一步深入分析才能确认，再次感谢微信群 <strong>Ceph中国社区</strong>  的大牛 陈晓熹 的指点。；</p>
 ]]></content>
     </entry>
     
@@ -233,38 +320,6 @@
     </entry>
     
     <entry>
-      <title><![CDATA[ceph full或者nearfull的解决方法探究]]></title>
-      <url>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</url>
-      <content type="html"><![CDATA[<h2 id="1-问题"><a href="#1-问题" class="headerlink" title="1.问题"></a>1.问题</h2><p>昨晚在测试环境新建了7个rbd，然后在不同节点上向这些rbd执行fio，对rbd进行初始化。今早来发现fio没有按时完成，没有输出信息，一看集群状态如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@console:~/CeTune/benchmarking<span class="comment"># ceph health detail</span></span><br><span class="line">HEALTH_ERR 1 full osd(s); 3 near full osd(s)</span><br><span class="line">osd.4 is full at 95%</span><br><span class="line">osd.0 is near full at 87%</span><br><span class="line">osd.2 is near full at 90%</span><br><span class="line">osd.3 is near full at 90%</span><br></pre></td></tr></table></figure>
-<p>这个对于见过场面的我来说不是什么大事（PS：其实主要因为是测试环境），于是乎习惯性翻笔记，但是发现以前的操作处理记录没了，于是乎今天记录一下今天的解决步骤。</p>
-<h2 id="2-解决"><a href="#2-解决" class="headerlink" title="2.解决"></a>2.解决</h2><h3 id="2-0-根本之道"><a href="#2-0-根本之道" class="headerlink" title="2.0.根本之道"></a>2.0.根本之道</h3><p>集群满了，说明空间不够用，因此添加OSD才是最终的出路，但是一旦集群有OSD达到full的级别，及时添加OSD，集群也不会进行数据平衡操作，因此先要能让集群动起来在根据实际情况选择添加OSD还是删除数据。</p>
-<h3 id="2-1-调整OSD的full比例"><a href="#2-1-调整OSD的full比例" class="headerlink" title="2.1.调整OSD的full比例"></a>2.1.调整OSD的full比例</h3><p>执行下面的命令调整OSD的full和nearfull的比例：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 98'</span></span><br><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 0.98'</span></span><br></pre></td></tr></table></figure>
-<p>上面两个是最容易想到的，但是实际上调整这两个后并不能很好的解决我的这个问题，这个时候及时选择删除rbd以腾出空间依然弹出错误如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@console:~/cluster<span class="comment"># rbd rm volume-b0d3175b-7e74-4f71-aae5-39a53eda11ad</span></span><br><span class="line">2016-04-08 08:56:27.911165 7f4cee0da7c0  0 client.104114.objecter  FULL, paused modify 0x1cc3a60 tid 2</span><br></pre></td></tr></table></figure>
-<p>在回看我的场景，基本是所有的OSD的数据都满了，也就是说整个集群（包括pg和OSD）都是full的状态，因此还需要设置一个pg的full比例：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph pg <span class="built_in">set</span>_full_ratio 0.98</span><br></pre></td></tr></table></figure>
-<p>此时再次执行删除rbd操作就会开始工作了，删除可能会比较慢</p>
-<p>PS：<strong>不推荐的删除方式</strong>，先解挂所有rbd，再删除所有rbd，最后直接删除OSD数据目录下current目录下的所有文件。即使是这样，由于我的集群整个满了，删除都消耗了十几分钟。</p>
-<h2 id="3-扩展"><a href="#3-扩展" class="headerlink" title="3.扩展"></a>3.扩展</h2><p>对于只有部分OSD用量满的情况跟前面的处理方式有很大不同。当然，<strong>让集群能够动起来是最开始要做的事</strong> ，这里的情况跟前面第二节介绍的方法还是要所有区别，尤其是对于线上环境，因为一旦调整这个全局的比例，可能整个集群的数据都会动起来，可能会有更多的数据迁移。因此另一种解决方法是临时调整、单个调整。但是，但是，但是，最最重要也是最先要解决的就是找到为什么只有少数OSD空间用量会满。</p>
-<h3 id="3-1-数据分布不均匀的原因"><a href="#3-1-数据分布不均匀的原因" class="headerlink" title="3.1.数据分布不均匀的原因"></a>3.1.数据分布不均匀的原因</h3><h4 id="3-1-1-crushmap问题"><a href="#3-1-1-crushmap问题" class="headerlink" title="3.1.1.crushmap问题"></a>3.1.1.crushmap问题</h4><p>出现这种问题的原因可能是你手动修改过crushmap，将某些OSD划到了单独的组；或者是数据分布规则设定有误等。这种情况就只能自己到处crushmap分析一下了。不好举例，有问题的欢迎沟通。</p>
-<p>####3.1.2.pg数设置不合理<br>这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 <strong>file-&gt;object-&gt;pg-&gt;OSD-&gt;physics disk</strong> 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 <strong>pg_num</strong> 和 <strong>pgp_num</strong> 。有关调整这部分的工作和注意事项等见我的另一篇博文：<a href="http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num">调整pg数量的步骤</a></p>
-<p>有一个python程序可以看各个pool在各个OSD上的pg分布，由此可以判断一下pg是否分布均匀。进而使用上面的方法调整该pool的pg_num和pgp_num。脚本点击<a href="https://gist.github.com/hnuzhoulin/fef193f5e26533fc08c86ad30209646d" target="_blank" rel="external">这里</a></p>
-<h3 id="3-2-调整OSD的weight"><a href="#3-2-调整OSD的weight" class="headerlink" title="3.2.调整OSD的weight"></a>3.2.调整OSD的weight</h3><p>对于只是少数OSD容量满的情况下，不管是上一小节中的调整crushmap还是pg_num的方法解决，最首先也还是需要集群能够进行正常读写操作，因此可以设置单个OSD的full和nearfull比例，也可以使用调整weight的方法。</p>
-<p>关于一个OSD的weght，一共有两种：</p>
-<ul>
-<li>一种就是在crush自动设置的weight，这个值是根据OSD所在硬盘空间大小算出来的，1T的硬盘可用空间，这个值为1.</li>
-<li>另一种就是人为添加的用以表示数据分布权重值的 reweight，这个值介于0-1之间，越小表示分布权重越低。</li>
-</ul>
-<p>两种weoght都可以在命令 <code>ceph osd ree</code> 中看到，如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">root@node1:~<span class="comment"># ceph osd tree</span></span><br><span class="line"><span class="comment"># id    weight  type name       up/down reweight</span></span><br><span class="line">-1      13.65   root default</span><br><span class="line">-2      2.73            host node1</span><br><span class="line">0       2.73                    osd.0   up      1</span><br><span class="line">-3      2.73            host node2</span><br><span class="line">1       2.73                    osd.1   up      1</span><br><span class="line">-4      2.73            host node3</span><br><span class="line">2       2.73                    osd.2   up      1</span><br><span class="line">-5      2.73            host node4</span><br><span class="line">3       2.73                    osd.3   up      1</span><br><span class="line">-6      2.73            host node5</span><br><span class="line">4       2.73                    osd.4   up      1</span><br></pre></td></tr></table></figure>
-<p>从上面的额输出来看，第二列的weight就是crush根据硬盘可用容量计算出来的，最后一列的reweight就是这个OSD的数据分布权重。这里我们应对某一个OSD满的另一种方法就是调整reweight，以降低数据在该OSD上的分布，调整的效果可以看看这个<a href="http://cephnotes.ksperis.com/blog/2013/12/09/ceph-osd-reweight/" target="_blank" rel="external">博文</a>，此文ceph中国论坛有<a href="http://bbs.ceph.org.cn/article/38" target="_blank" rel="external">翻译稿</a></p>
-<p>ceph提供有自动调节reweight的工具：<code>ceph osd reweight-by-utilization</code></p>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[记一次日志所在SSD故障导致的object unfound]]></title>
       <url>http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</url>
       <content type="html"><![CDATA[<h2 id="1-问题"><a href="#1-问题" class="headerlink" title="1.问题"></a>1.问题</h2><p>节点node-65因为其中一个既做系统又做日志分区的SSD寿命到期性能急剧下降导致对应OSD延时超级大，且有OSD无法启动，同时，整个过程依然有虚拟机在对集群进行读写。</p>
@@ -293,6 +348,38 @@
 <li>集群OK</li>
 </ul>
 <h2 id="3-总结"><a href="#3-总结" class="headerlink" title="3.总结"></a>3.总结</h2><p>从最近的几次集群故障来看，ceph还是比较健壮的，可能遇到的问题和故障都已经有相应的解决工具（这个应该得益于社区活跃）和方法，我们只需要为这些工具和方法准备所需的前提条件就可以。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[ceph full或者nearfull的解决方法探究]]></title>
+      <url>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</url>
+      <content type="html"><![CDATA[<h2 id="1-问题"><a href="#1-问题" class="headerlink" title="1.问题"></a>1.问题</h2><p>昨晚在测试环境新建了7个rbd，然后在不同节点上向这些rbd执行fio，对rbd进行初始化。今早来发现fio没有按时完成，没有输出信息，一看集群状态如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@console:~/CeTune/benchmarking<span class="comment"># ceph health detail</span></span><br><span class="line">HEALTH_ERR 1 full osd(s); 3 near full osd(s)</span><br><span class="line">osd.4 is full at 95%</span><br><span class="line">osd.0 is near full at 87%</span><br><span class="line">osd.2 is near full at 90%</span><br><span class="line">osd.3 is near full at 90%</span><br></pre></td></tr></table></figure>
+<p>这个对于见过场面的我来说不是什么大事（PS：其实主要因为是测试环境），于是乎习惯性翻笔记，但是发现以前的操作处理记录没了，于是乎今天记录一下今天的解决步骤。</p>
+<h2 id="2-解决"><a href="#2-解决" class="headerlink" title="2.解决"></a>2.解决</h2><h3 id="2-0-根本之道"><a href="#2-0-根本之道" class="headerlink" title="2.0.根本之道"></a>2.0.根本之道</h3><p>集群满了，说明空间不够用，因此添加OSD才是最终的出路，但是一旦集群有OSD达到full的级别，及时添加OSD，集群也不会进行数据平衡操作，因此先要能让集群动起来在根据实际情况选择添加OSD还是删除数据。</p>
+<h3 id="2-1-调整OSD的full比例"><a href="#2-1-调整OSD的full比例" class="headerlink" title="2.1.调整OSD的full比例"></a>2.1.调整OSD的full比例</h3><p>执行下面的命令调整OSD的full和nearfull的比例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 98'</span></span><br><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 0.98'</span></span><br></pre></td></tr></table></figure>
+<p>上面两个是最容易想到的，但是实际上调整这两个后并不能很好的解决我的这个问题，这个时候及时选择删除rbd以腾出空间依然弹出错误如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@console:~/cluster<span class="comment"># rbd rm volume-b0d3175b-7e74-4f71-aae5-39a53eda11ad</span></span><br><span class="line">2016-04-08 08:56:27.911165 7f4cee0da7c0  0 client.104114.objecter  FULL, paused modify 0x1cc3a60 tid 2</span><br></pre></td></tr></table></figure>
+<p>在回看我的场景，基本是所有的OSD的数据都满了，也就是说整个集群（包括pg和OSD）都是full的状态，因此还需要设置一个pg的full比例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph pg <span class="built_in">set</span>_full_ratio 0.98</span><br></pre></td></tr></table></figure>
+<p>此时再次执行删除rbd操作就会开始工作了，删除可能会比较慢</p>
+<p>PS：<strong>不推荐的删除方式</strong>，先解挂所有rbd，再删除所有rbd，最后直接删除OSD数据目录下current目录下的所有文件。即使是这样，由于我的集群整个满了，删除都消耗了十几分钟。</p>
+<h2 id="3-扩展"><a href="#3-扩展" class="headerlink" title="3.扩展"></a>3.扩展</h2><p>对于只有部分OSD用量满的情况跟前面的处理方式有很大不同。当然，<strong>让集群能够动起来是最开始要做的事</strong> ，这里的情况跟前面第二节介绍的方法还是要所有区别，尤其是对于线上环境，因为一旦调整这个全局的比例，可能整个集群的数据都会动起来，可能会有更多的数据迁移。因此另一种解决方法是临时调整、单个调整。但是，但是，但是，最最重要也是最先要解决的就是找到为什么只有少数OSD空间用量会满。</p>
+<h3 id="3-1-数据分布不均匀的原因"><a href="#3-1-数据分布不均匀的原因" class="headerlink" title="3.1.数据分布不均匀的原因"></a>3.1.数据分布不均匀的原因</h3><h4 id="3-1-1-crushmap问题"><a href="#3-1-1-crushmap问题" class="headerlink" title="3.1.1.crushmap问题"></a>3.1.1.crushmap问题</h4><p>出现这种问题的原因可能是你手动修改过crushmap，将某些OSD划到了单独的组；或者是数据分布规则设定有误等。这种情况就只能自己到处crushmap分析一下了。不好举例，有问题的欢迎沟通。</p>
+<p>####3.1.2.pg数设置不合理<br>这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 <strong>file-&gt;object-&gt;pg-&gt;OSD-&gt;physics disk</strong> 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 <strong>pg_num</strong> 和 <strong>pgp_num</strong> 。有关调整这部分的工作和注意事项等见我的另一篇博文：<a href="http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num">调整pg数量的步骤</a></p>
+<p>有一个python程序可以看各个pool在各个OSD上的pg分布，由此可以判断一下pg是否分布均匀。进而使用上面的方法调整该pool的pg_num和pgp_num。脚本点击<a href="https://gist.github.com/hnuzhoulin/fef193f5e26533fc08c86ad30209646d" target="_blank" rel="external">这里</a></p>
+<h3 id="3-2-调整OSD的weight"><a href="#3-2-调整OSD的weight" class="headerlink" title="3.2.调整OSD的weight"></a>3.2.调整OSD的weight</h3><p>对于只是少数OSD容量满的情况下，不管是上一小节中的调整crushmap还是pg_num的方法解决，最首先也还是需要集群能够进行正常读写操作，因此可以设置单个OSD的full和nearfull比例，也可以使用调整weight的方法。</p>
+<p>关于一个OSD的weght，一共有两种：</p>
+<ul>
+<li>一种就是在crush自动设置的weight，这个值是根据OSD所在硬盘空间大小算出来的，1T的硬盘可用空间，这个值为1.</li>
+<li>另一种就是人为添加的用以表示数据分布权重值的 reweight，这个值介于0-1之间，越小表示分布权重越低。</li>
+</ul>
+<p>两种weoght都可以在命令 <code>ceph osd ree</code> 中看到，如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">root@node1:~<span class="comment"># ceph osd tree</span></span><br><span class="line"><span class="comment"># id    weight  type name       up/down reweight</span></span><br><span class="line">-1      13.65   root default</span><br><span class="line">-2      2.73            host node1</span><br><span class="line">0       2.73                    osd.0   up      1</span><br><span class="line">-3      2.73            host node2</span><br><span class="line">1       2.73                    osd.1   up      1</span><br><span class="line">-4      2.73            host node3</span><br><span class="line">2       2.73                    osd.2   up      1</span><br><span class="line">-5      2.73            host node4</span><br><span class="line">3       2.73                    osd.3   up      1</span><br><span class="line">-6      2.73            host node5</span><br><span class="line">4       2.73                    osd.4   up      1</span><br></pre></td></tr></table></figure>
+<p>从上面的额输出来看，第二列的weight就是crush根据硬盘可用容量计算出来的，最后一列的reweight就是这个OSD的数据分布权重。这里我们应对某一个OSD满的另一种方法就是调整reweight，以降低数据在该OSD上的分布，调整的效果可以看看这个<a href="http://cephnotes.ksperis.com/blog/2013/12/09/ceph-osd-reweight/" target="_blank" rel="external">博文</a>，此文ceph中国论坛有<a href="http://bbs.ceph.org.cn/article/38" target="_blank" rel="external">翻译稿</a></p>
+<p>ceph提供有自动调节reweight的工具：<code>ceph osd reweight-by-utilization</code></p>
 ]]></content>
     </entry>
     

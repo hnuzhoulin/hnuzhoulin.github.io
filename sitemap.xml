@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://www.itzhoulin.com/2016/12/28/migrate-redmine-with-gitlab/</loc>
+    
+    <lastmod>2016-12-28T14:57:56.000Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://www.itzhoulin.com/2016/06/11/Ceph-krbd-discard/</loc>
     
     <lastmod>2016-06-16T01:11:42.000Z</lastmod>

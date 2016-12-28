@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.itzhoulin.com/"/>
-  <updated>2016-06-16T01:11:42.000Z</updated>
+  <updated>2016-12-28T14:57:56.000Z</updated>
   <id>http://www.itzhoulin.com/</id>
   
   <author>
@@ -14,6 +14,115 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Redmine与Gitlab深度集成</title>
+    <link href="http://www.itzhoulin.com/2016/12/28/migrate-redmine-with-gitlab/"/>
+    <id>http://www.itzhoulin.com/2016/12/28/migrate-redmine-with-gitlab/</id>
+    <published>2016-12-28T14:57:56.000Z</published>
+    <updated>2016-12-28T14:57:56.000Z</updated>
+    
+    <content type="html">&lt;h1 id=&quot;一-要求&quot;&gt;&lt;a href=&quot;#一-要求&quot; class=&quot;headerlink&quot; title=&quot;一.要求&quot;&gt;&lt;/a&gt;一.要求&lt;/h1&gt;&lt;ol&gt;
+&lt;li&gt;在redmine的issue页面能够看到该问题相关的提交记录&lt;/li&gt;
+&lt;li&gt;gitlab有提交后自动触发Redmine获取更新&lt;/li&gt;
+&lt;li&gt;通过commit message能够关联Redmine的issue，设置issue状态，设置任务耗时&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h1 id=&quot;二-实现&quot;&gt;&lt;a href=&quot;#二-实现&quot; class=&quot;headerlink&quot; title=&quot;二.实现&quot;&gt;&lt;/a&gt;二.实现&lt;/h1&gt;&lt;h2 id=&quot;2-1-redmine设置启用版本库&quot;&gt;&lt;a href=&quot;#2-1-redmine设置启用版本库&quot; class=&quot;headerlink&quot; title=&quot;2.1.redmine设置启用版本库&quot;&gt;&lt;/a&gt;2.1.redmine设置启用版本库&lt;/h2&gt;&lt;p&gt;设置如下图：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://ww4.sinaimg.cn/large/006tNbRwgw1faskvyscm4j30yo0ndju6.jpg&quot; alt=&quot;redmine设置启用版本库&quot;&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;启用SCM：本地只安装了git，所以其他的取消掉&lt;/li&gt;
+&lt;li&gt;启用用于版本库管理的Web Service：需要勾选，实现gitlab的web_hook访问&lt;/li&gt;
+&lt;li&gt;版本库管理网页服务API密钥：点击生成或者手动输入，记录一下后面配置gitlab需要用到&lt;/li&gt;
+&lt;li&gt;允许引用/修复所有其他项目的问题：勾选后就可以在commit message中使用上一项定义的关键字实现git提交和redmine issue的关联，如 &lt;code&gt;refs:#123&lt;/code&gt;  表示将本次提交关联到redmine的123号任务&lt;/li&gt;
+&lt;li&gt;激活时间日志：勾选后可以在commit message中设置当前提交耗时记录，方式为 &lt;code&gt;Implement feature #1234 @2h 或者 Implement feature #1234 @15m&lt;/code&gt; &lt;/li&gt;
+&lt;li&gt;最下面一个设置框中就是自定义关键字，实现commit message控制remine中的issue的状态，比如我这里预设了解决、进行中和关闭三个，在commit message中的用法为： &lt;code&gt;ok:#123  或  start #123  或  close:#123 @2&lt;/code&gt; ，这最后一个实例还把时间也带上了。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&quot;2-2-redmine服务器克隆代码版本库&quot;&gt;&lt;a href=&quot;#2-2-redmine服务器克隆代码版本库&quot; class=&quot;headerlink&quot; title=&quot;2.2.redmine服务器克隆代码版本库&quot;&gt;&lt;/a&gt;2.2.redmine服务器克隆代码版本库&lt;/h2&gt;&lt;p&gt;为了redmine能够读取到代码版本库，需要在redmine服务器上克隆gitlab上的项目的代码版本库。同时由于我是单独挂了一块盘在目录 &lt;strong&gt;/git-repo&lt;/strong&gt; ，同时redmine运行时使用的用户是daemon，所以我需要设置合理的权限。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;设置代码库所在目录的用户和用户组均未daemon&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;built_in&quot;&gt;cd&lt;/span&gt; /git-repo&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;chown daemon:daemon /git-repo&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;给daemon用户生成ssh key&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;mkdir /usr/sbin/.ssh&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;chown daemon:daemon /usr/sbin/.ssh&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;sudo -u daemon -H ssh-keygen -t rsa&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;将上一步生成的文件/usr/sbin/.ssh/id_rsa.pub的内容添加到自己gitlab的SSH Keys中，以便无密码获取代码库&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;克隆代码版本库&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;sudo -u daemon -H git &lt;span class=&quot;built_in&quot;&gt;clone&lt;/span&gt; --mirror git@git.gcidesign.com:zhoulin/markdown-test.git markdown-test&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;2-3-redmine的项目启用版本库&quot;&gt;&lt;a href=&quot;#2-3-redmine的项目启用版本库&quot; class=&quot;headerlink&quot; title=&quot;2.3.redmine的项目启用版本库&quot;&gt;&lt;/a&gt;2.3.redmine的项目启用版本库&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;在redmine的项中配置中启用版本库这个模块：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&quot;http://ww3.sinaimg.cn/large/006tNbRwgw1faslefy9s3j30dx0esgme.jpg&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;在 &lt;strong&gt;配置—版本库&lt;/strong&gt; 中新建版本库，配置信息如下：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://ww4.sinaimg.cn/large/006tNbRwgw1faslw0iygbj30dr0bmdgp.jpg&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;SCM：选择git，在 &lt;strong&gt;2.1的设置&lt;/strong&gt; 中只勾选了git&lt;/li&gt;
+&lt;li&gt;主版本库：如果勾选了这个在项目的导航条上就会新增一个tab—版本库，不勾选，就需要通过 &lt;strong&gt;配置—版本库&lt;/strong&gt; 查看&lt;/li&gt;
+&lt;li&gt;标识：是版本库的一个名字&lt;/li&gt;
+&lt;li&gt;库路径：就是前面执行git clone生成的目录的路径，&lt;strong&gt;注意：redmine需要有该目录的读写权限，否则点击版本库会出现404错误&lt;/strong&gt; &lt;/li&gt;
+&lt;li&gt;路径编码：优选UTF-8&lt;/li&gt;
+&lt;li&gt;报告最后一次文件/目录提交：建议勾选，选上后打开版本库会看到相关文件最后一次提交的相关信息如作者、commit message等，不勾选的效果如下图，勾选的效果见第7点。&lt;br&gt;&lt;img src=&quot;http://ww1.sinaimg.cn/large/006tNbRwgw1fasm9881ipj30r80c7myq.jpg&quot; alt=&quot;&quot;&gt;&lt;br&gt;7.设置完成后点击设置好的版本详情如下图：&lt;br&gt;&lt;img src=&quot;http://ww3.sinaimg.cn/large/006tNbRwgw1fasm7r9hdlj312i0pxwml.jpg&quot; alt=&quot;739258E85F7D5FE441E0D2044D824783&quot;&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;2-4-利用gitlab的web-hook和redmine的插件实现自动更新&quot;&gt;&lt;a href=&quot;#2-4-利用gitlab的web-hook和redmine的插件实现自动更新&quot; class=&quot;headerlink&quot; title=&quot;2.4.利用gitlab的web_hook和redmine的插件实现自动更新&quot;&gt;&lt;/a&gt;2.4.利用gitlab的web_hook和redmine的插件实现自动更新&lt;/h2&gt;&lt;p&gt;经过前面几步的配置我们已经基本实现了要求里面的功能，但是有一点很关键目前还没有实现，那就是如何实现咋我们提交代码之后redmine本地的代码版本库能够自动同步获取更新以便实时显示在redmine上呢？目前的解决方案有如下几种：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;本地利用cron定时获取更新，&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;redmine官方有 &lt;strong&gt;Fetch commits automatically&lt;/strong&gt;，我没有实现&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;利用redmine的插件和gitlab的web_hook，我觉得这是最好的方式，也是本文介绍的方式&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&quot;2-4-1-gitlab的web-hook配置&quot;&gt;&lt;a href=&quot;#2-4-1-gitlab的web-hook配置&quot; class=&quot;headerlink&quot; title=&quot;2.4.1.gitlab的web_hook配置&quot;&gt;&lt;/a&gt;2.4.1.gitlab的web_hook配置&lt;/h3&gt;&lt;p&gt;web_hook的配置其实十分简单，只需要知道redmine中的项目名和API密钥，如下图：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://ww1.sinaimg.cn/large/006tNbRwgw1fasmj7e1qmj30yb0jh772.jpg&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;URL：url连接形如 &lt;code&gt;https://10.1.35.57/redmine/gitlab_hook?project_id=testgit&amp;amp;key=qVfKU2vk3hZyWeH0lD49&lt;/code&gt;&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;https://10.1.35.57/redmine&lt;/code&gt; :表示当前redmine的url地址，&lt;strong&gt;注意：这里的https需要跟你的redmine设置一致，否则容易出现404错误，当然如果你设置了所有http自动转为https，你这里写http也没有问题；其次是这里的redmine，如果你没有更改默认的域名设置，务必加上redmine，否则也是404，&lt;a href=&quot;https://docs.bitnami.com/installer/apps/redmine/#how-to-configure-the-application-to-run-at-the-root-url-of-the-domains&quot; title=&quot;set redmine default root url&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;修改根域名方式&lt;/a&gt;。&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;project_id：这个就是redmine中项目的名称&lt;/li&gt;
+&lt;li&gt;key：这个是前面的 &lt;strong&gt;2.1节&lt;/strong&gt; 设置中的 &lt;strong&gt;启用用于版本库管理的Web Service&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Trigger：这个很好理解，哪些操作触发这个hook，默认都勾选就好。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&quot;2-4-2-redmine-gitlab-hook插件&quot;&gt;&lt;a href=&quot;#2-4-2-redmine-gitlab-hook插件&quot; class=&quot;headerlink&quot; title=&quot;2.4.2.redmine_gitlab_hook插件&quot;&gt;&lt;/a&gt;2.4.2.redmine_gitlab_hook插件&lt;/h3&gt;&lt;p&gt;这个插件出自github，代码地址见：&lt;a href=&quot;https://github.com/phlegx/redmine_gitlab_hook&quot; title=&quot;redmine_gitlab_hook&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;redmine_gitlab_hook&lt;/a&gt;   ，插件的安装按照Redmine常规插件安装即可，插件配置页面如下：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://ww2.sinaimg.cn/large/006tNbRwgw1fasmz8mkskj30to0gwdij.jpg&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+&lt;p&gt;这里我只启用了这两项，说明已经很详细了，我就不赘述了。&lt;/p&gt;
+&lt;h1 id=&quot;三-错误&quot;&gt;&lt;a href=&quot;#三-错误&quot; class=&quot;headerlink&quot; title=&quot;三.错误&quot;&gt;&lt;/a&gt;三.错误&lt;/h1&gt;&lt;p&gt;在整个配置过程中我碰到了下面几个错误，可能解决途径不是最优或者其实只是瞎碰上的，仅供参考&lt;/p&gt;
+&lt;h2 id=&quot;3-1-点击redmine版本库出现404&quot;&gt;&lt;a href=&quot;#3-1-点击redmine版本库出现404&quot; class=&quot;headerlink&quot; title=&quot;3.1.点击redmine版本库出现404&quot;&gt;&lt;/a&gt;3.1.点击redmine版本库出现404&lt;/h2&gt;&lt;p&gt;出现这个问题有两个原因：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;权限：redmine没有足够权限读写你配置的目录。更换目录或者修改目录权限&lt;/li&gt;
+&lt;li&gt;版本库：你指定的目录是实际的代码而不是版本库，常规克隆出来的版本库在隐藏文件夹 &lt;strong&gt;.git&lt;/strong&gt; 下，或者clone是添加 &lt;strong&gt;–mirror&lt;/strong&gt;  参数&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&quot;3-2-测试gitlab的web-hook时404&quot;&gt;&lt;a href=&quot;#3-2-测试gitlab的web-hook时404&quot; class=&quot;headerlink&quot; title=&quot;3.2.测试gitlab的web_hook时404&quot;&gt;&lt;/a&gt;3.2.测试gitlab的web_hook时404&lt;/h2&gt;&lt;p&gt;这又要分两种情况：&lt;/p&gt;
+&lt;h3 id=&quot;3-2-1-redmine的日志里面没有任何错误信息&quot;&gt;&lt;a href=&quot;#3-2-1-redmine的日志里面没有任何错误信息&quot; class=&quot;headerlink&quot; title=&quot;3.2.1.redmine的日志里面没有任何错误信息&quot;&gt;&lt;/a&gt;3.2.1.redmine的日志里面没有任何错误信息&lt;/h3&gt;&lt;p&gt;在apache的error_log日志中有一条404记录，这个说明你配置的Web_hook的url错了，可能原因：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;你启用了https，但是url写的是http，而且没有&lt;a href=&quot;https://docs.bitnami.com/installer/components/apache/#how-to-force-https-for-all-applications&quot; title=&quot;force http redirect to https&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;设置所有http自动跳转到https&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;你没有修改默认的根URL指向，默认要访问redmine，地址是：&lt;a href=&quot;http://IP-or-domain/redmine&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://IP-or-domain/redmine&lt;/a&gt; ，你的url中忘记了这个redmine，或者请&lt;a href=&quot;https://docs.bitnami.com/installer/apps/redmine/#how-to-configure-the-application-to-run-at-the-root-url-of-the-domains&quot; title=&quot;set redmine default root url&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;修改redmine默认根URL&lt;/a&gt;。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&quot;3-2-3-redmine的日志有错误信息，提示处理index时404&quot;&gt;&lt;a href=&quot;#3-2-3-redmine的日志有错误信息，提示处理index时404&quot; class=&quot;headerlink&quot; title=&quot;3.2.3.redmine的日志有错误信息，提示处理index时404&quot;&gt;&lt;/a&gt;3.2.3.redmine的日志有错误信息，提示处理index时404&lt;/h3&gt;&lt;p&gt;在production.log中的错误日志如下：&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;Started GET &amp;quot;/gitlab_hook?project_id=storage&amp;amp;key=2CivrlkuhwEOl2DmaCJ9&amp;quot; for 10.1.41.165 at 2016-12-15 17:46:23 +0800&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;Processing by GitlabHookController#index as HTML&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  Parameters: &amp;#123;&amp;quot;before&amp;quot;=&amp;gt;&amp;quot;8e279a1daed291d059bf626246a0165e7cc83940&amp;quot;, &amp;quot;after&amp;quot;=&amp;gt;&amp;quot;7c6e0d14d4b96fe0f908f326da51629230fd1428&amp;quot;, &amp;quot;ref&amp;quot;=&amp;gt;&amp;quot;refs/heads/master&amp;quot;, &amp;quot;user_id&amp;quot;=&amp;gt;3, &amp;quot;user_name&amp;quot;=&amp;gt;&amp;quot;周林&amp;quot;, &amp;quot;project_id&amp;quot;=&amp;gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&amp;quot;storage&amp;quot;, &amp;quot;repository&amp;quot;=&amp;gt;&amp;#123;&amp;quot;name&amp;quot;=&amp;gt;&amp;quot;translations&amp;quot;, &amp;quot;url&amp;quot;=&amp;gt;&amp;quot;git@git.gcidesign.com:zhoulin/translations.git&amp;quot;, &amp;quot;description&amp;quot;=&amp;gt;&amp;quot;&amp;quot;, &amp;quot;homepage&amp;quot;=&amp;gt;&amp;quot;http://git.gcidesign.com:9002/zhoulin/translations&amp;quot;&amp;#125;, &amp;quot;commi&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;ts&amp;quot;=&amp;gt;[&amp;#123;&amp;quot;id&amp;quot;=&amp;gt;&amp;quot;7c6e0d14d4b96fe0f908f326da51629230fd1428&amp;quot;, &amp;quot;message&amp;quot;=&amp;gt;&amp;quot;fix:auto fetch2\n\ntest auto fetch between redmine and gitlab.\nrefs:#1268 @2\nclose:#1268\n\nSigned-off-by: zhoulin &amp;lt;zhoulin@gcid&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;esign.com&amp;gt;&amp;quot;, &amp;quot;timestamp&amp;quot;=&amp;gt;&amp;quot;2016-12-15T17:47:51+08:00&amp;quot;, &amp;quot;url&amp;quot;=&amp;gt;&amp;quot;http://git.gcidesign.com:9002/zhoulin/translations/commit/7c6e0d14d4b96fe0f908f326da51629230fd1428&amp;quot;, &amp;quot;author&amp;quot;=&amp;gt;&amp;#123;&amp;quot;name&amp;quot;=&amp;gt;&amp;quot;unknown&amp;quot;, &amp;quot;emai&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;l&amp;quot;=&amp;gt;&amp;quot;zhoulin@gcidesign.com&amp;quot;&amp;#125;&amp;#125;], &amp;quot;total_commits_count&amp;quot;=&amp;gt;1, &amp;quot;key&amp;quot;=&amp;gt;&amp;quot;2CivrlkuhwEOl2DmaCJ9&amp;quot;&amp;#125;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;Completed 404 Not Found in 1ms (ActiveRecord: 0.0ms)&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;这个错误也是在仔细阅读插件文档后发现，错误原因是gitlab的web_hook发送过来的请求是GET，而不是插件要求的POST。这个问题我也是偶然发现的，因为我部署了两个redmine测试，同一个gitlab，其中一个redmine就正确的，一直是POST方式。还没有搞明白为啥有个时候是GET，有个时候是POST，我的解决方法是修改插件代码，去掉判断request的类型，修改如下：&lt;/p&gt;
+&lt;figure class=&quot;highlight ruby&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;14&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;15&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;16&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;17&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;18&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;19&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;20&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;21&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;22&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;23&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;24&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;25&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;26&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;27&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;28&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;29&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;30&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;31&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;32&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;33&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;34&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;## 修改文件 redmine_gitlab_hook/app/controllers/gitlab_hook_controller.rb&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;## def index 函数修改如下： 注释掉4行&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;index&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;#    if request.post?&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      repositories = find_repositories&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      &lt;span class=&quot;keyword&quot;&gt;if&lt;/span&gt; repositories.empty?&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        render(&lt;span class=&quot;symbol&quot;&gt;:text&lt;/span&gt; =&amp;gt; &lt;span class=&quot;string&quot;&gt;&#39;No repository configured!&#39;&lt;/span&gt;, &lt;span class=&quot;symbol&quot;&gt;:status&lt;/span&gt; =&amp;gt; &lt;span class=&quot;symbol&quot;&gt;:not_found&lt;/span&gt;)&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      &lt;span class=&quot;keyword&quot;&gt;else&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        errors = []&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        repositories.each &lt;span class=&quot;keyword&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;params&quot;&gt;|repository|&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          &lt;span class=&quot;comment&quot;&gt;# Fetch the changes from GitLab&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          &lt;span class=&quot;keyword&quot;&gt;if&lt;/span&gt; Setting.plugin_redmine_gitlab_hook[&lt;span class=&quot;string&quot;&gt;&#39;fetch_updates&#39;&lt;/span&gt;] == &lt;span class=&quot;string&quot;&gt;&#39;yes&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;            git_success = update_repository(repository)&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;            &lt;span class=&quot;keyword&quot;&gt;unless&lt;/span&gt; git_success&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;              errors.push(repository.identifier)&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;            &lt;span class=&quot;keyword&quot;&gt;else&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;              &lt;span class=&quot;comment&quot;&gt;# Fetch the new changesets into Redmine&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;              repository.fetch_changesets&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;            &lt;span class=&quot;keyword&quot;&gt;end&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          &lt;span class=&quot;keyword&quot;&gt;else&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;            &lt;span class=&quot;comment&quot;&gt;# Fetch the new changesets into Redmine&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;            repository.fetch_changesets&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          &lt;span class=&quot;keyword&quot;&gt;end&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        &lt;span class=&quot;keyword&quot;&gt;end&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        &lt;span class=&quot;keyword&quot;&gt;if&lt;/span&gt; errors.empty?&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          render(&lt;span class=&quot;symbol&quot;&gt;:text&lt;/span&gt; =&amp;gt; &lt;span class=&quot;string&quot;&gt;&#39;OK&#39;&lt;/span&gt;, &lt;span class=&quot;symbol&quot;&gt;:status&lt;/span&gt; =&amp;gt; &lt;span class=&quot;symbol&quot;&gt;:ok&lt;/span&gt;)&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        &lt;span class=&quot;keyword&quot;&gt;else&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;          render(&lt;span class=&quot;symbol&quot;&gt;:text&lt;/span&gt; =&amp;gt; &lt;span class=&quot;string&quot;&gt;&quot;Git command failed on repository: &lt;span class=&quot;subst&quot;&gt;#&amp;#123;errors.join(&lt;span class=&quot;string&quot;&gt;&#39;, &#39;&lt;/span&gt;)&amp;#125;&lt;/span&gt;!&quot;&lt;/span&gt;, &lt;span class=&quot;symbol&quot;&gt;:status&lt;/span&gt; =&amp;gt; &lt;span class=&quot;symbol&quot;&gt;:not_acceptable&lt;/span&gt;)&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        &lt;span class=&quot;keyword&quot;&gt;end&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;      &lt;span class=&quot;keyword&quot;&gt;end&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;#    else&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;#      raise ActionController::RoutingError.new(&#39;Not Found&#39;)&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;#    end&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;keyword&quot;&gt;end&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+</content>
+    
+    <summary type="html">
+    
+      深度集成Redmine和gitlab，使得可以在redmine页面看到gitlab提交的信息，可以通过gitlab的commit message来控制redmine任务的状态、等级任务耗时等。
+    
+    </summary>
+    
+      <category term="tool" scheme="http://www.itzhoulin.com/categories/tool/"/>
+    
+    
+      <category term="redmine" scheme="http://www.itzhoulin.com/tags/redmine/"/>
+    
+      <category term="gitlab" scheme="http://www.itzhoulin.com/tags/gitlab/"/>
+    
+  </entry>
   
   <entry>
     <title>Ceph-krbd-discard</title>
@@ -48,12 +157,8 @@
 &lt;h2 id=&quot;译者补充：&quot;&gt;&lt;a href=&quot;#译者补充：&quot; class=&quot;headerlink&quot; title=&quot;译者补充：&quot;&gt;&lt;/a&gt;译者补充：&lt;/h2&gt;&lt;p&gt;我的实际线上环境是：ubuntu12.04+Ceph 0.67.9&lt;/p&gt;
 &lt;p&gt;同时对于使用 KRBD 的都有感触，要保障业务不断的同时进行升级是相当麻烦的，但是这个存储系统已经稳定运行两年，Ceph检测到已用空间到了70%，但是实际业务系统层面统计还不到50%，因此执行 fstrim 势在必行。&lt;/p&gt;
 &lt;p&gt;经过本文作者的提示，我们的方案是在这个集群上使用kvm新建一个 ubuntu14.04.4 的虚拟机，依次将所有 RBD 在该虚拟机上映射后挂载到某一个目录，然后在这个目录上执行 fstrim 命令，达到清理的目的。&lt;/p&gt;
-&lt;p&gt;(&lt;strong&gt;注意：Ceph中国社区微信群有网友提醒我，这种另一个地点挂载执行fstrim的操作会对数据有损坏的可能，到底会不会有影响是否确定需要原挂载点先unmount和unmap还需进一步论证。&lt;/strong&gt;)&lt;/p&gt;
-&lt;p&gt;这个方案有以下几点表现：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;这里实际同一个 RBD 在两个不同节点映射并挂载，但是经过测试，执行 fstrim 命令不会造成业务的中断（使用死循环调dd进行写模拟业务），执行过程中是不是有性能影响没有监测；&lt;/li&gt;
-&lt;li&gt;如果该 RBD 在执行 fstrim 命令的时候仍然有写操作，会影响 fstrim 的效果，具体表现就是耗时显著增加、空间清理并没有预期的多。&lt;/li&gt;
-&lt;/ol&gt;
+&lt;p&gt;这个方案有需要注意：&lt;/p&gt;
+&lt;p&gt;推荐的步骤是原挂载点先 &lt;strong&gt;umount&lt;/strong&gt; ，再在该虚拟机上mount再执行fstrim。（原来的做法没有在原挂载点先umount，而是同一个 RBD 在两个不同节点映射并挂载，这样做存在新写入数据丢失的风险，一部分块被标记删除但是此时又有新数据写入就会有这种风险，再具体的需要对rbd的fstrim的机制进一步深入分析才能确认，再次感谢微信群 &lt;strong&gt;Ceph中国社区&lt;/strong&gt;  的大牛 陈晓熹 的指点。；&lt;/p&gt;
 </content>
     
     <summary type="html">
@@ -365,56 +470,6 @@
   </entry>
   
   <entry>
-    <title>ceph full或者nearfull的解决方法探究</title>
-    <link href="http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/"/>
-    <id>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</id>
-    <published>2016-04-20T06:43:57.000Z</published>
-    <updated>2016-04-23T09:18:35.000Z</updated>
-    
-    <content type="html">&lt;h2 id=&quot;1-问题&quot;&gt;&lt;a href=&quot;#1-问题&quot; class=&quot;headerlink&quot; title=&quot;1.问题&quot;&gt;&lt;/a&gt;1.问题&lt;/h2&gt;&lt;p&gt;昨晚在测试环境新建了7个rbd，然后在不同节点上向这些rbd执行fio，对rbd进行初始化。今早来发现fio没有按时完成，没有输出信息，一看集群状态如下：&lt;/p&gt;
-&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@console:~/CeTune/benchmarking&lt;span class=&quot;comment&quot;&gt;# ceph health detail&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;HEALTH_ERR 1 full osd(s); 3 near full osd(s)&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.4 is full at 95%&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.0 is near full at 87%&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.2 is near full at 90%&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.3 is near full at 90%&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;这个对于见过场面的我来说不是什么大事（PS：其实主要因为是测试环境），于是乎习惯性翻笔记，但是发现以前的操作处理记录没了，于是乎今天记录一下今天的解决步骤。&lt;/p&gt;
-&lt;h2 id=&quot;2-解决&quot;&gt;&lt;a href=&quot;#2-解决&quot; class=&quot;headerlink&quot; title=&quot;2.解决&quot;&gt;&lt;/a&gt;2.解决&lt;/h2&gt;&lt;h3 id=&quot;2-0-根本之道&quot;&gt;&lt;a href=&quot;#2-0-根本之道&quot; class=&quot;headerlink&quot; title=&quot;2.0.根本之道&quot;&gt;&lt;/a&gt;2.0.根本之道&lt;/h3&gt;&lt;p&gt;集群满了，说明空间不够用，因此添加OSD才是最终的出路，但是一旦集群有OSD达到full的级别，及时添加OSD，集群也不会进行数据平衡操作，因此先要能让集群动起来在根据实际情况选择添加OSD还是删除数据。&lt;/p&gt;
-&lt;h3 id=&quot;2-1-调整OSD的full比例&quot;&gt;&lt;a href=&quot;#2-1-调整OSD的full比例&quot; class=&quot;headerlink&quot; title=&quot;2.1.调整OSD的full比例&quot;&gt;&lt;/a&gt;2.1.调整OSD的full比例&lt;/h3&gt;&lt;p&gt;执行下面的命令调整OSD的full和nearfull的比例：&lt;/p&gt;
-&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;ceph tell osd.* injectargs &lt;span class=&quot;string&quot;&gt;&#39;--mon-osd-full-ratio 98&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;ceph tell osd.* injectargs &lt;span class=&quot;string&quot;&gt;&#39;--mon-osd-full-ratio 0.98&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;上面两个是最容易想到的，但是实际上调整这两个后并不能很好的解决我的这个问题，这个时候及时选择删除rbd以腾出空间依然弹出错误如下：&lt;/p&gt;
-&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@console:~/cluster&lt;span class=&quot;comment&quot;&gt;# rbd rm volume-b0d3175b-7e74-4f71-aae5-39a53eda11ad&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2016-04-08 08:56:27.911165 7f4cee0da7c0  0 client.104114.objecter  FULL, paused modify 0x1cc3a60 tid 2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;在回看我的场景，基本是所有的OSD的数据都满了，也就是说整个集群（包括pg和OSD）都是full的状态，因此还需要设置一个pg的full比例：&lt;/p&gt;
-&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;ceph pg &lt;span class=&quot;built_in&quot;&gt;set&lt;/span&gt;_full_ratio 0.98&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;此时再次执行删除rbd操作就会开始工作了，删除可能会比较慢&lt;/p&gt;
-&lt;p&gt;PS：&lt;strong&gt;不推荐的删除方式&lt;/strong&gt;，先解挂所有rbd，再删除所有rbd，最后直接删除OSD数据目录下current目录下的所有文件。即使是这样，由于我的集群整个满了，删除都消耗了十几分钟。&lt;/p&gt;
-&lt;h2 id=&quot;3-扩展&quot;&gt;&lt;a href=&quot;#3-扩展&quot; class=&quot;headerlink&quot; title=&quot;3.扩展&quot;&gt;&lt;/a&gt;3.扩展&lt;/h2&gt;&lt;p&gt;对于只有部分OSD用量满的情况跟前面的处理方式有很大不同。当然，&lt;strong&gt;让集群能够动起来是最开始要做的事&lt;/strong&gt; ，这里的情况跟前面第二节介绍的方法还是要所有区别，尤其是对于线上环境，因为一旦调整这个全局的比例，可能整个集群的数据都会动起来，可能会有更多的数据迁移。因此另一种解决方法是临时调整、单个调整。但是，但是，但是，最最重要也是最先要解决的就是找到为什么只有少数OSD空间用量会满。&lt;/p&gt;
-&lt;h3 id=&quot;3-1-数据分布不均匀的原因&quot;&gt;&lt;a href=&quot;#3-1-数据分布不均匀的原因&quot; class=&quot;headerlink&quot; title=&quot;3.1.数据分布不均匀的原因&quot;&gt;&lt;/a&gt;3.1.数据分布不均匀的原因&lt;/h3&gt;&lt;h4 id=&quot;3-1-1-crushmap问题&quot;&gt;&lt;a href=&quot;#3-1-1-crushmap问题&quot; class=&quot;headerlink&quot; title=&quot;3.1.1.crushmap问题&quot;&gt;&lt;/a&gt;3.1.1.crushmap问题&lt;/h4&gt;&lt;p&gt;出现这种问题的原因可能是你手动修改过crushmap，将某些OSD划到了单独的组；或者是数据分布规则设定有误等。这种情况就只能自己到处crushmap分析一下了。不好举例，有问题的欢迎沟通。&lt;/p&gt;
-&lt;p&gt;####3.1.2.pg数设置不合理&lt;br&gt;这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 &lt;strong&gt;file-&amp;gt;object-&amp;gt;pg-&amp;gt;OSD-&amp;gt;physics disk&lt;/strong&gt; 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 &lt;strong&gt;pg_num&lt;/strong&gt; 和 &lt;strong&gt;pgp_num&lt;/strong&gt; 。有关调整这部分的工作和注意事项等见我的另一篇博文：&lt;a href=&quot;http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num&quot;&gt;调整pg数量的步骤&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;有一个python程序可以看各个pool在各个OSD上的pg分布，由此可以判断一下pg是否分布均匀。进而使用上面的方法调整该pool的pg_num和pgp_num。脚本点击&lt;a href=&quot;https://gist.github.com/hnuzhoulin/fef193f5e26533fc08c86ad30209646d&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;这里&lt;/a&gt;&lt;/p&gt;
-&lt;h3 id=&quot;3-2-调整OSD的weight&quot;&gt;&lt;a href=&quot;#3-2-调整OSD的weight&quot; class=&quot;headerlink&quot; title=&quot;3.2.调整OSD的weight&quot;&gt;&lt;/a&gt;3.2.调整OSD的weight&lt;/h3&gt;&lt;p&gt;对于只是少数OSD容量满的情况下，不管是上一小节中的调整crushmap还是pg_num的方法解决，最首先也还是需要集群能够进行正常读写操作，因此可以设置单个OSD的full和nearfull比例，也可以使用调整weight的方法。&lt;/p&gt;
-&lt;p&gt;关于一个OSD的weght，一共有两种：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;一种就是在crush自动设置的weight，这个值是根据OSD所在硬盘空间大小算出来的，1T的硬盘可用空间，这个值为1.&lt;/li&gt;
-&lt;li&gt;另一种就是人为添加的用以表示数据分布权重值的 reweight，这个值介于0-1之间，越小表示分布权重越低。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;两种weoght都可以在命令 &lt;code&gt;ceph osd ree&lt;/code&gt; 中看到，如下：&lt;/p&gt;
-&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@node1:~&lt;span class=&quot;comment&quot;&gt;# ceph osd tree&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;# id    weight  type name       up/down reweight&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-1      13.65   root default&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-2      2.73            host node1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;0       2.73                    osd.0   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-3      2.73            host node2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;1       2.73                    osd.1   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-4      2.73            host node3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2       2.73                    osd.2   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-5      2.73            host node4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3       2.73                    osd.3   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-6      2.73            host node5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4       2.73                    osd.4   up      1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;从上面的额输出来看，第二列的weight就是crush根据硬盘可用容量计算出来的，最后一列的reweight就是这个OSD的数据分布权重。这里我们应对某一个OSD满的另一种方法就是调整reweight，以降低数据在该OSD上的分布，调整的效果可以看看这个&lt;a href=&quot;http://cephnotes.ksperis.com/blog/2013/12/09/ceph-osd-reweight/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;博文&lt;/a&gt;，此文ceph中国论坛有&lt;a href=&quot;http://bbs.ceph.org.cn/article/38&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;翻译稿&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;ceph提供有自动调节reweight的工具：&lt;code&gt;ceph osd reweight-by-utilization&lt;/code&gt;&lt;/p&gt;
-</content>
-    
-    <summary type="html">
-    
-      ceph full或者nearfull的解决方法探究
-    
-    </summary>
-    
-      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
-    
-    
-      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
-    
-      <category term="full" scheme="http://www.itzhoulin.com/tags/full/"/>
-    
-  </entry>
-  
-  <entry>
     <title>记一次日志所在SSD故障导致的object unfound</title>
     <link href="http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/"/>
     <id>http://www.itzhoulin.com/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/</id>
@@ -461,6 +516,56 @@
       <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
     
       <category term="ssd" scheme="http://www.itzhoulin.com/tags/ssd/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>ceph full或者nearfull的解决方法探究</title>
+    <link href="http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/"/>
+    <id>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</id>
+    <published>2016-04-20T06:43:57.000Z</published>
+    <updated>2016-04-23T09:18:35.000Z</updated>
+    
+    <content type="html">&lt;h2 id=&quot;1-问题&quot;&gt;&lt;a href=&quot;#1-问题&quot; class=&quot;headerlink&quot; title=&quot;1.问题&quot;&gt;&lt;/a&gt;1.问题&lt;/h2&gt;&lt;p&gt;昨晚在测试环境新建了7个rbd，然后在不同节点上向这些rbd执行fio，对rbd进行初始化。今早来发现fio没有按时完成，没有输出信息，一看集群状态如下：&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@console:~/CeTune/benchmarking&lt;span class=&quot;comment&quot;&gt;# ceph health detail&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;HEALTH_ERR 1 full osd(s); 3 near full osd(s)&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.4 is full at 95%&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.0 is near full at 87%&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.2 is near full at 90%&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;osd.3 is near full at 90%&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;这个对于见过场面的我来说不是什么大事（PS：其实主要因为是测试环境），于是乎习惯性翻笔记，但是发现以前的操作处理记录没了，于是乎今天记录一下今天的解决步骤。&lt;/p&gt;
+&lt;h2 id=&quot;2-解决&quot;&gt;&lt;a href=&quot;#2-解决&quot; class=&quot;headerlink&quot; title=&quot;2.解决&quot;&gt;&lt;/a&gt;2.解决&lt;/h2&gt;&lt;h3 id=&quot;2-0-根本之道&quot;&gt;&lt;a href=&quot;#2-0-根本之道&quot; class=&quot;headerlink&quot; title=&quot;2.0.根本之道&quot;&gt;&lt;/a&gt;2.0.根本之道&lt;/h3&gt;&lt;p&gt;集群满了，说明空间不够用，因此添加OSD才是最终的出路，但是一旦集群有OSD达到full的级别，及时添加OSD，集群也不会进行数据平衡操作，因此先要能让集群动起来在根据实际情况选择添加OSD还是删除数据。&lt;/p&gt;
+&lt;h3 id=&quot;2-1-调整OSD的full比例&quot;&gt;&lt;a href=&quot;#2-1-调整OSD的full比例&quot; class=&quot;headerlink&quot; title=&quot;2.1.调整OSD的full比例&quot;&gt;&lt;/a&gt;2.1.调整OSD的full比例&lt;/h3&gt;&lt;p&gt;执行下面的命令调整OSD的full和nearfull的比例：&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;ceph tell osd.* injectargs &lt;span class=&quot;string&quot;&gt;&#39;--mon-osd-full-ratio 98&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;ceph tell osd.* injectargs &lt;span class=&quot;string&quot;&gt;&#39;--mon-osd-full-ratio 0.98&#39;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;上面两个是最容易想到的，但是实际上调整这两个后并不能很好的解决我的这个问题，这个时候及时选择删除rbd以腾出空间依然弹出错误如下：&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@console:~/cluster&lt;span class=&quot;comment&quot;&gt;# rbd rm volume-b0d3175b-7e74-4f71-aae5-39a53eda11ad&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2016-04-08 08:56:27.911165 7f4cee0da7c0  0 client.104114.objecter  FULL, paused modify 0x1cc3a60 tid 2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;在回看我的场景，基本是所有的OSD的数据都满了，也就是说整个集群（包括pg和OSD）都是full的状态，因此还需要设置一个pg的full比例：&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;ceph pg &lt;span class=&quot;built_in&quot;&gt;set&lt;/span&gt;_full_ratio 0.98&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;此时再次执行删除rbd操作就会开始工作了，删除可能会比较慢&lt;/p&gt;
+&lt;p&gt;PS：&lt;strong&gt;不推荐的删除方式&lt;/strong&gt;，先解挂所有rbd，再删除所有rbd，最后直接删除OSD数据目录下current目录下的所有文件。即使是这样，由于我的集群整个满了，删除都消耗了十几分钟。&lt;/p&gt;
+&lt;h2 id=&quot;3-扩展&quot;&gt;&lt;a href=&quot;#3-扩展&quot; class=&quot;headerlink&quot; title=&quot;3.扩展&quot;&gt;&lt;/a&gt;3.扩展&lt;/h2&gt;&lt;p&gt;对于只有部分OSD用量满的情况跟前面的处理方式有很大不同。当然，&lt;strong&gt;让集群能够动起来是最开始要做的事&lt;/strong&gt; ，这里的情况跟前面第二节介绍的方法还是要所有区别，尤其是对于线上环境，因为一旦调整这个全局的比例，可能整个集群的数据都会动起来，可能会有更多的数据迁移。因此另一种解决方法是临时调整、单个调整。但是，但是，但是，最最重要也是最先要解决的就是找到为什么只有少数OSD空间用量会满。&lt;/p&gt;
+&lt;h3 id=&quot;3-1-数据分布不均匀的原因&quot;&gt;&lt;a href=&quot;#3-1-数据分布不均匀的原因&quot; class=&quot;headerlink&quot; title=&quot;3.1.数据分布不均匀的原因&quot;&gt;&lt;/a&gt;3.1.数据分布不均匀的原因&lt;/h3&gt;&lt;h4 id=&quot;3-1-1-crushmap问题&quot;&gt;&lt;a href=&quot;#3-1-1-crushmap问题&quot; class=&quot;headerlink&quot; title=&quot;3.1.1.crushmap问题&quot;&gt;&lt;/a&gt;3.1.1.crushmap问题&lt;/h4&gt;&lt;p&gt;出现这种问题的原因可能是你手动修改过crushmap，将某些OSD划到了单独的组；或者是数据分布规则设定有误等。这种情况就只能自己到处crushmap分析一下了。不好举例，有问题的欢迎沟通。&lt;/p&gt;
+&lt;p&gt;####3.1.2.pg数设置不合理&lt;br&gt;这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 &lt;strong&gt;file-&amp;gt;object-&amp;gt;pg-&amp;gt;OSD-&amp;gt;physics disk&lt;/strong&gt; 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 &lt;strong&gt;pg_num&lt;/strong&gt; 和 &lt;strong&gt;pgp_num&lt;/strong&gt; 。有关调整这部分的工作和注意事项等见我的另一篇博文：&lt;a href=&quot;http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num&quot;&gt;调整pg数量的步骤&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;有一个python程序可以看各个pool在各个OSD上的pg分布，由此可以判断一下pg是否分布均匀。进而使用上面的方法调整该pool的pg_num和pgp_num。脚本点击&lt;a href=&quot;https://gist.github.com/hnuzhoulin/fef193f5e26533fc08c86ad30209646d&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;这里&lt;/a&gt;&lt;/p&gt;
+&lt;h3 id=&quot;3-2-调整OSD的weight&quot;&gt;&lt;a href=&quot;#3-2-调整OSD的weight&quot; class=&quot;headerlink&quot; title=&quot;3.2.调整OSD的weight&quot;&gt;&lt;/a&gt;3.2.调整OSD的weight&lt;/h3&gt;&lt;p&gt;对于只是少数OSD容量满的情况下，不管是上一小节中的调整crushmap还是pg_num的方法解决，最首先也还是需要集群能够进行正常读写操作，因此可以设置单个OSD的full和nearfull比例，也可以使用调整weight的方法。&lt;/p&gt;
+&lt;p&gt;关于一个OSD的weght，一共有两种：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;一种就是在crush自动设置的weight，这个值是根据OSD所在硬盘空间大小算出来的，1T的硬盘可用空间，这个值为1.&lt;/li&gt;
+&lt;li&gt;另一种就是人为添加的用以表示数据分布权重值的 reweight，这个值介于0-1之间，越小表示分布权重越低。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;两种weoght都可以在命令 &lt;code&gt;ceph osd ree&lt;/code&gt; 中看到，如下：&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@node1:~&lt;span class=&quot;comment&quot;&gt;# ceph osd tree&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;# id    weight  type name       up/down reweight&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-1      13.65   root default&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-2      2.73            host node1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;0       2.73                    osd.0   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-3      2.73            host node2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;1       2.73                    osd.1   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-4      2.73            host node3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2       2.73                    osd.2   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-5      2.73            host node4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3       2.73                    osd.3   up      1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;-6      2.73            host node5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4       2.73                    osd.4   up      1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;从上面的额输出来看，第二列的weight就是crush根据硬盘可用容量计算出来的，最后一列的reweight就是这个OSD的数据分布权重。这里我们应对某一个OSD满的另一种方法就是调整reweight，以降低数据在该OSD上的分布，调整的效果可以看看这个&lt;a href=&quot;http://cephnotes.ksperis.com/blog/2013/12/09/ceph-osd-reweight/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;博文&lt;/a&gt;，此文ceph中国论坛有&lt;a href=&quot;http://bbs.ceph.org.cn/article/38&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;翻译稿&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;ceph提供有自动调节reweight的工具：&lt;code&gt;ceph osd reweight-by-utilization&lt;/code&gt;&lt;/p&gt;
+</content>
+    
+    <summary type="html">
+    
+      ceph full或者nearfull的解决方法探究
+    
+    </summary>
+    
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
+    
+    
+      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
+    
+      <category term="full" scheme="http://www.itzhoulin.com/tags/full/"/>
     
   </entry>
   
@@ -969,136 +1074,9 @@ osd recovery op priority = 1
       <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="pg" scheme="http://www.itzhoulin.com/tags/pg/"/>
-    
       <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
     
-  </entry>
-  
-  <entry>
-    <title>Ceph的IO模式分析</title>
-    <link href="http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/"/>
-    <id>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</id>
-    <published>2015-12-28T07:37:40.000Z</published>
-    <updated>2016-01-31T16:05:54.000Z</updated>
-    
-    <content type="html">&lt;p&gt;本文主要是翻译sebastien-han的三篇博客：&lt;a href=&quot;http://www.sebastien-han.fr/blog/2014/02/10/ceph-io-patterns-the-good/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;ceph-io-patterns-the-good&lt;/a&gt; 、&lt;a href=&quot;http://www.sebastien-han.fr/blog/2014/02/17/ceph-io-patterns-the-bad/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;ceph-io-patterns-the-bad&lt;/a&gt;、&lt;a href=&quot;http://www.sebastien-han.fr/blog/2014/02/24/ceph-io-patterns-the-ugly/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;ceph-io-patterns-the-ugly&lt;/a&gt;  欢迎加入 &lt;a href=&quot;http://7xj5dz.com1.z0.glb.clouddn.com/qun.png&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;翻译组&lt;/a&gt;&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;一切都是为了性能。基准测试是非常复杂的，得到的测试结果总是难以预测、分析和解释。有时你得到了测试数据，但你不知道它们的意思，也不知道这个结果到底是好呢还是坏呢？好又好在哪里，不好又哪里是瓶颈。在这篇文章中，我将尽力详细的讲解以帮助你理解内部Ceph是如何工作的。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h2 id=&quot;1-The-good&quot;&gt;&lt;a href=&quot;#1-The-good&quot; class=&quot;headerlink&quot; title=&quot;1. The good&quot;&gt;&lt;/a&gt;1. The good&lt;/h2&gt;&lt;h3 id=&quot;1-1-确定的对象位置&quot;&gt;&lt;a href=&quot;#1-1-确定的对象位置&quot; class=&quot;headerlink&quot; title=&quot;1.1 确定的对象位置&quot;&gt;&lt;/a&gt;1.1 确定的对象位置&lt;/h3&gt;&lt;p&gt;&lt;img src=&quot;http://sebastien-han.fr/images/ceph-pgs.png&quot; alt=&quot;ceph-pgs&quot;&gt;&lt;/p&gt;
-&lt;p&gt;关于这一点我相信大家已经熟知了，但是在这里我还是要再次解释一下。Ceph用以确定对象位置的方法是独一无二的：&lt;/p&gt;
-&lt;p&gt;客户端写入顺序(位置和从属关系见上图):&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;=&amp;gt; 一个确定的资源池(包含对象的逻辑概念)&lt;/li&gt;
-&lt;li&gt;=&amp;gt; 这个资源池包含有placement groups (可以看做是资源池的分片)&lt;/li&gt;
-&lt;li&gt;=&amp;gt; 这个PG 包含对象&lt;/li&gt;
-&lt;li&gt;=&amp;gt; 这些对象只属于一个placement group&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;上面几个过程都是通过计算实现的， 这使得整个过程具备可重复性和确定性。所以没有哈希表查找，只有公式和计算。这个公式就是我们通常所说的RADOS算法，它决定了对象在集群内的具体位置。&lt;/p&gt;
-&lt;h3 id=&quot;1-2-整合-集群层面&quot;&gt;&lt;a href=&quot;#1-2-整合-集群层面&quot; class=&quot;headerlink&quot; title=&quot;1.2 整合: 集群层面&quot;&gt;&lt;/a&gt;1.2 整合: 集群层面&lt;/h3&gt;&lt;blockquote&gt;
-&lt;p&gt;一旦有数据写入Ceph，所有对象在整个集群的节点和磁盘内均匀分布。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&quot;http://sebastien-han.fr/images/random-io-one-client.png&quot; alt=&quot;random-io-one-client&quot;&gt;&lt;/p&gt;
-&lt;p&gt;上图阐述了RBD块设备的一个常用使用场景：映射到一个物理机或者一个虚拟机。这两种情况对于存储集群而言是相同的行为，因而无需单独讨论。在这种场景下，客户端产生大量的4K随机操作。显然，在此图中OSD代表一个磁盘。&lt;/p&gt;
-&lt;p&gt;正如在前一节中阐述的那样，客户端每次执行一个IO操作都需要计算位置。也多亏了RADOS算法，所有的4K IOs能够充分利用整个集群的网络、磁盘和带宽来将其均匀分布到整个集群。&lt;/p&gt;
-&lt;p&gt;注意: 这里的瓶颈可能是交换机的背板带宽，因此需要确保它能够很好的支撑每一个链路的最高速度。&lt;/p&gt;
-&lt;h3 id=&quot;1-3-整合-OSD层面&quot;&gt;&lt;a href=&quot;#1-3-整合-OSD层面&quot; class=&quot;headerlink&quot; title=&quot;1.3 整合: OSD层面&quot;&gt;&lt;/a&gt;1.3 整合: OSD层面&lt;/h3&gt;&lt;blockquote&gt;
-&lt;p&gt;一旦有IO到达OSD，不管原来的模式是什么，此时都是连续的。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;&lt;img src=&quot;http://sebastien-han.fr/images/ceph-io-into-journal.png&quot; alt=&quot;ceph-io-into-journal&quot;&gt;&lt;/p&gt;
-&lt;p&gt;上图描述了这样一种场景：不同客户端计算对象位置的时候最终落到了同一个OSD上面。这是相当普遍的一种场景，而且这是一直在发生的事。不同客户端计算它们的对象的位置，最终会落到一个特定的OSD上面。&lt;/p&gt;
-&lt;p&gt;这样做的好处是进入到日志的写请求都被序列化了。基本上，客户端的写都是排队进入日志，再等待被flush到后端存储，就像进入到FIFO。&lt;/p&gt;
-&lt;p&gt;注意: 这样做的真正好处是能够使用专门的磁盘来存储日志，一般是指SSD。&lt;/p&gt;
-&lt;p&gt;确认有效: 主副本OSD在将数据写入日志的同时也将它们发送给其他副本。&lt;/p&gt;
-&lt;h2 id=&quot;2-The-bad&quot;&gt;&lt;a href=&quot;#2-The-bad&quot; class=&quot;headerlink&quot; title=&quot;2. The bad&quot;&gt;&lt;/a&gt;2. The bad&lt;/h2&gt;&lt;h3 id=&quot;2-1-日志化&quot;&gt;&lt;a href=&quot;#2-1-日志化&quot; class=&quot;headerlink&quot; title=&quot;2.1  日志化&quot;&gt;&lt;/a&gt;2.1  日志化&lt;/h3&gt;&lt;blockquote&gt;
-&lt;p&gt;每当有IO请求到达OSD的时候，它都会需要两次写操作。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;这个表述只关注了日志层面，详情见下图：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;http://sebastien-han.fr/images/ceph-a-single-io.png&quot; alt=&quot;Ceph single IO&quot;&gt;&lt;/p&gt;
-&lt;h4 id=&quot;2-1-1-单次写&quot;&gt;&lt;a href=&quot;#2-1-1-单次写&quot; class=&quot;headerlink&quot; title=&quot;2.1.1 单次写&quot;&gt;&lt;/a&gt;2.1.1 单次写&lt;/h4&gt;&lt;p&gt;Ceph是软件定义存储，这意味着数据的副本和可用性都是由软件智能实现。我认为理解Ceph内部是如何工作的相当重要(默认的逻辑架构)。本文的重点是向你们展示当执行一个写操作的时候底层究竟发生了什么。那么，我们举一个副本数是2的单个对象写的实例来详细阐述。这个写会导致4个IO:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;客户端发送请求到主副本OSD&lt;/li&gt;
-&lt;li&gt;第一个IO写入该OSD的日志中&lt;/li&gt;
-&lt;li&gt;日志使用libaio，使用 &lt;code&gt;O_DIRECT&lt;/code&gt; 和 &lt;code&gt;O_DSYNC&lt;/code&gt; 来进行写操作。使用&lt;code&gt;writev()&lt;/code&gt;来处理这个写操作&lt;/li&gt;
-&lt;li&gt;第二个IO是使用 &lt;code&gt;buffered_io&lt;/code&gt; 将数据写入到后端文件系统中，使用 &lt;code&gt;writev()&lt;/code&gt;处理写操作&lt;/li&gt;
-&lt;li&gt;filestore在达到 &lt;code&gt;filestore_max_sync_interval&lt;/code&gt; 设定的时间间隔后，调用 &lt;code&gt;syncfs&lt;/code&gt; 并删除日志中对应的条目，并等待 &lt;code&gt;syncfs&lt;/code&gt; 结束再释放锁。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;采用同样的操作将数据复制到第二副本OSD。&lt;/p&gt;
-&lt;h4 id=&quot;2-1-2-关于日志&quot;&gt;&lt;a href=&quot;#2-1-2-关于日志&quot; class=&quot;headerlink&quot; title=&quot;2.1.2. 关于日志&quot;&gt;&lt;/a&gt;2.1.2. 关于日志&lt;/h4&gt;&lt;p&gt;在前面一幅图中，我提到了日志，但是它到底是干什么的呢？其中几个主要的操作如下：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;保证数据和操作的一致性。正如传统的文件系统日志一样，因此它可以在发生错误的时候进行回滚&lt;/li&gt;
-&lt;li&gt;提供原子操作。它保持对已经提交和即将提交的操作的跟踪。&lt;/li&gt;
-&lt;li&gt;在日志中的写是连续的&lt;/li&gt;
-&lt;li&gt;工作模式是FIFO&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;Ceph OSD守护进程在合适的时候停止写操作，然后同步日志到文件系统，同时允许Ceph OSD守护进程从日志中删除已经写入后端存储的数据以便实现空间重复利用。&lt;/p&gt;
-&lt;p&gt;上面的表述对于OSD的文件系统是Btrfs或ZFS的情况是不适用的。一般而言，我们建议OSD使用XFS或ext4做文件系统，它们的日志模式是writeahead：先写日志再写到后端文件系统。这跟COW(Copy On Write)文件系统是一个不同的方法，因为它使用的是writeparallel模式即同时写日志和后端文件系统。&lt;/p&gt;
-&lt;h4 id=&quot;2-1-3-设计的副作用-Design-penalty&quot;&gt;&lt;a href=&quot;#2-1-3-设计的副作用-Design-penalty&quot; class=&quot;headerlink&quot; title=&quot;2.1.3. 设计的副作用(Design penalty)&quot;&gt;&lt;/a&gt;2.1.3. 设计的副作用(Design penalty)&lt;/h4&gt;&lt;p&gt;显然，你已经注意到了，在writeahead模式下使用日志在写对象的时候会有比较大的性能损耗这一副作用。因为我们写了两次，对于日志跟后端文件系统在同一个磁盘的情况，会导致如下结果：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;Device:             wMB/s
-sdb1 - journal      50.11
-sdb2 - osd_data     40.25
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;传统的企业级SATA盘在顺序写IO模式下可以提供大约110MB/S的速度。是的，基本上说我们将其分成两个IOs。&lt;/p&gt;
-&lt;p&gt;为了避免(或隐藏)这种影响，实现日志有以下几种方法。&lt;/p&gt;
-&lt;p&gt;通常，Ceph日志是文件系统上的一个文件(位置在 &lt;code&gt;/var/lib/ceph/osd/&amp;lt;osd-id&amp;gt;/journal&lt;/code&gt; )。首先因为文件系统的开销因而这种方式这是非常低效的，其次我们无法确定的知道日志在物理磁盘上的确切位置。(文件和块之间的相关性)。&lt;/p&gt;
-&lt;p&gt;实现它的另一种方法是使用OSD数据磁盘的起始裸分区。基本上，你只需要使用最开始的一部分扇区新建一个小的分区来存储日志。由于我们使用的是磁盘的最开始的部分，我们确信这是磁盘上最快的部分。磁盘的外部总是更快的，当磁头越接近中心，性能开始下降(这是一个众所周知的问题)。如果你不想为了日志单独使用一个磁盘的话，这是最好的方法。&lt;/p&gt;
-&lt;p&gt;如果你需要更高的性能，可以使用一个独立的磁盘。不幸的是，因为有大量并发日志写而导致磁盘需要花费大量时间进行寻道。&lt;/p&gt;
-&lt;p&gt;最后，实现日志的最好方法是使用一个单独的SSD盘。多亏了它，你能够使用SSD的诸多有点：无需寻道，快速顺序写和快速访问时间。&lt;/p&gt;
-&lt;h3 id=&quot;2-2-文件系统碎片&quot;&gt;&lt;a href=&quot;#2-2-文件系统碎片&quot; class=&quot;headerlink&quot; title=&quot;2.2. 文件系统碎片&quot;&gt;&lt;/a&gt;2.2. 文件系统碎片&lt;/h3&gt;&lt;p&gt;存储在Ceph中的每个对象在后端文件系统上实际是以文件的形式存在。默认情况下，这些对象存放在 &lt;code&gt;/var/lib/ceph/osd/&amp;lt;osd.id&amp;gt;/current/&amp;lt;pg.id&amp;gt;/&lt;/code&gt; 下。由于Ceph作为动态集群而天生具备的分布式特性，Ceph总是针对对象（此处理解为文件）在执行写和更新操作。这样的负载对于传统文件系统而言是很重的，同时如此密集的操作可能导致大量的碎片。很明显，这会导致时延加剧，现而今，文件系统已经具备了诸如精简制备等机制能够有效地控制文件系统碎片。如果你使用RBD，它能够很好的作为虚拟机的块设备和机器的裸设备工作，对象块大小是4MB(默认开启条带)。然而，Ceph集群中的每一个镜像都可以有自己的条带和方法。&lt;/p&gt;
-&lt;p&gt;注意：文件系统碎片很少会被考虑，因为文件系统老化很难模拟。&lt;/p&gt;
-&lt;p&gt;在Ceph环境中，我们都公开承认：随着时间的推移性能会慢慢下降。对于使用一年的老集群系统而言，可以使用下面的方法应对：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;$ sudo xfs_db -c frag -r /dev/sdd
-actual 196334, ideal 122582, fragmentation factor 37.56%
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;幸运的是，Ceph核心开发人员最近发起了一个针对这个问题的项目。这个新功能叫做RADOS IO hints。它将执行类似 &lt;code&gt;fadvise(2)&lt;/code&gt; 的操作。 &lt;code&gt;fadvise(2)&lt;/code&gt; 是一个系统调用，可以用来提示Linux如何缓存文件。这样，内核就可以选择合适的read-ahead和缓存技术来访问到相应的文件。对于更详细的实现方式，请看邮件列表讨论。&lt;/p&gt;
-&lt;h3 id=&quot;2-3-没有并行读&quot;&gt;&lt;a href=&quot;#2-3-没有并行读&quot; class=&quot;headerlink&quot; title=&quot;2.3. 没有并行读&quot;&gt;&lt;/a&gt;2.3. 没有并行读&lt;/h3&gt;&lt;p&gt;目前，Ceph不提供任何并行读功能，这意味着Ceph总是从主副本OSD提供读服务。因为我们通常有2个或更多的副本，因此读性能应该可以大大改善。我记得在Ceph邮件列表中有过讨论，但是现在找不到任何资料了。但是我相信它已经是Ceph的一部分开发人员的待办事项。&lt;/p&gt;
-&lt;h3 id=&quot;2-4-深度清洗消耗IOs&quot;&gt;&lt;a href=&quot;#2-4-深度清洗消耗IOs&quot; class=&quot;headerlink&quot; title=&quot;2.4. 深度清洗消耗IOs&quot;&gt;&lt;/a&gt;2.4. 深度清洗消耗IOs&lt;/h3&gt;&lt;p&gt;清洗是对对象的一种fsck。它在PG层级检查对象一致性，并且比较对象的主副本和其他副本的版本。&lt;/p&gt;
-&lt;p&gt;目前有两种清洗类型：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;轻度清洗（每天）检查对象大小和属性&lt;/li&gt;
-&lt;li&gt;深度清洗（每周）读取数据并使用校验值来确保数据一致性&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;目前很多用户反馈，深度清洗会对集群产生重大影响。应对这个IO开销的方法很有限，你也可以禁用它，但是你需要使用你自己的方式来实现清洗并使用合适的参数控制它的行为。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;Ceph希望尽可能的保证事务和数据的安全。显然，这是要付出代价的，这就是性能。然而，我们看到已经有一些技术来解决Ceph这种设计带来的副作用。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h2 id=&quot;3-The-ugly&quot;&gt;&lt;a href=&quot;#3-The-ugly&quot; class=&quot;headerlink&quot; title=&quot;3. The ugly&quot;&gt;&lt;/a&gt;3. The ugly&lt;/h2&gt;&lt;blockquote&gt;
-&lt;p&gt;在此之前，我想稍微扯点别的。这里我想公开阐述的问题不仅仅是Ceph存在，其他的分布式存储系统也存在。所以，请牢记一点，下面要讲述的问题不仅仅是Ceph才有。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h3 id=&quot;3-1-RBD的IO模式&quot;&gt;&lt;a href=&quot;#3-1-RBD的IO模式&quot; class=&quot;headerlink&quot; title=&quot;3.1. RBD的IO模式&quot;&gt;&lt;/a&gt;3.1. RBD的IO模式&lt;/h3&gt;&lt;blockquote&gt;
-&lt;p&gt;一个IO进入到Ceph后会有两次写，第二次写性能更糟：&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;原理:&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;http://sebastien-han.fr/images/ceph-io-random-osd.png&quot; alt=&quot;IO patterns on RBD&quot;&gt;&lt;/p&gt;
-&lt;p&gt;在我最后一次基准测试期间，我们有一个类似的假设，然而我们没有得到机会来证实这个事实。幸运的是英特尔的研究人员将这种假设证实为现实。这种现象很容易理解。基本上，由于其分布式特性以及Ceph的确定性存储对象。因此,对象(来自不同客户端)映射到相同的OSD磁盘。最终顺序流混合在一起。下面是Ceph的IO操作队列的一个实例：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;object1 points to pg1.1&lt;/li&gt;
-&lt;li&gt;object2 points to pg1.2&lt;/li&gt;
-&lt;li&gt;object3 points to pg1.3&lt;/li&gt;
-&lt;li&gt;object4 points to pg1.4&lt;/li&gt;
-&lt;li&gt;object5 points to pg1.5&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;OSD 1负责这5个PG。然而没人知道这5个目录在文件系统的哪里(&lt;code&gt;/var/lib/ceph/osd/osd.1/current/pg1.{1,2,3,4,5}&lt;/code&gt;)。如图所示，PG在块设备上有一个确定的位置（文件系统）。最后，磁盘消耗大部分的时间从一个轨道跳到另一个，因此整体性能下降了。&lt;/p&gt;
-&lt;p&gt;由于我讨厌复述，我将引导你们找到来自Intel的那篇详细解释这种现象的杰出博客。&lt;a href=&quot;http://software.intel.com/en-us/blogs/2013/11/20/measure-ceph-rbd-performance-in-a-quantitative-way-part-ii&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;点击这里&lt;/a&gt;&lt;/p&gt;
-&lt;h3 id=&quot;3-2-如果使用erasure-coding情况会更糟&quot;&gt;&lt;a href=&quot;#3-2-如果使用erasure-coding情况会更糟&quot; class=&quot;headerlink&quot; title=&quot;3.2. 如果使用erasure coding情况会更糟&quot;&gt;&lt;/a&gt;3.2. 如果使用erasure coding情况会更糟&lt;/h3&gt;&lt;p&gt;借用一下 &lt;a href=&quot;http://dachary.org/?p=2171&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Loic Dachary’s&lt;/a&gt; 的图片：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;http://sebastien-han.fr/images/erasure-vs-replication.png&quot; alt=&quot;Erasure VS replication&quot;&gt;&lt;/p&gt;
-&lt;p&gt;这只是一个假设。由于erasure code会给块再分块，因此前面的现象可能会被放大。如图所示，这里不是写3份对象，这里写13份对象：10 x 1M(分块)+ 3(奇偶校验)。我相信erasure code能够为你节省空间，但同时也会降低性能。&lt;/p&gt;
-&lt;p&gt;你必须亲自验证。&lt;/p&gt;
-&lt;p&gt;最后两个小节有一点偏离IO模式的主题，但是我相信它们很重要，值得认真考虑。&lt;/p&gt;
-&lt;h2 id=&quot;4-内存位损坏-Memory-bit-corruption&quot;&gt;&lt;a href=&quot;#4-内存位损坏-Memory-bit-corruption&quot; class=&quot;headerlink&quot; title=&quot;4. 内存位损坏(Memory bit corruption)&quot;&gt;&lt;/a&gt;4. 内存位损坏(Memory bit corruption)&lt;/h2&gt;&lt;p&gt;内存位损坏大多是因为从某一个位置上发生了移位。在分布式副本环境中比如Ceph，这可能导致大规模的数据损坏，因为损坏会在整个集群中扩散。如果发生了移位，一般是很难检测到的，因为客户端文件写入一个文件，而就在其进入Ceph集群的时候就直接损坏了。使用ECC内存针对这种问题的是一个通用的实践方案。&lt;/p&gt;
-&lt;p&gt;了解详情见 &lt;a href=&quot;http://en.wikipedia.org/wiki/ECC_memory#Problem_background&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Wikipedia&lt;/a&gt;&lt;/p&gt;
-&lt;h2 id=&quot;5-软件定义存储&quot;&gt;&lt;a href=&quot;#5-软件定义存储&quot; class=&quot;headerlink&quot; title=&quot;5. 软件定义存储&quot;&gt;&lt;/a&gt;5. 软件定义存储&lt;/h2&gt;&lt;p&gt;Ceph是一种软件定义存储，这意味着你所有的IO的计算、存储和平衡都是在程序员写的软件程序的帮助下实现的。因此由于某种原因导致的软件故障可能摧毁你的所有数据。我们已经看到在Ceph中过去的一些特性或标志可能导致数据损坏，不幸的是，一旦你发现它已经太迟了。据我所知，这是有史以来最糟糕的场景但这里的概率是比较低的。&lt;/p&gt;
-</content>
-    
-    <summary type="html">
-    
-      ceph的IO模式分析，翻译自sebastien-han的三篇博客，分别从good，badly和ugly三个方面分析
-    
-    </summary>
-    
-      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
-    
-    
-      <category term="翻译" scheme="http://www.itzhoulin.com/tags/%E7%BF%BB%E8%AF%91/"/>
+      <category term="pg" scheme="http://www.itzhoulin.com/tags/pg/"/>
     
   </entry>
   
