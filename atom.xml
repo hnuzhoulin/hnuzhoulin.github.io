@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.itzhoulin.com/"/>
-  <updated>2016-12-28T14:57:56.000Z</updated>
+  <updated>2017-01-12T10:28:30.000Z</updated>
   <id>http://www.itzhoulin.com/</id>
   
   <author>
@@ -14,6 +14,103 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>xiaomi-router-mini-install-transmission</title>
+    <link href="http://www.itzhoulin.com/2017/01/12/xiaomi-router-mini-install-transmission/"/>
+    <id>http://www.itzhoulin.com/2017/01/12/xiaomi-router-mini-install-transmission/</id>
+    <published>2017-01-12T10:21:36.000Z</published>
+    <updated>2017-01-12T10:28:30.000Z</updated>
+    
+    <content type="html">&lt;p&gt;主要参考两篇论坛高手的教程：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;http://www.miui.com/thread-2093928-1-1.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://www.miui.com/thread-2093928-1-1.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://bbs.xiaomi.cn/t-12985345&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://bbs.xiaomi.cn/t-12985345&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;其实我只是小小合并了一下下，方法也是基于openwrt的源来安装。&lt;/p&gt;
+&lt;h2 id=&quot;1-安装&quot;&gt;&lt;a href=&quot;#1-安装&quot; class=&quot;headerlink&quot; title=&quot;1.安装&quot;&gt;&lt;/a&gt;1.安装&lt;/h2&gt;&lt;h3 id=&quot;1-1-开启ssh&quot;&gt;&lt;a href=&quot;#1-1-开启ssh&quot; class=&quot;headerlink&quot; title=&quot;1.1.开启ssh&quot;&gt;&lt;/a&gt;1.1.开启ssh&lt;/h3&gt;&lt;p&gt;对于小米路由器mini来说，打开 &lt;a href=&quot;http://d.miwifi.com/rom/ssh&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://d.miwifi.com/rom/ssh&lt;/a&gt;  按照提示操作即可。&lt;/p&gt;
+&lt;h3 id=&quot;1-2-修改openwrt源地址到基础软件包源&quot;&gt;&lt;a href=&quot;#1-2-修改openwrt源地址到基础软件包源&quot; class=&quot;headerlink&quot; title=&quot;1.2.修改openwrt源地址到基础软件包源&quot;&gt;&lt;/a&gt;1.2.修改openwrt源地址到基础软件包源&lt;/h3&gt;&lt;p&gt;由于小米路由器mini的空间不足，所以所有相关软件都安装到外接的移动硬盘内。&lt;/p&gt;
+&lt;p&gt;默认带的源地址已经不存在，需要修改到最新的。同时安装transmission需要的依赖和transmission软件本身不在同一个源内，所以需要分批添加分批更新。&lt;/p&gt;
+&lt;p&gt;修改文件和内容如下：&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:~# vi /etc/opkg.conf&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;src/gz attitude_adjustment http://downloads.openwrt.org/barrier_breaker/14.07/ramips/mt7620a/packages/base&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;dest root /data&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;dest ram /tmp&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;lists_dir ext /data/var/opkg-lists&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;option overlay_root /data&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;dest usb /extdisks/sda1/opkg&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;arch all 100&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;arch ramips 200&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;arch ramips_24kec 300&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;&lt;strong&gt;说明：&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;第一行是base源地址，是一些依赖项的&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;dest usb /extdisks/sda1/opkg&lt;/code&gt; 是告知opkg插件安装命令增加一个插件安装目录，也就是USB存储设备中的opkg目录下（opkg目录是我在USB存储设备中新建的目录）。以后使用opkg命令安装插件时使用“opkg -d usb install …”来安装到USB存储设备中。&lt;/li&gt;
+&lt;li&gt;最后三行arch开头的很重要，不添加这三行安装的时候会出现 “no valid architecture” 的错误&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&quot;1-3-更新源&quot;&gt;&lt;a href=&quot;#1-3-更新源&quot; class=&quot;headerlink&quot; title=&quot;1.3.更新源&quot;&gt;&lt;/a&gt;1.3.更新源&lt;/h3&gt;&lt;p&gt;正常更新源命令如下：&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:~# opkg update&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;但是实际上这里会提示你压根没有opkg，所以需要手动上传一个，附件是我用的opkg，我把它放到了目录 &lt;code&gt;/extdisks/sda1/opkg&lt;/code&gt; ，因此实际执行：&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:~#extdisks/sda1/opkg/opkg update&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;补充说明：&lt;br&gt;如果你先用packages源地址(http:// downloads.openwrt.org/barrier_breaker/14.07/ramips/mt7620a/packages/packages)试图直接安装Transmission，会提示缺少依赖的插件包：&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:~# opkg -d usb install transmission-daemon&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;Installing transmission-daemon (2.84-1) to usb...&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;Downloading http:// downloads.openwrt.org/barrier_breaker/14.07/ramips/mt7620a/packages/packages/transmission-daemon_2.84-1_ramips_24kec.ipk.&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;Collected errors:&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;* satisfy_dependencies_for: Cannot satisfy the following dependencies for transmission-daemon:&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;* libc * libcurl * libopenssl * libpthread * libevent2 * librt *&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;* opkg_install_cmd: Cannot install package transmission-daemon.&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;由此可以，需要先用b&lt;/p&gt;
+&lt;h3 id=&quot;1-4-安装Transmission所需的基础插件包&quot;&gt;&lt;a href=&quot;#1-4-安装Transmission所需的基础插件包&quot; class=&quot;headerlink&quot; title=&quot;1.4.安装Transmission所需的基础插件包&quot;&gt;&lt;/a&gt;1.4.安装Transmission所需的基础插件包&lt;/h3&gt;&lt;p&gt;上面提到的依赖中libc无法通过“opkg -d usb install libc”来直接安装，只能手动下载后安装它。&lt;/p&gt;
+&lt;p&gt;首先进入到一个能够下载文件的目录，可以是/tmp临时目录，但我用/extdisks/sda1/opkg目录，下载后可以以后留用：&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:~# cd /tmp&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;或者&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:~# mkdir /extdisks/sda1/opkg&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:~# cd /extdisks/sda1/opkg/&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;下载libc基础插件包（它的地址可以通过在浏览器中打开base源地址，搜索“libc”找到）：&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# wget http://downloads.openwrt.org/barrier_breaker/14.07/ramips/mt7620a/packages/base/libc_0.9.33.2-1_ramips_24kec.ipk&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;安装它（它会自动安装依赖的libgcc包）：&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# ./opkg -d usb install libc_0.9.33.2-1_ramips_24kec.ipk&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;安装Transmission所依赖的其他插件包，可以一起安装：&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# ./opkg -d usb install libcurl libevent2 libopenssl libpthread librt&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;可以通过命令“opkg list-installed”列出当前安装的插件包：&lt;br&gt;&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# ./opkg list-installed&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;libc - 0.9.33.2-1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;libcurl - 7.38.0-1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;libevent2 - 2.0.21-1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;libgcc - 4.8-linaro-1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;libopenssl - 1.0.1j-1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;libpolarssl - 1.3.8-2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;libpthread - 0.9.33.2-1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;librt - 0.9.33.2-1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;zlib - 1.2.8-1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;&lt;/p&gt;
+&lt;h3 id=&quot;1-5-安装Transmission&quot;&gt;&lt;a href=&quot;#1-5-安装Transmission&quot; class=&quot;headerlink&quot; title=&quot;1.5.安装Transmission&quot;&gt;&lt;/a&gt;1.5.安装Transmission&lt;/h3&gt;&lt;p&gt;首先要改成packages源地址，并更新源：&lt;br&gt;&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# vi /etc/opkg.conf&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;src/gz attitude_adjustment http://downloads.openwrt.org/barrier_breaker/14.07/ramips/mt7620a/packages/packages&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;---&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# ./opkg update&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;&lt;/p&gt;
+&lt;p&gt;安装Transmission的两个组件：transmission-daemon（核心程序），transmission-web（网页控制中心）&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# opkg -d usb install transmission-daemon&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# opkg -d usb install transmission-web&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;至此安装结束，下面来配置和启动Transmission。&lt;/p&gt;
+&lt;h2 id=&quot;2-配置Transmission&quot;&gt;&lt;a href=&quot;#2-配置Transmission&quot; class=&quot;headerlink&quot; title=&quot;2.配置Transmission&quot;&gt;&lt;/a&gt;2.配置Transmission&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;因为我们不是默认安装到/data，而是按照到USB存储设备，所以运行下面这个命令添加“TRANSMISSION_WEB_HOME”环境变量，来告知Transmission网页控制台的所在目录：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# export TRANSMISSION_WEB_HOME=/extdisks/sda1/opkg/usr/share/transmission/web/&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;ul&gt;
+&lt;li&gt;启动并生成默认的配置目录（我将配置目录同样制定到USB存储设备中）：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;# /extdisks/sda1/opkg/usr/bin/transmission-daemon -g /extdisks/sda1/opkg/transmission-daemon&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;ul&gt;
+&lt;li&gt;编辑Transmission的配置文件，其中”download-dir”是默认下载到的目录，而”rpc-port”是网页控制台所用的端口，默认是9091：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# vi /extdisks/sda1/opkg/transmission-daemon/settings.json&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;修改以下：&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &amp;quot;download-dir&amp;quot;: &amp;quot;/extdisks/sda1/Downloads&amp;quot;, &lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &amp;quot;rpc-port&amp;quot;: 9876,&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &amp;quot;rpc-whitelist-enabled&amp;quot;: false, &lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;如果要设置用户名和密码登陆（注意保留引号，感谢segafans分享方法）：&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &amp;quot;rpc-authentication-required&amp;quot;: true,&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &amp;quot;rpc-password&amp;quot;: &amp;quot;密码&amp;quot;,&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &amp;quot;rpc-username&amp;quot;: &amp;quot;用户名&amp;quot;,&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;&lt;strong&gt;补充说明：&lt;/strong&gt;&lt;br&gt;修改端口的原因在于默认端口9091已经被系统占用，名为“plugincenter”（插件中心？）的程序：&lt;br&gt;&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1# netstat -lpa | grep 9091&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;tcp 0 0 localhost:9091 0.0.0.0:* LISTEN 8099/plugincenter&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;重启Transmission使修改后的配置生效：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# killall -HUP transmission-daemon&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;h2 id=&quot;3-配置防火墙&quot;&gt;&lt;a href=&quot;#3-配置防火墙&quot; class=&quot;headerlink&quot; title=&quot;3.配置防火墙&quot;&gt;&lt;/a&gt;3.配置防火墙&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;编辑防火墙配置文件，在文件最后添加以下内容：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;14&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;15&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;16&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;17&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;18&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;19&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;20&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# vi /etc/config/firewall&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;添加以下：&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;config rule &amp;apos;transmission_web&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option src &amp;apos;wan&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option dest_port &amp;apos;9876&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option proto &amp;apos;tcp&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option target &amp;apos;ACCEPT&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option name &amp;apos;transmission mgmt from wan&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;config rule &amp;apos;transmission_peer_tcp&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option src &amp;apos;wan&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option dest_port &amp;apos;51413&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option proto &amp;apos;tcp&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option target &amp;apos;ACCEPT&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option name &amp;apos;transmission incoming tcp&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;config rule &amp;apos;transmission_peer_udp&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option src &amp;apos;wan&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option dest_port &amp;apos;51413&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option proto &amp;apos;udp&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option target &amp;apos;ACCEPT&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;        option name &amp;apos;transmission incoming udp&amp;apos;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;ul&gt;
+&lt;li&gt;重启防火墙使配置生效：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@XiaoQiang:/extdisks/sda1/opkg# /etc/init.d/firewall restart&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;至此，你可以在浏览器中输入地址“192.168.31.1:9876”来访问Transmission的网页控制台（出于习惯，我把路由器地址改成了192.168.1.1）。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;设置开机自启动&lt;br&gt;将下面两行命令添加到/etc/rc.local中的“exit 0”之前&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;# export TRANSMISSION_WEB_HOME=/extdisks/sda1/opkg/usr/share/transmission/web/&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;# /extdisks/sda1/opkg/usr/bin/transmission-daemon -g /extdisks/sda1/opkg/transmission-daemon&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;注意：&lt;/strong&gt;&lt;br&gt;部分情况会不生效，此时重启路由器后需要SSH到路由器下，运行下面两个命令，可能是因为在启动脚本运行时，USB存储设备还没准备好。如果有谁成功实现自启动就好了。&lt;/p&gt;
+&lt;h2 id=&quot;4-问题&quot;&gt;&lt;a href=&quot;#4-问题&quot; class=&quot;headerlink&quot; title=&quot;4.问题&quot;&gt;&lt;/a&gt;4.问题&lt;/h2&gt;&lt;ol&gt;
+&lt;li&gt;我添加了4个种子下载，然后路由器就死掉了，可以ping通，但是app无法管理，web管理平台打不开，transmission的web打不开，&lt;/li&gt;
+&lt;li&gt;设置了只允许同时下载两个种子，删掉了一切可以删掉的插件，看着它跑了一个小时，睡一觉起来在外网能ping通回去，检测transmission的端口也开着，但是各种web和app无法打开。&lt;/li&gt;
+&lt;/ol&gt;
+</content>
+    
+    <summary type="html">
+    
+      小米路由器Mini版安装transmission挂PT
+    
+    </summary>
+    
+      <category term="tool" scheme="http://www.itzhoulin.com/categories/tool/"/>
+    
+    
+      <category term="xiaomi" scheme="http://www.itzhoulin.com/tags/xiaomi/"/>
+    
+      <category term="transmission" scheme="http://www.itzhoulin.com/tags/transmission/"/>
+    
+  </entry>
   
   <entry>
     <title>Redmine与Gitlab深度集成</title>
@@ -1034,49 +1131,6 @@
     
     
       <category term="osd" scheme="http://www.itzhoulin.com/tags/osd/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>调整pg数量的步骤</title>
-    <link href="http://www.itzhoulin.com/2016/01/06/right-steps-adjusting-ceph-pg-num/"/>
-    <id>http://www.itzhoulin.com/2016/01/06/right-steps-adjusting-ceph-pg-num/</id>
-    <published>2016-01-06T08:59:18.000Z</published>
-    <updated>2016-03-26T03:18:06.000Z</updated>
-    
-    <content type="html">&lt;h1 id=&quot;1-计算合适的pg数&quot;&gt;&lt;a href=&quot;#1-计算合适的pg数&quot; class=&quot;headerlink&quot; title=&quot;1.计算合适的pg数&quot;&gt;&lt;/a&gt;1.计算合适的pg数&lt;/h1&gt;&lt;p&gt;关于pg数值的合理值的计算参考 &lt;code&gt;http://ceph.com/pgcalc/&lt;/code&gt; 。但是请谨记，在你真正还是调整pg前，请确保集群状态是健康的。 &lt;/p&gt;
-&lt;h1 id=&quot;2-调整前确保状态ok&quot;&gt;&lt;a href=&quot;#2-调整前确保状态ok&quot; class=&quot;headerlink&quot; title=&quot;2.调整前确保状态ok&quot;&gt;&lt;/a&gt;2.调整前确保状态ok&lt;/h1&gt;&lt;p&gt;如果 &lt;code&gt;ceph -s&lt;/code&gt; 命令显示的集群状态是OK的，此时就可以动态的增大pg的值。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;注意：&lt;/strong&gt; 增大pg有几个步骤，同时必须比较平滑的增大，不能一次性调的太猛。对于生产环境格外注意。&lt;/p&gt;
-&lt;p&gt;一次性的将pg跳到一个很大的值会导致集群大规模的数据平衡，因而可能导致集群出现问题而临时不可用。&lt;/p&gt;
-&lt;h1 id=&quot;3-调整数据同步参数，减少数据同步时对业务的影响&quot;&gt;&lt;a href=&quot;#3-调整数据同步参数，减少数据同步时对业务的影响&quot; class=&quot;headerlink&quot; title=&quot;3.调整数据同步参数，减少数据同步时对业务的影响&quot;&gt;&lt;/a&gt;3.调整数据同步参数，减少数据同步时对业务的影响&lt;/h1&gt;&lt;p&gt;当调整 PG/PGP 的值时，会引发ceph集群的 &lt;code&gt;backfill&lt;/code&gt; 操作，数据会以最快的数据进行平衡，因此可能导致集群不稳定。 因此首先设置 backfill ratio 到一个比较小的值，通过下面的命令设置：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;ceph tell osd.* injectargs &amp;apos;--osd-max-backfills 1&amp;apos;
-ceph tell osd.* injectargs &amp;apos;--osd-recovery-max-active 1&amp;apos;
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;还包括下面这些：&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;osd_backfill_scan_min = 4 
-osd_backfill_scan_max = 32 
-osd recovery threads = 1 
-osd recovery op priority = 1 
-&lt;/code&gt;&lt;/pre&gt;&lt;h1 id=&quot;4-首先调整pg&quot;&gt;&lt;a href=&quot;#4-首先调整pg&quot; class=&quot;headerlink&quot; title=&quot;4.首先调整pg&quot;&gt;&lt;/a&gt;4.首先调整pg&lt;/h1&gt;&lt;p&gt;然后，先增长pg的值，我们推荐的增长幅度是按照 &lt;strong&gt;2的幂&lt;/strong&gt; 进行增长，如原来是 &lt;strong&gt;64&lt;/strong&gt;个，第一次调整先增加到&lt;strong&gt;128&lt;/strong&gt;个， 设置命令如下：    &lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;ceph osd pool set &amp;lt;poolname&amp;gt; pg_num &amp;lt;new_pgnum&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;你可以通过 &lt;code&gt;ceph -w&lt;/code&gt; 查看集群的变化。&lt;/p&gt;
-&lt;h1 id=&quot;5-等到状态再次恢复正常再调整pgp&quot;&gt;&lt;a href=&quot;#5-等到状态再次恢复正常再调整pgp&quot; class=&quot;headerlink&quot; title=&quot;5.等到状态再次恢复正常再调整pgp&quot;&gt;&lt;/a&gt;5.等到状态再次恢复正常再调整pgp&lt;/h1&gt;&lt;p&gt;在pg增长之后，通过下面的命令增加pgp，pgp的值需要与pg的值一致： &lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;ceph osd pool set &amp;lt;poolname&amp;gt; pgp_num &amp;lt;new_pgnum&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;此时，通过 &lt;code&gt;ceph -w&lt;/code&gt; 可以看到集群状态的详细信息，可以看到数据的再平衡过程。&lt;/p&gt;
-&lt;h1 id=&quot;6-关于pg和pgp的区别在另外的文章中再详述&quot;&gt;&lt;a href=&quot;#6-关于pg和pgp的区别在另外的文章中再详述&quot; class=&quot;headerlink&quot; title=&quot;6.关于pg和pgp的区别在另外的文章中再详述&quot;&gt;&lt;/a&gt;6.关于pg和pgp的区别在另外的文章中再详述&lt;/h1&gt;&lt;h1 id=&quot;7-关于pg分裂的详细讲解见有云官方博客&quot;&gt;&lt;a href=&quot;#7-关于pg分裂的详细讲解见有云官方博客&quot; class=&quot;headerlink&quot; title=&quot;7.关于pg分裂的详细讲解见有云官方博客&quot;&gt;&lt;/a&gt;7.关于pg分裂的详细讲解见有云官方博客&lt;/h1&gt;&lt;p&gt;&lt;a href=&quot;https://www.ustack.com/blog/ceph-pg-fenlie/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Ceph pg分裂流程及可行性分析&lt;/a&gt;&lt;/p&gt;
-</content>
-    
-    <summary type="html">
-    
-      调整pg数量的步骤
-    
-    </summary>
-    
-      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
-    
-    
-      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
-    
-      <category term="pg" scheme="http://www.itzhoulin.com/tags/pg/"/>
     
   </entry>
   

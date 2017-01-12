@@ -4,6 +4,85 @@
   
     
     <entry>
+      <title><![CDATA[xiaomi-router-mini-install-transmission]]></title>
+      <url>http://www.itzhoulin.com/2017/01/12/xiaomi-router-mini-install-transmission/</url>
+      <content type="html"><![CDATA[<p>主要参考两篇论坛高手的教程：</p>
+<ul>
+<li><a href="http://www.miui.com/thread-2093928-1-1.html" target="_blank" rel="external">http://www.miui.com/thread-2093928-1-1.html</a></li>
+<li><a href="http://bbs.xiaomi.cn/t-12985345" target="_blank" rel="external">http://bbs.xiaomi.cn/t-12985345</a></li>
+</ul>
+<p>其实我只是小小合并了一下下，方法也是基于openwrt的源来安装。</p>
+<h2 id="1-安装"><a href="#1-安装" class="headerlink" title="1.安装"></a>1.安装</h2><h3 id="1-1-开启ssh"><a href="#1-1-开启ssh" class="headerlink" title="1.1.开启ssh"></a>1.1.开启ssh</h3><p>对于小米路由器mini来说，打开 <a href="http://d.miwifi.com/rom/ssh" target="_blank" rel="external">http://d.miwifi.com/rom/ssh</a>  按照提示操作即可。</p>
+<h3 id="1-2-修改openwrt源地址到基础软件包源"><a href="#1-2-修改openwrt源地址到基础软件包源" class="headerlink" title="1.2.修改openwrt源地址到基础软件包源"></a>1.2.修改openwrt源地址到基础软件包源</h3><p>由于小米路由器mini的空间不足，所以所有相关软件都安装到外接的移动硬盘内。</p>
+<p>默认带的源地址已经不存在，需要修改到最新的。同时安装transmission需要的依赖和transmission软件本身不在同一个源内，所以需要分批添加分批更新。</p>
+<p>修改文件和内容如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:~# vi /etc/opkg.conf</span><br><span class="line">src/gz attitude_adjustment http://downloads.openwrt.org/barrier_breaker/14.07/ramips/mt7620a/packages/base</span><br><span class="line">dest root /data</span><br><span class="line">dest ram /tmp</span><br><span class="line">lists_dir ext /data/var/opkg-lists</span><br><span class="line">option overlay_root /data</span><br><span class="line">dest usb /extdisks/sda1/opkg</span><br><span class="line"></span><br><span class="line">arch all 100</span><br><span class="line">arch ramips 200</span><br><span class="line">arch ramips_24kec 300</span><br></pre></td></tr></table></figure>
+<p><strong>说明：</strong></p>
+<ol>
+<li>第一行是base源地址，是一些依赖项的</li>
+<li><code>dest usb /extdisks/sda1/opkg</code> 是告知opkg插件安装命令增加一个插件安装目录，也就是USB存储设备中的opkg目录下（opkg目录是我在USB存储设备中新建的目录）。以后使用opkg命令安装插件时使用“opkg -d usb install …”来安装到USB存储设备中。</li>
+<li>最后三行arch开头的很重要，不添加这三行安装的时候会出现 “no valid architecture” 的错误</li>
+</ol>
+<h3 id="1-3-更新源"><a href="#1-3-更新源" class="headerlink" title="1.3.更新源"></a>1.3.更新源</h3><p>正常更新源命令如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:~# opkg update</span><br></pre></td></tr></table></figure>
+<p>但是实际上这里会提示你压根没有opkg，所以需要手动上传一个，附件是我用的opkg，我把它放到了目录 <code>/extdisks/sda1/opkg</code> ，因此实际执行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:~#extdisks/sda1/opkg/opkg update</span><br></pre></td></tr></table></figure>
+<p>补充说明：<br>如果你先用packages源地址(http:// downloads.openwrt.org/barrier_breaker/14.07/ramips/mt7620a/packages/packages)试图直接安装Transmission，会提示缺少依赖的插件包：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:~# opkg -d usb install transmission-daemon</span><br><span class="line">Installing transmission-daemon (2.84-1) to usb...</span><br><span class="line">Downloading http:// downloads.openwrt.org/barrier_breaker/14.07/ramips/mt7620a/packages/packages/transmission-daemon_2.84-1_ramips_24kec.ipk.</span><br><span class="line">Collected errors:</span><br><span class="line">* satisfy_dependencies_for: Cannot satisfy the following dependencies for transmission-daemon:</span><br><span class="line">* libc * libcurl * libopenssl * libpthread * libevent2 * librt *</span><br><span class="line">* opkg_install_cmd: Cannot install package transmission-daemon.</span><br></pre></td></tr></table></figure>
+<p>由此可以，需要先用b</p>
+<h3 id="1-4-安装Transmission所需的基础插件包"><a href="#1-4-安装Transmission所需的基础插件包" class="headerlink" title="1.4.安装Transmission所需的基础插件包"></a>1.4.安装Transmission所需的基础插件包</h3><p>上面提到的依赖中libc无法通过“opkg -d usb install libc”来直接安装，只能手动下载后安装它。</p>
+<p>首先进入到一个能够下载文件的目录，可以是/tmp临时目录，但我用/extdisks/sda1/opkg目录，下载后可以以后留用：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:~# cd /tmp</span><br><span class="line">或者</span><br><span class="line">root@XiaoQiang:~# mkdir /extdisks/sda1/opkg</span><br><span class="line">root@XiaoQiang:~# cd /extdisks/sda1/opkg/</span><br></pre></td></tr></table></figure>
+<p>下载libc基础插件包（它的地址可以通过在浏览器中打开base源地址，搜索“libc”找到）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# wget http://downloads.openwrt.org/barrier_breaker/14.07/ramips/mt7620a/packages/base/libc_0.9.33.2-1_ramips_24kec.ipk</span><br></pre></td></tr></table></figure>
+<p>安装它（它会自动安装依赖的libgcc包）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# ./opkg -d usb install libc_0.9.33.2-1_ramips_24kec.ipk</span><br></pre></td></tr></table></figure>
+<p>安装Transmission所依赖的其他插件包，可以一起安装：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# ./opkg -d usb install libcurl libevent2 libopenssl libpthread librt</span><br></pre></td></tr></table></figure>
+<p>可以通过命令“opkg list-installed”列出当前安装的插件包：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# ./opkg list-installed</span><br><span class="line">libc - 0.9.33.2-1</span><br><span class="line">libcurl - 7.38.0-1</span><br><span class="line">libevent2 - 2.0.21-1</span><br><span class="line">libgcc - 4.8-linaro-1</span><br><span class="line">libopenssl - 1.0.1j-1</span><br><span class="line">libpolarssl - 1.3.8-2</span><br><span class="line">libpthread - 0.9.33.2-1</span><br><span class="line">librt - 0.9.33.2-1</span><br><span class="line">zlib - 1.2.8-1</span><br></pre></td></tr></table></figure></p>
+<h3 id="1-5-安装Transmission"><a href="#1-5-安装Transmission" class="headerlink" title="1.5.安装Transmission"></a>1.5.安装Transmission</h3><p>首先要改成packages源地址，并更新源：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# vi /etc/opkg.conf</span><br><span class="line">src/gz attitude_adjustment http://downloads.openwrt.org/barrier_breaker/14.07/ramips/mt7620a/packages/packages</span><br><span class="line">---</span><br><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# ./opkg update</span><br></pre></td></tr></table></figure></p>
+<p>安装Transmission的两个组件：transmission-daemon（核心程序），transmission-web（网页控制中心）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# opkg -d usb install transmission-daemon</span><br><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# opkg -d usb install transmission-web</span><br></pre></td></tr></table></figure>
+<p>至此安装结束，下面来配置和启动Transmission。</p>
+<h2 id="2-配置Transmission"><a href="#2-配置Transmission" class="headerlink" title="2.配置Transmission"></a>2.配置Transmission</h2><ul>
+<li>因为我们不是默认安装到/data，而是按照到USB存储设备，所以运行下面这个命令添加“TRANSMISSION_WEB_HOME”环境变量，来告知Transmission网页控制台的所在目录：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# export TRANSMISSION_WEB_HOME=/extdisks/sda1/opkg/usr/share/transmission/web/</span><br></pre></td></tr></table></figure>
+<ul>
+<li>启动并生成默认的配置目录（我将配置目录同样制定到USB存储设备中）：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># /extdisks/sda1/opkg/usr/bin/transmission-daemon -g /extdisks/sda1/opkg/transmission-daemon</span><br></pre></td></tr></table></figure>
+<ul>
+<li>编辑Transmission的配置文件，其中”download-dir”是默认下载到的目录，而”rpc-port”是网页控制台所用的端口，默认是9091：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# vi /extdisks/sda1/opkg/transmission-daemon/settings.json</span><br><span class="line">修改以下：</span><br><span class="line">    &quot;download-dir&quot;: &quot;/extdisks/sda1/Downloads&quot;, </span><br><span class="line">    &quot;rpc-port&quot;: 9876,</span><br><span class="line">    &quot;rpc-whitelist-enabled&quot;: false, </span><br><span class="line">如果要设置用户名和密码登陆（注意保留引号，感谢segafans分享方法）：</span><br><span class="line">    &quot;rpc-authentication-required&quot;: true,</span><br><span class="line">    &quot;rpc-password&quot;: &quot;密码&quot;,</span><br><span class="line">    &quot;rpc-username&quot;: &quot;用户名&quot;,</span><br></pre></td></tr></table></figure>
+<p><strong>补充说明：</strong><br>修改端口的原因在于默认端口9091已经被系统占用，名为“plugincenter”（插件中心？）的程序：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:/extdisks/sda1# netstat -lpa | grep 9091</span><br><span class="line">tcp 0 0 localhost:9091 0.0.0.0:* LISTEN 8099/plugincenter</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>重启Transmission使修改后的配置生效：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# killall -HUP transmission-daemon</span><br></pre></td></tr></table></figure>
+<h2 id="3-配置防火墙"><a href="#3-配置防火墙" class="headerlink" title="3.配置防火墙"></a>3.配置防火墙</h2><ul>
+<li>编辑防火墙配置文件，在文件最后添加以下内容：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# vi /etc/config/firewall</span><br><span class="line">添加以下：</span><br><span class="line">config rule &apos;transmission_web&apos;</span><br><span class="line">        option src &apos;wan&apos;</span><br><span class="line">        option dest_port &apos;9876&apos;</span><br><span class="line">        option proto &apos;tcp&apos;</span><br><span class="line">        option target &apos;ACCEPT&apos;</span><br><span class="line">        option name &apos;transmission mgmt from wan&apos;</span><br><span class="line">config rule &apos;transmission_peer_tcp&apos;</span><br><span class="line">        option src &apos;wan&apos;</span><br><span class="line">        option dest_port &apos;51413&apos;</span><br><span class="line">        option proto &apos;tcp&apos;</span><br><span class="line">        option target &apos;ACCEPT&apos;</span><br><span class="line">        option name &apos;transmission incoming tcp&apos;</span><br><span class="line">config rule &apos;transmission_peer_udp&apos;</span><br><span class="line">        option src &apos;wan&apos;</span><br><span class="line">        option dest_port &apos;51413&apos;</span><br><span class="line">        option proto &apos;udp&apos;</span><br><span class="line">        option target &apos;ACCEPT&apos;</span><br><span class="line">        option name &apos;transmission incoming udp&apos;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>重启防火墙使配置生效：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:/extdisks/sda1/opkg# /etc/init.d/firewall restart</span><br></pre></td></tr></table></figure>
+<p>至此，你可以在浏览器中输入地址“192.168.31.1:9876”来访问Transmission的网页控制台（出于习惯，我把路由器地址改成了192.168.1.1）。</p>
+<ul>
+<li>设置开机自启动<br>将下面两行命令添加到/etc/rc.local中的“exit 0”之前<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># export TRANSMISSION_WEB_HOME=/extdisks/sda1/opkg/usr/share/transmission/web/</span><br><span class="line"># /extdisks/sda1/opkg/usr/bin/transmission-daemon -g /extdisks/sda1/opkg/transmission-daemon</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p><strong>注意：</strong><br>部分情况会不生效，此时重启路由器后需要SSH到路由器下，运行下面两个命令，可能是因为在启动脚本运行时，USB存储设备还没准备好。如果有谁成功实现自启动就好了。</p>
+<h2 id="4-问题"><a href="#4-问题" class="headerlink" title="4.问题"></a>4.问题</h2><ol>
+<li>我添加了4个种子下载，然后路由器就死掉了，可以ping通，但是app无法管理，web管理平台打不开，transmission的web打不开，</li>
+<li>设置了只允许同时下载两个种子，删掉了一切可以删掉的插件，看着它跑了一个小时，睡一觉起来在外网能ping通回去，检测transmission的端口也开着，但是各种web和app无法打开。</li>
+</ol>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[Redmine与Gitlab深度集成]]></title>
       <url>http://www.itzhoulin.com/2016/12/28/migrate-redmine-with-gitlab/</url>
       <content type="html"><![CDATA[<h1 id="一-要求"><a href="#一-要求" class="headerlink" title="一.要求"></a>一.要求</h1><ol>

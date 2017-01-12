@@ -4,6 +4,28 @@
 
     
   <url>
+    <loc>http://www.itzhoulin.com/2017/01/12/xiaomi-router-mini-install-transmission/</loc>
+    <lastmod>2017-01-12T10:28:30.000Z</lastmod>
+    <data>
+        <display>
+        <title>xiaomi-router-mini-install-transmission</title>
+        <pubTime>2017-01-12T10:21:36.000Z</pubTime>
+        
+        <tag>xiaomi</tag>
+         
+        <tag>transmission</tag>
+         
+         
+           
+             
+              <breadCrumb title="tool" url="http://www.itzhoulin.com/categories/tool/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
     <loc>http://www.itzhoulin.com/2016/12/28/migrate-redmine-with-gitlab/</loc>
     <lastmod>2016-12-28T14:57:56.000Z</lastmod>
     <data>
@@ -298,9 +320,9 @@
         <title>调整pg数量的步骤</title>
         <pubTime>2016-01-06T08:59:18.000Z</pubTime>
         
-        <tag>排错</tag>
-         
         <tag>pg</tag>
+         
+        <tag>排错</tag>
          
          
            
