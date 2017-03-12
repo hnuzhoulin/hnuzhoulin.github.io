@@ -17,7 +17,7 @@
 <meta property="og:url" content="http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/index.html">
 <meta property="og:site_name" content="我的IT江湖之旅">
 <meta property="og:description" content="ceph full或者nearfull的解决方法探究">
-<meta property="og:updated_time" content="2016-04-23T09:18:35.000Z">
+<meta property="og:updated_time" content="2017-03-12T03:35:35.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ceph full或者nearfull的解决方法探究">
 <meta name="twitter:description" content="ceph full或者nearfull的解决方法探究">
@@ -141,13 +141,13 @@
                 <div class="tips-box hide">
                     <div class="tips-arrow"></div>
                     <ul class="tips-inner">
-                        <li>Menu</li>
-                        <li>Tags</li>
+                        <li>菜单</li>
+                        <li>标签</li>
                         
-                        <li>Friends</li>
+                        <li>友情链接</li>
                         
                         
-                        <li>About Me</li>
+                        <li>关于我</li>
                         
                     </ul>
                 </div>
@@ -265,13 +265,13 @@
             </nav>
         </header>                
     </div>
-    <link class="menu-list" tags="Tags" friends="Friends" about="About Me"/>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
 </nav>
       <div class="body-wrap"><article id="post-deal_with_ceph_full" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
       <a href="/2016/04/20/deal_with_ceph_full/" class="article-date">
-      <time datetime="2016-04-20T06:43:57.000Z" itemprop="datePublished">2016-04-20</time>
+      <time datetime="2016-04-20T06:43:58.000Z" itemprop="datePublished">2016-04-20</time>
 </a>
     </div>
   
@@ -314,16 +314,21 @@
 <p>这个对于见过场面的我来说不是什么大事（PS：其实主要因为是测试环境），于是乎习惯性翻笔记，但是发现以前的操作处理记录没了，于是乎今天记录一下今天的解决步骤。</p>
 <h2 id="2-解决"><a href="#2-解决" class="headerlink" title="2.解决"></a>2.解决</h2><h3 id="2-0-根本之道"><a href="#2-0-根本之道" class="headerlink" title="2.0.根本之道"></a>2.0.根本之道</h3><p>集群满了，说明空间不够用，因此添加OSD才是最终的出路，但是一旦集群有OSD达到full的级别，及时添加OSD，集群也不会进行数据平衡操作，因此先要能让集群动起来在根据实际情况选择添加OSD还是删除数据。</p>
 <h3 id="2-1-调整OSD的full比例"><a href="#2-1-调整OSD的full比例" class="headerlink" title="2.1.调整OSD的full比例"></a>2.1.调整OSD的full比例</h3><p>执行下面的命令调整OSD的full和nearfull的比例：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 98'</span></span><br><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 0.98'</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-nearfull-ratio 0.98'</span></span><br><span class="line">ceph tell osd.* injectargs <span class="string">'--mon-osd-full-ratio 0.98'</span></span><br></pre></td></tr></table></figure>
 <p>上面两个是最容易想到的，但是实际上调整这两个后并不能很好的解决我的这个问题，这个时候及时选择删除rbd以腾出空间依然弹出错误如下：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@console:~/cluster<span class="comment"># rbd rm volume-b0d3175b-7e74-4f71-aae5-39a53eda11ad</span></span><br><span class="line">2016-04-08 08:56:27.911165 7f4cee0da7c0  0 client.104114.objecter  FULL, paused modify 0x1cc3a60 tid 2</span><br></pre></td></tr></table></figure>
-<p>在回看我的场景，基本是所有的OSD的数据都满了，也就是说整个集群（包括pg和OSD）都是full的状态，因此还需要设置一个pg的full比例：</p>
+<h3 id="2-2-调整pg的full比例"><a href="#2-2-调整pg的full比例" class="headerlink" title="2.2.调整pg的full比例"></a>2.2.调整pg的full比例</h3><p>在回看我的场景，基本是所有的OSD的数据都满了，也就是说整个集群（包括pg和OSD）都是full的状态，因此还需要设置一个pg的full比例：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph pg <span class="built_in">set</span>_full_ratio 0.98</span><br></pre></td></tr></table></figure>
 <p>此时再次执行删除rbd操作就会开始工作了，删除可能会比较慢</p>
 <p>PS：<strong>不推荐的删除方式</strong>，先解挂所有rbd，再删除所有rbd，最后直接删除OSD数据目录下current目录下的所有文件。即使是这样，由于我的集群整个满了，删除都消耗了十几分钟。</p>
+<h3 id="2-3-调整osd-backfill的full比例"><a href="#2-3-调整osd-backfill的full比例" class="headerlink" title="2.3.调整osd-backfill的full比例"></a>2.3.调整osd-backfill的full比例</h3><p>如果你发现是数据在OSD之间分布不均匀，你可以通过降低用量比较大的OSD的reweight值，这个值得范围是 <code>0~1</code> 标明权重，参考<a href="http://cephnotes.ksperis.com/blog/2013/12/09/ceph-osd-reweight" target="_blank" rel="external">这篇博文</a>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd reweight 30 0.96</span><br></pre></td></tr></table></figure>
+<p>还有一种weight是根据硬盘容量计算出来的，实在不行的时候也可以司马当做活马医进行微调，但是请谨慎，关于两种weight的分析见<a href="http://cephnotes.ksperis.com/blog/2014/12/23/difference-between-ceph-osd-reweight-and-ceph-osd-crush-reweight" target="_blank" rel="external">博文</a>;</p>
+<p>进行上述调整后就会将数据从<code>OSD.30</code>中迁出一部分数据，但是我碰到一个情况是这种调整，一般是当前节点的OSD之间的数据迁移，比较少会迁移到别的节点去，如果此时当前节点的所有OSD的用量都大于85%的话，此时会出现状态为 <code>active+remapped+wait_backfill+backfill_toofull</code> 的PG，而有希望能够进行数据匀一匀，就需要调整backfill的full比例了：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph tell osd.* injectargs <span class="string">'--osd-backfill-full-ratio 0.9'</span></span><br></pre></td></tr></table></figure>
 <h2 id="3-扩展"><a href="#3-扩展" class="headerlink" title="3.扩展"></a>3.扩展</h2><p>对于只有部分OSD用量满的情况跟前面的处理方式有很大不同。当然，<strong>让集群能够动起来是最开始要做的事</strong> ，这里的情况跟前面第二节介绍的方法还是要所有区别，尤其是对于线上环境，因为一旦调整这个全局的比例，可能整个集群的数据都会动起来，可能会有更多的数据迁移。因此另一种解决方法是临时调整、单个调整。但是，但是，但是，最最重要也是最先要解决的就是找到为什么只有少数OSD空间用量会满。</p>
 <h3 id="3-1-数据分布不均匀的原因"><a href="#3-1-数据分布不均匀的原因" class="headerlink" title="3.1.数据分布不均匀的原因"></a>3.1.数据分布不均匀的原因</h3><h4 id="3-1-1-crushmap问题"><a href="#3-1-1-crushmap问题" class="headerlink" title="3.1.1.crushmap问题"></a>3.1.1.crushmap问题</h4><p>出现这种问题的原因可能是你手动修改过crushmap，将某些OSD划到了单独的组；或者是数据分布规则设定有误等。这种情况就只能自己到处crushmap分析一下了。不好举例，有问题的欢迎沟通。</p>
-<p>####3.1.2.pg数设置不合理<br>这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 <strong>file-&gt;object-&gt;pg-&gt;OSD-&gt;physics disk</strong> 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 <strong>pg_num</strong> 和 <strong>pgp_num</strong> 。有关调整这部分的工作和注意事项等见我的另一篇博文：<a href="http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num">调整pg数量的步骤</a></p>
+<h4 id="3-1-2-pg数设置不合理"><a href="#3-1-2-pg数设置不合理" class="headerlink" title="3.1.2.pg数设置不合理"></a>3.1.2.pg数设置不合理</h4><p>这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 <strong>file-&gt;object-&gt;pg-&gt;OSD-&gt;physics disk</strong> 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 <strong>pg_num</strong> 和 <strong>pgp_num</strong> 。有关调整这部分的工作和注意事项等见我的另一篇博文：<a href="http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num">调整pg数量的步骤</a></p>
 <p>有一个python程序可以看各个pool在各个OSD上的pg分布，由此可以判断一下pg是否分布均匀。进而使用上面的方法调整该pool的pg_num和pgp_num。脚本点击<a href="https://gist.github.com/hnuzhoulin/fef193f5e26533fc08c86ad30209646d" target="_blank" rel="external">这里</a></p>
 <h3 id="3-2-调整OSD的weight"><a href="#3-2-调整OSD的weight" class="headerlink" title="3.2.调整OSD的weight"></a>3.2.调整OSD的weight</h3><p>对于只是少数OSD容量满的情况下，不管是上一小节中的调整crushmap还是pg_num的方法解决，最首先也还是需要集群能够进行正常读写操作，因此可以设置单个OSD的full和nearfull比例，也可以使用调整weight的方法。</p>
 <p>关于一个OSD的weght，一共有两种：</p>
@@ -343,17 +348,17 @@
   
     
     <div class="copyright">
-        <p><span>Title:</span><a href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></p>
-        <p><span>Author:</span><a href="/" title="Back to Homepage">半天河(hnuzhoulin)</a></p>
-        <p><span>Created:</span>2016-04-20, 14:43:57</p>
-        <p><span>Updated:</span>2016-04-23, 17:18:35</p>
+        <p><span>本文标题:</span><a href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">半天河(hnuzhoulin)</a></p>
+        <p><span>发布时间:</span>2016-04-20, 14:43:58</p>
+        <p><span>最后更新:</span>2017-03-12, 11:35:35</p>
         <p>
-            <span>Full URL:</span><a class="post-url" href="/2016/04/20/deal_with_ceph_full/" title="ceph full或者nearfull的解决方法探究">http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</a>
-            <span class="copy-path" data-clipboard-text="From http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/　　By 半天河(hnuzhoulin)" title="Copy Article&#39;s Link &amp; Author"><i class="fa fa-clipboard"></i></span>
+            <span>原始链接:</span><a class="post-url" href="/2016/04/20/deal_with_ceph_full/" title="ceph full或者nearfull的解决方法探究">http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/　　作者: 半天河(hnuzhoulin)" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
             <script> var clipboard = new Clipboard('.copy-path'); </script>
         </p>
         <p>
-            <span>License:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"CC BY-NC-SA 4.0"</a> Keep Link &amp; Author if Distribute.
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
         </p>
     </div>
 
@@ -380,8 +385,8 @@
 </article>
 
     <div id="toc" class="toc-article">
-    <strong class="toc-title">Contents</strong>
-    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-问题"><span class="toc-number">1.</span> <span class="toc-text">1.问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-解决"><span class="toc-number">2.</span> <span class="toc-text">2.解决</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-0-根本之道"><span class="toc-number">2.1.</span> <span class="toc-text">2.0.根本之道</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-调整OSD的full比例"><span class="toc-number">2.2.</span> <span class="toc-text">2.1.调整OSD的full比例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-扩展"><span class="toc-number">3.</span> <span class="toc-text">3.扩展</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-数据分布不均匀的原因"><span class="toc-number">3.1.</span> <span class="toc-text">3.1.数据分布不均匀的原因</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#3-1-1-crushmap问题"><span class="toc-number">3.1.1.</span> <span class="toc-text">3.1.1.crushmap问题</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-调整OSD的weight"><span class="toc-number">3.2.</span> <span class="toc-text">3.2.调整OSD的weight</span></a></li></ol></li></ol>
+    <strong class="toc-title">文章目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-问题"><span class="toc-number">1.</span> <span class="toc-text">1.问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-解决"><span class="toc-number">2.</span> <span class="toc-text">2.解决</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-0-根本之道"><span class="toc-number">2.1.</span> <span class="toc-text">2.0.根本之道</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-调整OSD的full比例"><span class="toc-number">2.2.</span> <span class="toc-text">2.1.调整OSD的full比例</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-调整pg的full比例"><span class="toc-number">2.3.</span> <span class="toc-text">2.2.调整pg的full比例</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-调整osd-backfill的full比例"><span class="toc-number">2.4.</span> <span class="toc-text">2.3.调整osd-backfill的full比例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-扩展"><span class="toc-number">3.</span> <span class="toc-text">3.扩展</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-数据分布不均匀的原因"><span class="toc-number">3.1.</span> <span class="toc-text">3.1.数据分布不均匀的原因</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#3-1-1-crushmap问题"><span class="toc-number">3.1.1.</span> <span class="toc-text">3.1.1.crushmap问题</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-1-2-pg数设置不合理"><span class="toc-number">3.1.2.</span> <span class="toc-text">3.1.2.pg数设置不合理</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-调整OSD的weight"><span class="toc-number">3.2.</span> <span class="toc-text">3.2.调整OSD的weight</span></a></li></ol></li></ol>
 </div>
 <style>
     .left-col .switch-btn {
@@ -392,10 +397,10 @@
     }
 </style>
 
-<input type="button" id="tocButton" value="Hide"  title="Show or Hide Table of Contents">
+<input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
 <script>
-    var valueHide = "Hide";
-    var valueShow = "Show";
+    var valueHide = "隐藏目录";
+    var valueShow = "显示目录";
 
     if ($(".left-col").is(":hidden")) {
         $("#tocButton").attr("value", valueShow);
@@ -478,21 +483,21 @@
 
     <div class="scroll" id="post-nav-button">
         
-            <a href="/2016/04/20/ceph-journal-ssd-lifetime-expire/" title="Pre: 记一次因为ceph日志分区所在SSD寿命到期导致的故障">
+            <a href="/2016/04/20/ceph-journal-ssd-lifetime-expire/" title="上一篇: 记一次因为ceph日志分区所在SSD寿命到期导致的故障">
                 <i class="fa fa-angle-left"></i>
             </a>
         
 
-        <a title="Mini Archives"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
 
         
-            <a href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/" title="Next: 记一次日志所在SSD故障导致的object unfound">
+            <a href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/" title="下一篇: 记一次日志所在SSD故障导致的object unfound">
                 <i class="fa fa-angle-right"></i>
             </a>
         
     </div>
 
-    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2017/01/12/xiaomi-router-mini-install-transmission/">xiaomi-router-mini-install-transmission</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/12/28/migrate-redmine-with-gitlab/">Redmine与Gitlab深度集成</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/06/11/Ceph-krbd-discard/">Ceph-krbd-discard</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/06/04/ceph-deploy/">ceph-deploy</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/06/04/httpproxy-tinypeoxy/">httpproxy-tinypeoxy</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/05/28/migrate-ceph-cluster-from-one-distro-to-another/">将Ceph集群从Ubuntu迁移到RHEL</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/05/24/create-ubuntu-source-file-based-local-deb-files/">根据本地deb文件生成ubuntu本地安装源</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/24/blog-updates/">博客更新</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/ceph-journal-ssd-lifetime-expire/">记一次因为ceph日志分区所在SSD寿命到期导致的故障</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/">记一次日志所在SSD故障导致的object unfound</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">因为ceph波动导致kernel rbd挂起</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">Ceph Jewel版功能预览---RBD mirroring</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/01/fio-usage-example/">fio应用</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/04/cetune-performance-metric/">CeTune抓取性能数据的代码段分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/02/using-apache2-and-wsgi-to-run-django/">django项目利用apache2+mod_wsgi运行</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/03/get-ceph-rbd-watches/">ceph下查看使用rbd的客户端</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/01/mac-text-edit-shortcuts/">MAC文本编辑时跳转快捷键</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/">calamari的监控页面没有集群和Pool信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/12/right-steps-delete-ceph-osd/">删除osd的正确姿势</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/06/right-steps-adjusting-ceph-pg-num/">调整pg数量的步骤</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/28/ceph-IO-pattern/">Ceph的IO模式分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/24/fio-man-guide/">fio使用指南</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/23/using-python-or-shell-create-file-tree/">文件目录树的python和shell生成方法</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/07/sqlalchemy-orm/">SQLAlchemy的ORM模型操作数据库</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-release-infernalis/">Ceph V9.2.0版本(代号INFERNALIS)已发布</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-infernalis-five-useful-new-features/">ceph的infernalis版本的五个很实用的新功能</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-manual-repair-object/">Ceph里手动修复Object</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">php-sdk访问ceph对象存储时405错误</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/">一次硬盘被重新分区并写入数据后的整体恢复</a></li></ul>
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2017/01/12/xiaomi-router-mini-install-transmission/">xiaomi-router-mini-install-transmission</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/12/28/migrate-redmine-with-gitlab/">Redmine与Gitlab深度集成</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/06/11/Ceph-krbd-discard/">Ceph-krbd-discard</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/06/04/ceph-deploy/">ceph-deploy</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/06/04/httpproxy-tinypeoxy/">httpproxy-tinypeoxy</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/05/28/migrate-ceph-cluster-from-one-distro-to-another/">将Ceph集群从Ubuntu迁移到RHEL</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/05/24/create-ubuntu-source-file-based-local-deb-files/">根据本地deb文件生成ubuntu本地安装源</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/24/blog-updates/">博客更新</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/ceph-journal-ssd-lifetime-expire/">记一次因为ceph日志分区所在SSD寿命到期导致的故障</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/">记一次日志所在SSD故障导致的object unfound</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">因为ceph波动导致kernel rbd挂起</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">Ceph Jewel版功能预览---RBD mirroring</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/01/fio-usage-example/">fio应用</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/04/cetune-performance-metric/">CeTune抓取性能数据的代码段分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/02/using-apache2-and-wsgi-to-run-django/">django项目利用apache2+mod_wsgi运行</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/03/get-ceph-rbd-watches/">ceph下查看使用rbd的客户端</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/01/mac-text-edit-shortcuts/">MAC文本编辑时跳转快捷键</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/">calamari的监控页面没有集群和Pool信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/12/right-steps-delete-ceph-osd/">删除osd的正确姿势</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/06/right-steps-adjusting-ceph-pg-num/">调整pg数量的步骤</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/28/ceph-IO-pattern/">Ceph的IO模式分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/24/fio-man-guide/">fio使用指南</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/23/using-python-or-shell-create-file-tree/">文件目录树的python和shell生成方法</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/07/sqlalchemy-orm/">SQLAlchemy的ORM模型操作数据库</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-release-infernalis/">Ceph V9.2.0版本(代号INFERNALIS)已发布</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-infernalis-five-useful-new-features/">ceph的infernalis版本的五个很实用的新功能</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-manual-repair-object/">Ceph里手动修复Object</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">php-sdk访问ceph对象存储时405错误</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/">一次硬盘被重新分区并写入数据后的整体恢复</a></li></ul>
 
 
 
@@ -509,14 +514,14 @@
                 2016-2017 半天河(hnuzhoulin)
             </div>
             <div class="footer-right">
-                <a href="http://hexo.io/" target="_blank" title="A fast, simple &amp; powerful blog framework">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="Another simple and elegant theme for Hexo  v3.0">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.0">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
             </div>
         </div>
         
             <div class="visit">
                 
                     <span id="busuanzi_container_site_pv" style='display:none'>
-                        <span id="site-visit" >Site Visitors: 
+                        <span id="site-visit" >本站到访数: 
                             <span id="busuanzi_value_site_uv"></span>
                         </span>
                     </span>
@@ -526,7 +531,7 @@
                 
                 
                     <span id="busuanzi_container_page_pv" style='display:none'>
-                        <span id="page-visit">Page Hits: 
+                        <span id="page-visit">本页阅读量: 
                             <span id="busuanzi_value_page_pv"></span>
                         </span>
                     </span>
@@ -572,9 +577,9 @@ ga('send', 'pageview');
 
 
 <div class="scroll" id="scroll">
-    <a href="#" title="Back to Top"><i class="fa fa-arrow-up"></i></a>
-    <a href="#comments" title="Comments"><i class="fa fa-comments-o"></i></a>
-    <a href="#footer" title="Go to Bottom"><i class="fa fa-arrow-down"></i></a>
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
 </div>
 <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
 </script>
