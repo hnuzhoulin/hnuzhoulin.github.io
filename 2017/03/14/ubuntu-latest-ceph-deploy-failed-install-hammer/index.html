@@ -9,17 +9,20 @@
 
   <meta charset="utf-8">
   
-  <title>Tag: redmine | 我的IT江湖之旅</title>
+  <title>Ubuntu下最新版ceph-deploy安装Hammer失败 | 我的IT江湖之旅</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="每周至少一篇博客回顾总结遇到的问题">
-<meta property="og:type" content="website">
-<meta property="og:title" content="我的IT江湖之旅">
-<meta property="og:url" content="http://www.itzhoulin.com/tags/redmine/index.html">
+  <meta name="description" content="Ubuntu下最新版ceph-deploy安装Hammer失败的解决方法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ubuntu下最新版ceph-deploy安装Hammer失败">
+<meta property="og:url" content="http://www.itzhoulin.com/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/index.html">
 <meta property="og:site_name" content="我的IT江湖之旅">
-<meta property="og:description" content="每周至少一篇博客回顾总结遇到的问题">
+<meta property="og:description" content="Ubuntu下最新版ceph-deploy安装Hammer失败的解决方法">
+<meta property="og:image" content="https://ww1.sinaimg.cn/large/006tNbRwgy1fdmef00fesj313a07adhu.jpg">
+<meta property="og:updated_time" content="2017-03-14T06:46:02.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="我的IT江湖之旅">
-<meta name="twitter:description" content="每周至少一篇博客回顾总结遇到的问题">
+<meta name="twitter:title" content="Ubuntu下最新版ceph-deploy安装Hammer失败">
+<meta name="twitter:description" content="Ubuntu下最新版ceph-deploy安装Hammer失败的解决方法">
+<meta name="twitter:image" content="https://ww1.sinaimg.cn/large/006tNbRwgy1fdmef00fesj313a07adhu.jpg">
   
     <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
   
@@ -48,9 +51,9 @@
           fancybox: true,
           animate: true,
           isHome: false,
-          isPost: false,
+          isPost: true,
           isArchive: false,
-          isTag: true,
+          isTag: false,
           isCategory: false,
           open_in_new: false,
           fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
@@ -266,13 +269,11 @@
     </div>
     <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
 </nav>
-      <div class="body-wrap">
-  
-    <article id="post-migrate-redmine-with-gitlab" class="article article-type-post" itemscope itemprop="blogPost">
+      <div class="body-wrap"><article id="post-ubuntu-latest-ceph-deploy-failed-install-hammer" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
-      <a href="/2016/12/28/migrate-redmine-with-gitlab/" class="article-date">
-      <time datetime="2016-12-28T14:57:56.000Z" itemprop="datePublished">2016-12-28</time>
+      <a href="/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/" class="article-date">
+      <time datetime="2017-03-14T06:46:02.000Z" itemprop="datePublished">2017-03-14</time>
 </a>
     </div>
   
@@ -284,47 +285,143 @@
       <header class="article-header">
         
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/12/28/migrate-redmine-with-gitlab/">Redmine与Gitlab深度集成</a>
+    <h1 class="article-title" itemprop="name">
+      Ubuntu下最新版ceph-deploy安装Hammer失败
     </h1>
   
 
       </header>
       
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/ceph/">ceph</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/部署/">部署</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
     
     <div class="article-entry" itemprop="articleBody">
       
           
-              深度集成Redmine和gitlab，使得可以在redmine页面看到gitlab提交的信息，可以通过gitlab的commit message来控制redmine任务的状态、等级任务耗时等。
-          
-      
-    </div>
-    
-    <div class="article-info article-info-index">
-      
-      
-    <div class="article-category tagcloud">
-    <a class="article-category-link" href="/categories/tool/">tool</a>
-    </div>
-
+        <h2 id="一-问题"><a href="#一-问题" class="headerlink" title="一.问题"></a>一.问题</h2><p>近来需要部署一套Ceph集群，在纠结了一阵子版本之后还是果断的选择了才发布过更新的 <code>Hammer</code>，不求新功能新特性的情况下，这个应该是最稳定的，按照以往的经验，参照自己的博文<a href="../../../../2016/06/04/ceph-deploy">本地源ceph-deploy安装</a> 就开始安装了，但是出现了几个错误。</p>
+<h2 id="二-ubuntu官方源的ceph-deploy"><a href="#二-ubuntu官方源的ceph-deploy" class="headerlink" title="二.ubuntu官方源的ceph-deploy"></a>二.ubuntu官方源的ceph-deploy</h2><p>第一次安装使用的是ubuntu官方源的ceph-deploy，虽然安装上述方法指定了安装H版本，但是不管怎么变换姿势，始终都是安装的F版本，而且包的来源也都是官方源而不是我指定的本地H版本的源。</p>
+<h2 id="三-直接使用本地ceph源安装ceph-deploy"><a href="#三-直接使用本地ceph源安装ceph-deploy" class="headerlink" title="三.直接使用本地ceph源安装ceph-deploy"></a>三.直接使用本地ceph源安装ceph-deploy</h2><p>这次试了一下先把ubuntu官方源干掉，直接将本地H版的源写进<code>sources.list</code>，然后安装ceph-deploy，再次按照原来的博文修改后进行安装，这次的错如下图：</p>
+<p><img src="https://ww1.sinaimg.cn/large/006tNbRwgy1fdmef00fesj313a07adhu.jpg" alt="找不到ceoh-osd包"></p>
+<p>我去，这是什么鬼，H版什么时候有ceph-osd这个包了，于是google了一下，找到了邮件列表里面的一个回答，<a href="http://lists.ceph.com/pipermail/ceph-users-ceph.com/2016-September/012911.html" target="_blank" rel="external">ubuntu下最新的ceph-deploy安装Hammer失败</a></p>
+<p>看来是有段时间呢没有关注ceph-deploy源码了，J版之后才会有ceph-osd，ceph-mon等独立的包，而最新版的ceph-deploy有这个bug。我查看了一下自己的ceph-deploy版本，果然是<code>1.5.37</code>，按照邮件列表的推荐彻底卸载所有相关包之后使用pip安装1.5.25版本：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install ceph-deploy==1.5.25</span><br></pre></td></tr></table></figure>
+<p>再次安装一切正常。</p>
 
       
-    <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/gitlab/">gitlab</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/redmine/">redmine</a></li></ul>
-    </div>
-
-      
-        <p class="article-more-link">
-          <a href="/2016/12/28/migrate-redmine-with-gitlab/#more">阅读全文 >></a>
-        </p>
-      
-      <div class="clearfix"></div>
     </div>
     
   </div>
   
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/">Ubuntu下最新版ceph-deploy安装Hammer失败</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">半天河(hnuzhoulin)</a></p>
+        <p><span>发布时间:</span>2017-03-14, 14:46:02</p>
+        <p><span>最后更新:</span>2017-03-14, 14:46:02</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/" title="Ubuntu下最新版ceph-deploy安装Hammer失败">http://www.itzhoulin.com/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://www.itzhoulin.com/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/　　作者: 半天河(hnuzhoulin)" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/01/12/xiaomi-router-mini-install-transmission/">
+                    xiaomi-router-mini-install-transmission
+                </a>
+            </div>
+        
+    </nav>
+
+  
 </article>
 
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">文章目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#一-问题"><span class="toc-number">1.</span> <span class="toc-text">一.问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#二-ubuntu官方源的ceph-deploy"><span class="toc-number">2.</span> <span class="toc-text">二.ubuntu官方源的ceph-deploy</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#三-直接使用本地ceph源安装ceph-deploy"><span class="toc-number">3.</span> <span class="toc-text">三.直接使用本地ceph源安装ceph-deploy</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn {
+        display: none;
+    }
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+<script>
+    var valueHide = "隐藏目录";
+    var valueShow = "显示目录";
+
+    if ($(".left-col").is(":hidden")) {
+        $("#tocButton").attr("value", valueShow);
+    }
+
+    $("#tocButton").click(function() {
+        if ($("#toc").is(":hidden")) {
+            $("#tocButton").attr("value", valueHide);
+            $("#toc").slideDown(320);
+            $(".switch-btn, .switch-area").fadeOut(300);
+        }
+        else {
+            $("#tocButton").attr("value", valueShow);
+            $("#toc").slideUp(350);
+            $(".switch-btn, .switch-area").fadeIn(500);
+        }
+    })
+
+    if ($(".toc").length < 1) {
+        $("#toc, #tocButton").hide();
+        $(".switch-btn, .switch-area").show();
+    }
+</script>
+
+
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Ubuntu下最新版ceph-deploy安装Hammer失败　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
 
 
 
@@ -332,9 +429,53 @@
 
 
 
+    
+      <div class="duoshuo" id="comments">
+    <!-- 多说评论框 start -->
+    <div class="ds-thread" data-thread-key="2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/" data-title="Ubuntu下最新版ceph-deploy安装Hammer失败" data-url="http://www.itzhoulin.com/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/"></div>
+    <!-- 多说评论框 end -->
+    <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+    <script type="text/javascript">
+    var duoshuoQuery = {short_name:"itzhoulin"};
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0] 
+         || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+    </script>
+    <!-- 多说公共JS代码 end -->
+</div>
 
-  
-  
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/01/12/xiaomi-router-mini-install-transmission/" title="下一篇: xiaomi-router-mini-install-transmission">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/">Ubuntu下最新版ceph-deploy安装Hammer失败</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/12/xiaomi-router-mini-install-transmission/">xiaomi-router-mini-install-transmission</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/12/28/migrate-redmine-with-gitlab/">Redmine与Gitlab深度集成</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/06/11/Ceph-krbd-discard/">Ceph-krbd-discard</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/06/04/ceph-deploy/">ceph-deploy</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/06/04/httpproxy-tinypeoxy/">httpproxy-tinypeoxy</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/05/28/migrate-ceph-cluster-from-one-distro-to-another/">将Ceph集群从Ubuntu迁移到RHEL</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/05/24/create-ubuntu-source-file-based-local-deb-files/">根据本地deb文件生成ubuntu本地安装源</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/24/blog-updates/">博客更新</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/ceph-journal-ssd-lifetime-expire/">记一次因为ceph日志分区所在SSD寿命到期导致的故障</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/">记一次日志所在SSD故障导致的object unfound</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">因为ceph波动导致kernel rbd挂起</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">Ceph Jewel版功能预览---RBD mirroring</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/01/fio-usage-example/">fio应用</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/04/cetune-performance-metric/">CeTune抓取性能数据的代码段分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/02/using-apache2-and-wsgi-to-run-django/">django项目利用apache2+mod_wsgi运行</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/03/get-ceph-rbd-watches/">ceph下查看使用rbd的客户端</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/01/mac-text-edit-shortcuts/">MAC文本编辑时跳转快捷键</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/">calamari的监控页面没有集群和Pool信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/12/right-steps-delete-ceph-osd/">删除osd的正确姿势</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/06/right-steps-adjusting-ceph-pg-num/">调整pg数量的步骤</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/28/ceph-IO-pattern/">Ceph的IO模式分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/24/fio-man-guide/">fio使用指南</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/23/using-python-or-shell-create-file-tree/">文件目录树的python和shell生成方法</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/07/sqlalchemy-orm/">SQLAlchemy的ORM模型操作数据库</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-release-infernalis/">Ceph V9.2.0版本(代号INFERNALIS)已发布</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-infernalis-five-useful-new-features/">ceph的infernalis版本的五个很实用的新功能</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-manual-repair-object/">Ceph里手动修复Object</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">php-sdk访问ceph对象存储时405错误</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/">一次硬盘被重新分区并写入数据后的整体恢复</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
 </div>
       <footer id="footer">
     <div class="outer">

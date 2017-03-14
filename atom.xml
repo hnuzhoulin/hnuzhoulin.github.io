@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.itzhoulin.com/"/>
-  <updated>2017-01-12T10:28:30.000Z</updated>
+  <updated>2017-03-14T06:46:02.000Z</updated>
   <id>http://www.itzhoulin.com/</id>
   
   <author>
@@ -14,6 +14,36 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Ubuntu下最新版ceph-deploy安装Hammer失败</title>
+    <link href="http://www.itzhoulin.com/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/"/>
+    <id>http://www.itzhoulin.com/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/</id>
+    <published>2017-03-14T06:46:02.000Z</published>
+    <updated>2017-03-14T06:46:02.000Z</updated>
+    
+    <content type="html">&lt;h2 id=&quot;一-问题&quot;&gt;&lt;a href=&quot;#一-问题&quot; class=&quot;headerlink&quot; title=&quot;一.问题&quot;&gt;&lt;/a&gt;一.问题&lt;/h2&gt;&lt;p&gt;近来需要部署一套Ceph集群，在纠结了一阵子版本之后还是果断的选择了才发布过更新的 &lt;code&gt;Hammer&lt;/code&gt;，不求新功能新特性的情况下，这个应该是最稳定的，按照以往的经验，参照自己的博文&lt;a href=&quot;../../../../2016/06/04/ceph-deploy&quot;&gt;本地源ceph-deploy安装&lt;/a&gt; 就开始安装了，但是出现了几个错误。&lt;/p&gt;
+&lt;h2 id=&quot;二-ubuntu官方源的ceph-deploy&quot;&gt;&lt;a href=&quot;#二-ubuntu官方源的ceph-deploy&quot; class=&quot;headerlink&quot; title=&quot;二.ubuntu官方源的ceph-deploy&quot;&gt;&lt;/a&gt;二.ubuntu官方源的ceph-deploy&lt;/h2&gt;&lt;p&gt;第一次安装使用的是ubuntu官方源的ceph-deploy，虽然安装上述方法指定了安装H版本，但是不管怎么变换姿势，始终都是安装的F版本，而且包的来源也都是官方源而不是我指定的本地H版本的源。&lt;/p&gt;
+&lt;h2 id=&quot;三-直接使用本地ceph源安装ceph-deploy&quot;&gt;&lt;a href=&quot;#三-直接使用本地ceph源安装ceph-deploy&quot; class=&quot;headerlink&quot; title=&quot;三.直接使用本地ceph源安装ceph-deploy&quot;&gt;&lt;/a&gt;三.直接使用本地ceph源安装ceph-deploy&lt;/h2&gt;&lt;p&gt;这次试了一下先把ubuntu官方源干掉，直接将本地H版的源写进&lt;code&gt;sources.list&lt;/code&gt;，然后安装ceph-deploy，再次按照原来的博文修改后进行安装，这次的错如下图：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://ww1.sinaimg.cn/large/006tNbRwgy1fdmef00fesj313a07adhu.jpg&quot; alt=&quot;找不到ceoh-osd包&quot;&gt;&lt;/p&gt;
+&lt;p&gt;我去，这是什么鬼，H版什么时候有ceph-osd这个包了，于是google了一下，找到了邮件列表里面的一个回答，&lt;a href=&quot;http://lists.ceph.com/pipermail/ceph-users-ceph.com/2016-September/012911.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;ubuntu下最新的ceph-deploy安装Hammer失败&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;看来是有段时间呢没有关注ceph-deploy源码了，J版之后才会有ceph-osd，ceph-mon等独立的包，而最新版的ceph-deploy有这个bug。我查看了一下自己的ceph-deploy版本，果然是&lt;code&gt;1.5.37&lt;/code&gt;，按照邮件列表的推荐彻底卸载所有相关包之后使用pip安装1.5.25版本：&lt;/p&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;pip install ceph-deploy==1.5.25&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;再次安装一切正常。&lt;/p&gt;
+</content>
+    
+    <summary type="html">
+    
+      Ubuntu下最新版ceph-deploy安装Hammer失败的解决方法
+    
+    </summary>
+    
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
+    
+    
+      <category term="部署" scheme="http://www.itzhoulin.com/tags/%E9%83%A8%E7%BD%B2/"/>
+    
+  </entry>
   
   <entry>
     <title>xiaomi-router-mini-install-transmission</title>
@@ -1103,39 +1133,6 @@
     
     
       <category term="calamari" scheme="http://www.itzhoulin.com/tags/calamari/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>删除osd的正确姿势</title>
-    <link href="http://www.itzhoulin.com/2016/01/12/right-steps-delete-ceph-osd/"/>
-    <id>http://www.itzhoulin.com/2016/01/12/right-steps-delete-ceph-osd/</id>
-    <published>2016-01-12T05:46:35.000Z</published>
-    <updated>2016-01-31T16:05:51.000Z</updated>
-    
-    <content type="html">&lt;p&gt;最近邮件列表又有关于删除osd正确姿势的讨论，按照官网的步骤走的话，在 &lt;code&gt;标记osd为out&lt;/code&gt; 和 &lt;code&gt;从crushmap删除osd&lt;/code&gt; 这两步都会触发数据再平衡。&lt;/p&gt;
-&lt;p&gt;根据邮件列表的指示，总结删除osd的正确姿势如下：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;ceph osd crush reweight osd.X 0.0&lt;br&gt;… wait for rebalance to finish….&lt;/li&gt;
-&lt;li&gt;ceph osd out X&lt;/li&gt;
-&lt;li&gt;service ceph-osd stop id=X&lt;/li&gt;
-&lt;li&gt;ceph osd crush remove osd.X&lt;/li&gt;
-&lt;li&gt;ceph auth del osd.X&lt;/li&gt;
-&lt;li&gt;ceph osd rm X&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;参考链接&lt;a href=&quot;http://permalink.gmane.org/gmane.comp.file-systems.ceph.user/25629&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://permalink.gmane.org/gmane.comp.file-systems.ceph.user/25629&lt;/a&gt;&lt;/p&gt;
-</content>
-    
-    <summary type="html">
-    
-      删除osd的正确姿势
-    
-    </summary>
-    
-      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
-    
-    
-      <category term="osd" scheme="http://www.itzhoulin.com/tags/osd/"/>
     
   </entry>
   

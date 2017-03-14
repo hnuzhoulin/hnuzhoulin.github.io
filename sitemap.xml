@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://www.itzhoulin.com/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/</loc>
+    
+    <lastmod>2017-03-14T06:46:02.000Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://www.itzhoulin.com/2016/04/20/deal_with_ceph_full/</loc>
     
     <lastmod>2017-03-12T03:35:35.000Z</lastmod>
