@@ -340,9 +340,9 @@
         <title>调整pg数量的步骤</title>
         <pubTime>2016-01-06T08:59:18.000Z</pubTime>
         
-        <tag>排错</tag>
-         
         <tag>pg</tag>
+         
+        <tag>排错</tag>
          
          
            
@@ -479,26 +479,6 @@
 
     
   <url>
-    <loc>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</loc>
-    <lastmod>2016-01-31T16:05:54.000Z</lastmod>
-    <data>
-        <display>
-        <title>Ceph的IO模式分析</title>
-        <pubTime>2015-12-28T07:37:40.000Z</pubTime>
-        
-        <tag>翻译</tag>
-         
-         
-           
-             
-              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
-          
-        </display>
-    </data>
-    </url>
-
-    
-  <url>
     <loc>http://www.itzhoulin.com/2015/11/24/ceph-infernalis-five-useful-new-features/</loc>
     <lastmod>2016-01-31T16:05:54.000Z</lastmod>
     <data>
@@ -511,6 +491,26 @@
         <tag>infenalis</tag>
          
         <tag>tool</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>http://www.itzhoulin.com/2015/12/28/ceph-IO-pattern/</loc>
+    <lastmod>2016-01-31T16:05:54.000Z</lastmod>
+    <data>
+        <display>
+        <title>Ceph的IO模式分析</title>
+        <pubTime>2015-12-28T07:37:40.000Z</pubTime>
+        
+        <tag>翻译</tag>
          
          
            
