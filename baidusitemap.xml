@@ -4,6 +4,26 @@
 
     
   <url>
+    <loc>http://www.itzhoulin.com/2018/04/15/using-libvirt-create-vm-combine-rbd/</loc>
+    <lastmod>2018-04-15T03:25:43.000Z</lastmod>
+    <data>
+        <display>
+        <title>using-libvirt-create-vm-combine-rbd</title>
+        <pubTime>2018-04-15T03:25:43.000Z</pubTime>
+        
+        <tag>rbd libvirt qemu</tag>
+         
+         
+           
+             
+              <breadCrumb title="ceph" url="http://www.itzhoulin.com/categories/ceph/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
     <loc>http://www.itzhoulin.com/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/</loc>
     <lastmod>2017-03-14T06:46:02.000Z</lastmod>
     <data>

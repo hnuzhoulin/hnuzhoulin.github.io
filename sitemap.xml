@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://www.itzhoulin.com/2018/04/15/using-libvirt-create-vm-combine-rbd/</loc>
+    
+    <lastmod>2018-04-15T03:25:43.000Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://www.itzhoulin.com/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/</loc>
     
     <lastmod>2017-03-14T06:46:02.000Z</lastmod>
