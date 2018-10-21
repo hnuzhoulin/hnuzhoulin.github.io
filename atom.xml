@@ -846,9 +846,9 @@
       <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
     
     
-      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
-    
       <category term="rbd" scheme="http://www.itzhoulin.com/tags/rbd/"/>
+    
+      <category term="排错" scheme="http://www.itzhoulin.com/tags/%E6%8E%92%E9%94%99/"/>
     
       <category term="kernel" scheme="http://www.itzhoulin.com/tags/kernel/"/>
     
