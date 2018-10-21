@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.itzhoulin.com/"/>
-  <updated>2018-04-15T03:25:43.000Z</updated>
+  <updated>2018-10-21T07:19:18.000Z</updated>
   <id>http://www.itzhoulin.com/</id>
   
   <author>
@@ -14,6 +14,68 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>pre-split-filestore-diir-when-create-pool</title>
+    <link href="http://www.itzhoulin.com/2018/10/21/pre-split-filestore-diir-when-create-pool/"/>
+    <id>http://www.itzhoulin.com/2018/10/21/pre-split-filestore-diir-when-create-pool/</id>
+    <published>2018-10-21T07:19:18.000Z</published>
+    <updated>2018-10-21T07:19:18.000Z</updated>
+    
+    <content type="html">&lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h2&gt;&lt;p&gt;使用filestore的ceph是将最终的object存在带文件系统的磁盘上的，这样就有一个单目录下文件数的问题需要处理：在文件系统场景下，目录下的文件数过大会影响在操作该目录下文件的性能。&lt;/p&gt;
+&lt;p&gt;因此ceph针对这个提出了split和merge的概念来应对，即当一个pg下的object数超过设置的阈值的时候，执行split操作：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;在pg的根目录下新建一定数量的子目录&lt;/li&gt;
+&lt;li&gt;将根目录下的所有object根据一定规则移动到上述新建的子目录中&lt;/li&gt;
+&lt;li&gt;pg执行分裂期间是会block对该pg的操作请求的&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;从上述过程很容易知道在分裂期间，集群的性能是会大打折扣的，我在实际场景下就碰到过很多次这种情况，一旦分裂期间client端也有比较大负载的时候会有大量的slow request出现，这样业务会有明显的性能降低感知，甚至直接导致业务超时。对此我们还专门做了告警，一旦检测到有pg开始分裂，我们会格外关注这个集群，同时跟业务做好沟通，能迁移的先迁移部分负载，不能迁移的调大超时时间。&lt;/p&gt;
+&lt;p&gt;另外一个merge其实就是split的逆过程，也就是当object低于阈值时，回收子目录，object转移到上一级数据目录。&lt;/p&gt;
+&lt;h2 id=&quot;对策&quot;&gt;&lt;a href=&quot;#对策&quot; class=&quot;headerlink&quot; title=&quot;对策&quot;&gt;&lt;/a&gt;对策&lt;/h2&gt;&lt;p&gt;其实早在4年前就有人提到这个问题，当时Sage也有提到响应的解决方法，详情见：&lt;a href=&quot;http://tracker.ceph.com/issues/7593&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Disk saturation during PG folder splitting&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;主要的解决办法其实也很明确：提前分裂，一旦分裂即使object数下降也不执行merge。&lt;/p&gt;
+&lt;p&gt;至于这个解决方案，社区有两种方法：(两种方法都需要的前提条件：设置&lt;code&gt;filestore merge threshold为一个负数&lt;/code&gt;，即不合并)&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;手动为某一个osd执行分裂，使用工具&lt;code&gt;ceph-objectstore-tool&lt;/code&gt;，找到一个issue见：&lt;a href=&quot;https://tracker.ceph.com/issues/21366&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;https://tracker.ceph.com/issues/21366&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;在新建pool的时候添加一个参数&lt;code&gt;expected_num_objects&lt;/code&gt;，该pool所有相关的osd按照这个object总数去预先执行split&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;但是兜兜转转的，一直没能真正实现，我是直到jewel的10.2.11和Luminous的12.2.7才实现上面的第二种方法：建pool时提前分裂。（中间有些小版本没测试，看官方的release，在Luminous12.2.5已经修复这个问题：&lt;a href=&quot;http://tracker.ceph.com/issues/22530&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;pool create cmd’s expected_num_objects is not correctly interpreted&lt;/a&gt;）&lt;/p&gt;
+&lt;h2 id=&quot;实际测试&quot;&gt;&lt;a href=&quot;#实际测试&quot; class=&quot;headerlink&quot; title=&quot;实际测试&quot;&gt;&lt;/a&gt;实际测试&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;在global段设置如下参数：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;filestore merge threshold = -10&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;ul&gt;
+&lt;li&gt;重启所有服务：重启mon和osd服务&lt;/li&gt;
+&lt;li&gt;执行新建pool的命令，添加预期的object总数，我设置的是3亿，请根据实际修改&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;ceph osd pool create .rgw.buckets.data 16384 16384 replicated site1_sata_replicated_ruleset 300000000&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;ul&gt;
+&lt;li&gt;查看效果&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;root@cld-osd1-48:/home/ceph/var/lib/osd/ceph-0/current/49.111b_head# ls DIR_B/DIR_1/DIR_1/&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;DIR_1  DIR_5  DIR_9  DIR_D&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;root@cld-osd1-48:/home/ceph/var/lib/osd/ceph-0/current/49.111b_head# ls DIR_B/DIR_1/DIR_1/DIR_1/&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;DIR_0  DIR_1  DIR_2  DIR_3  DIR_4  DIR_5  DIR_6  DIR_7	DIR_8  DIR_9  DIR_A  DIR_B  DIR_C  DIR_D  DIR_E  DIR_F&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;root@cld-osd1-48:/home/ceph/var/lib/osd/ceph-0/current/49.111b_head# ls DIR_B/DIR_1/DIR_1/DIR_1/DIR_1/&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;root@cld-osd1-48:/home/ceph/var/lib/osd/ceph-0/current/49.111b_head#&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;h2 id=&quot;其他问题&quot;&gt;&lt;a href=&quot;#其他问题&quot; class=&quot;headerlink&quot; title=&quot;其他问题&quot;&gt;&lt;/a&gt;其他问题&lt;/h2&gt;&lt;ol&gt;
+&lt;li&gt;如果pg设置过小的话，很容易出现split，因为这意味着单pg下需要承载的object会更多，但是也不能为了防止分裂，将pg数设置过高。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;ceph-objectstore-tool&lt;/code&gt;工具看起来是只能修改一个osd的分裂，没有继续测试是否生效&lt;/li&gt;
+&lt;li&gt;碰到过偶发性的，部分osd分裂不完全，即一部分已经移到pg子目录了，一部分还是pg根目录，这时性能大大降低，该osd上会有大量的slow request。&lt;/li&gt;
+&lt;li&gt;从L版开始这个问题看起来就不存在了，因为是使用裸设备直接存取。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;hr&gt;
+&lt;blockquote&gt;
+&lt;p&gt;个人浅见，不准确的地方欢迎指正。&lt;/p&gt;
+&lt;/blockquote&gt;
+</content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h2&gt;&lt;p&gt;使用filestore的ceph是将最终的object存在带文件系统的磁盘上的，这样就有一个单目录下文件数的问题需要处理：在文件系统场景下，
+    
+    </summary>
+    
+      <category term="ceph" scheme="http://www.itzhoulin.com/categories/ceph/"/>
+    
+    
+      <category term="filestore" scheme="http://www.itzhoulin.com/tags/filestore/"/>
+    
+  </entry>
   
   <entry>
     <title>using-libvirt-create-vm-combine-rbd</title>
@@ -1083,52 +1145,6 @@
     
     
       <category term="rbd" scheme="http://www.itzhoulin.com/tags/rbd/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>MAC文本编辑时跳转快捷键</title>
-    <link href="http://www.itzhoulin.com/2016/02/01/mac-text-edit-shortcuts/"/>
-    <id>http://www.itzhoulin.com/2016/02/01/mac-text-edit-shortcuts/</id>
-    <published>2016-01-31T16:19:29.000Z</published>
-    <updated>2016-02-01T01:20:20.000Z</updated>
-    
-    <content type="html">&lt;p&gt;在电脑上码字的时候，经常会遇到需要对某段文字进行修改或者操作的情况，大家通常的做法是用鼠标去移动光标快速定位，但是右手（或者左手）反复的在鼠标和键盘之前来回切换其实是很浪费时间的一件事，有时候，通过键盘移动光标比拖动鼠标来的更快。&lt;br&gt;&lt;br&gt;&lt;br&gt;今天我就教大家三招，让你在最短的时间内把光标移动到你想要的位置，提高在电脑上码字的效率。&lt;/p&gt;
-&lt;h2 id=&quot;1-全文-amp-段落定位&quot;&gt;&lt;a href=&quot;#1-全文-amp-段落定位&quot; class=&quot;headerlink&quot; title=&quot;1. 全文 &amp;amp; 段落定位&quot;&gt;&lt;/a&gt;1. 全文 &amp;amp; 段落定位&lt;/h2&gt;&lt;p&gt;目标位置比较远的时候，需要对光标远程定位，下面的组合键可以帮到我们。&lt;/p&gt;
-&lt;h3 id=&quot;1-1-Command-方向键上-下&quot;&gt;&lt;a href=&quot;#1-1-Command-方向键上-下&quot; class=&quot;headerlink&quot; title=&quot;1.1 Command + 方向键上/下&quot;&gt;&lt;/a&gt;1.1 Command + 方向键上/下&lt;/h3&gt;&lt;p&gt;「Command + 方向键上」将光标快速移动到整篇文本开头，类似的，「Command + 方向键下」快速移动到文章结尾。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;http://cdn.sspai.com/attachment/origin/2016/01/26/308461.gif&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
-&lt;h3 id=&quot;1-2-Option-方向键上-下&quot;&gt;&lt;a href=&quot;#1-2-Option-方向键上-下&quot; class=&quot;headerlink&quot; title=&quot;1.2 Option + 方向键上/下&quot;&gt;&lt;/a&gt;1.2 Option + 方向键上/下&lt;/h3&gt;&lt;p&gt;「Option + 方向键上」将光标移动到当前段落的开头，「Option + 方向键下」移动到当前段落的末尾。&lt;br&gt;&lt;br&gt;&lt;br&gt;需要注意，如果光标在段落的开头，「Option + 方向键上」可以将光标移动到上一段落的开头，而光标在段落结尾时，「Option + 方向键下」则将光标移动到下一段落的结尾。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;http://cdn.sspai.com/attachment/origin/2016/01/26/308462.gif&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;句子 &amp;amp; 单词定位&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;下面的组合键，可以在单词与单词、句子与句子间移动光标，从而更加精确得移动光标。&lt;/p&gt;
-&lt;h3 id=&quot;2-1-Command-方向键左-右&quot;&gt;&lt;a href=&quot;#2-1-Command-方向键左-右&quot; class=&quot;headerlink&quot; title=&quot;2.1 Command + 方向键左/右&quot;&gt;&lt;/a&gt;2.1 Command + 方向键左/右&lt;/h3&gt;&lt;p&gt;「Command + 方向键左」，将光标移动到句子的开头，「Command + 方向键右」，则是移动到句子的末尾。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;http://cdn.sspai.com/attachment/origin/2016/01/26/308463.gif&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
-&lt;h3 id=&quot;2-2-Option-方向键左-右&quot;&gt;&lt;a href=&quot;#2-2-Option-方向键左-右&quot; class=&quot;headerlink&quot; title=&quot;2.2 Option + 方向键左/右&quot;&gt;&lt;/a&gt;2.2 Option + 方向键左/右&lt;/h3&gt;&lt;p&gt;「Option + 方向键左」，将光标移动到前一个单词，「Option + 方向键右」，将光标移动到单词。这里有几点要注意一下：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;如果光标的初始位置在单词的开头，向前移动时，自动移动到前一个单词的开头。&lt;/li&gt;
-&lt;li&gt;如果光标的初始位置在单词的结尾，向后移动时，自动移动到后一个单词的结尾。&lt;/li&gt;
-&lt;li&gt;如果光标的初始位置在单词中间，则光标向前移动时，移动到当前单词的开头，向后移动时，移动到当前单词的结尾。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;img src=&quot;http://cdn.sspai.com/attachment/origin/2016/01/26/308464.gif&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
-&lt;h2 id=&quot;3-快速选中文本&quot;&gt;&lt;a href=&quot;#3-快速选中文本&quot; class=&quot;headerlink&quot; title=&quot;3. 快速选中文本&quot;&gt;&lt;/a&gt;3. 快速选中文本&lt;/h2&gt;&lt;p&gt;除了快速移动光标之外，配合「Shift」键，我们还可以快速得选中我们想要的文本。&lt;br&gt;&lt;img src=&quot;http://cdn.sspai.com/attachment/origin/2016/01/26/308465.gif&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
-&lt;h3 id=&quot;3-1-Option-Shift-方向键上-下&quot;&gt;&lt;a href=&quot;#3-1-Option-Shift-方向键上-下&quot; class=&quot;headerlink&quot; title=&quot;3.1 Option + Shift + 方向键上/下&quot;&gt;&lt;/a&gt;3.1 Option + Shift + 方向键上/下&lt;/h3&gt;&lt;p&gt;以之前提到的「Option + 方向键上」为例，按下组合键「Option + Shift + 方向键上」，即可选中光标所在位置到段落开头的所有文本。按下「Option + Shift + 方向键下」，则是选中光标所在位置到段落结尾的所有文本。&lt;/p&gt;
-&lt;h3 id=&quot;3-2-Option-Shift-方向键左-右&quot;&gt;&lt;a href=&quot;#3-2-Option-Shift-方向键左-右&quot; class=&quot;headerlink&quot; title=&quot;3.2 Option + Shift + 方向键左/右&quot;&gt;&lt;/a&gt;3.2 Option + Shift + 方向键左/右&lt;/h3&gt;&lt;p&gt;类似的，「Option + Shift + 方向键左/右」可以选中一个单词，「Command + Shift +左/右」可以选中一句话。&lt;/p&gt;
-&lt;h2 id=&quot;4-总结&quot;&gt;&lt;a href=&quot;#4-总结&quot; class=&quot;headerlink&quot; title=&quot;4. 总结&quot;&gt;&lt;/a&gt;4. 总结&lt;/h2&gt;&lt;p&gt;这些快捷键看起来好像不太好记，但是只要你多用几次就可以轻松掌握，熟练之后你就能明显感受到在文本编辑时候效率的提升，尤其是有些网站的文本框非常的小，这种情况下使用快捷键会比鼠标定位更加精准。&lt;/p&gt;
-&lt;p&gt;图片来自：&lt;a href=&quot;http://sspai.com/32769&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;少数派&lt;/a&gt;&lt;/p&gt;
-</content>
-    
-    <summary type="html">
-    
-      MAC文本编辑时跳转快捷键，快速跳转和选中文本
-    
-    </summary>
-    
-      <category term="mac" scheme="http://www.itzhoulin.com/categories/mac/"/>
-    
-    
-      <category term="shortcut" scheme="http://www.itzhoulin.com/tags/shortcut/"/>
     
   </entry>
   
