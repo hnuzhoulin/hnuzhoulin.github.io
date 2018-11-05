@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://www.itzhoulin.com/2018/11/05/ceph-rgw-delimiter-and-nextmarker/</loc>
+    
+    <lastmod>2018-11-05T05:26:29.000Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://www.itzhoulin.com/2018/10/21/pre-split-filestore-diir-when-create-pool/</loc>
     
     <lastmod>2018-10-21T07:19:18.000Z</lastmod>

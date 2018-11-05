@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+  <meta charset="utf-8">
+  
+  <title>ceph-rgw-delimiter-and-nextmarker | 我的IT江湖之旅</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="ceph的rgw服务在list大于1000个object时delimiter参数会影响返回值是否有NextMarker参数">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ceph-rgw-delimiter-and-nextmarker">
+<meta property="og:url" content="http://www.itzhoulin.com/2018/11/05/ceph-rgw-delimiter-and-nextmarker/index.html">
+<meta property="og:site_name" content="我的IT江湖之旅">
+<meta property="og:description" content="ceph的rgw服务在list大于1000个object时delimiter参数会影响返回值是否有NextMarker参数">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwgy1fwx4l1lbg4j30fd03qwew.jpg">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwgy1fwx4o3w4wqj30fd03fq38.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwgy1fwx4ojhkz7j30eu03ngly.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwgy1fwx4osdm9ej30g203s3yw.jpg">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwgy1fwx4p21yerj30vm03hwf9.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwgy1fwx4pa5tghj30iv044aaj.jpg">
+<meta property="og:updated_time" content="2018-11-05T05:26:29.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ceph-rgw-delimiter-and-nextmarker">
+<meta name="twitter:description" content="ceph的rgw服务在list大于1000个object时delimiter参数会影响返回值是否有NextMarker参数">
+<meta name="twitter:image" content="https://ws4.sinaimg.cn/large/006tNbRwgy1fwx4l1lbg4j30fd03qwew.jpg">
+  
+    <link rel="alternative" href="/atom.xml" title="我的IT江湖之旅" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+      <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+  
+  
+      <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+      <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  
+  
+      <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+  
+  <script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+  <script>
+      var yiliaConfig = {
+          fancybox: true,
+          animate: true,
+          isHome: false,
+          isPost: true,
+          isArchive: false,
+          isTag: false,
+          isCategory: false,
+          open_in_new: false,
+          fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+          scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+          search: true
+      }
+  </script>
+
+  
+      <script>
+          yiliaConfig.jquery_ui = [true, "//cdn.bootcss.com/jqueryui/1.10.4/jquery-ui.min.js", "//cdn.bootcss.com/jqueryui/1.10.4/css/jquery-ui.min.css"];
+      </script>
+  
+
+  
+      <script>
+          yiliaConfig.rootUrl = "/";
+      </script>
+  
+
+  
+  
+      <script>
+          var _hmt = _hmt || [];
+          (function() {
+              var hm = document.createElement("script");
+              hm.src = "https://hm.baidu.com/hm.js?bfda7d8af83db2f5572810a41e5bd3f1";
+              var s = document.getElementsByTagName("script")[0]; 
+              s.parentNode.insertBefore(hm, s);
+          })();
+      </script>
+  
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">半天河(hnuzhoulin)</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">python ceph openstack 运维</p>
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" results="0" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="false" />
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class='no-result'>No results found <i class='fa fa-spinner fa-pulse'></i></p>
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/2016/04/24/blog-updates/">博客更新</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/hnuzhoulin" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/calamari/">calamari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cetune/">cetune</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/deb/">deb</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/dns/">dns</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/filestore/">filestore</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/fio/">fio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/full/">full</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/gitlab/">gitlab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infenalis/">infenalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/infernalis/">infernalis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jewel/">jewel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/journal/">journal</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kernel/">kernel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/krbd/">krbd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/osd/">osd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/pg/">pg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/proxy/">proxy</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rbd/">rbd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rbd-libvirt-qemu/">rbd libvirt qemu</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redmine/">redmine</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/release/">release</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/rgw/">rgw</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shell/">shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shortcut/">shortcut</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sqlalchemy/">sqlalchemy</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ssd/">ssd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tool/">tool</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/transmission/">transmission</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/troubleshoot/">troubleshoot</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wsgi/">wsgi</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/xiaomi/">xiaomi</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/排错/">排错</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/源/">源</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/翻译/">翻译</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/部署/">部署</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a target="_blank" class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">IT爱好者，慢慢前行</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">半天河(hnuzhoulin)</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">python ceph openstack 运维</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/2016/04/24/blog-updates/">博客更新</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:itzhoulin@itzhoulin.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/hnuzhoulin" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-ceph-rgw-delimiter-and-nextmarker" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2018/11/05/ceph-rgw-delimiter-and-nextmarker/" class="article-date">
+      <time datetime="2018-11-05T05:26:29.000Z" itemprop="datePublished">2018-11-05</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      ceph-rgw-delimiter-and-nextmarker
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/ceph/">ceph</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/rgw/">rgw</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <h2 id="rgw的list-bucket"><a href="#rgw的list-bucket" class="headerlink" title="rgw的list-bucket"></a>rgw的list-bucket</h2><p>ceph rgw的list-bucket接口默认只返回前面1000个object，对于大于1000个object的场景，在第一次请求的response中会有下面两个参数来指示获取下一个1000个object，类似分页：</p>
+<ul>
+<li>NextMarker: 下一个1000个object（也就是下一页）的第一个object的名字</li>
+<li>isTruncated: 标记当前是否是最后一页</li>
+<li>delimiter：按照目录层级的方式返回，标记目录层级的分隔符，比如linux下的目录分隔符为<code>/</code></li>
+<li>Prefix：object的名字前缀，可以理解为目录名</li>
+</ul>
+<h2 id="list-bucket的delimiter问题复现及解决"><a href="#list-bucket的delimiter问题复现及解决" class="headerlink" title="list-bucket的delimiter问题复现及解决"></a>list-bucket的delimiter问题复现及解决</h2><h3 id="使用boto执行list-bucket"><a href="#使用boto执行list-bucket" class="headerlink" title="使用boto执行list-bucket"></a>使用boto执行list-bucket</h3><p>脚本如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">import</span> boto</span><br><span class="line"><span class="keyword">from</span> boto.s3.connection <span class="keyword">import</span> S3Connection</span><br><span class="line"><span class="keyword">import</span> datetime</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line">reload(sys)</span><br><span class="line">sys.setdefaultencoding(<span class="string">'utf-8'</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># get config from environment or ...</span></span><br><span class="line">endpoint = os.environ[<span class="string">"s3_endpoint"</span>]</span><br><span class="line">bucket_name = <span class="string">"hdg2-gcp-bossweb"</span></span><br><span class="line"></span><br><span class="line">access_key = os.environ[<span class="string">"access_key"</span>]</span><br><span class="line">secret_key = os.environ[<span class="string">"secret_key"</span>]</span><br><span class="line"></span><br><span class="line">conn = S3Connection(ak, sk, host=host, calling_format=boto.s3.connection.OrdinaryCallingFormat(), is_secure=<span class="keyword">False</span>)</span><br><span class="line"><span class="comment">#print conn.get_all_buckets()</span></span><br><span class="line">bucket = conn.get_bucket(bucketname)</span><br><span class="line"></span><br><span class="line">marker=<span class="string">""</span></span><br><span class="line"><span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">    filelist = bucket.get_all_keys(marker=marker)</span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> filelist:</span><br><span class="line">        print(<span class="string">"%s\t%s\t%s"</span> %(file.last_modified, file.name, file.size))</span><br><span class="line">    <span class="keyword">if</span> filelist.is_truncated == <span class="keyword">False</span>:</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    marker = filelist.next_marker</span><br><span class="line"></span><br><span class="line">    print(marker)</span><br></pre></td></tr></table></figure>
+<p>抓包请求：<br><img src="https://ws4.sinaimg.cn/large/006tNbRwgy1fwx4l1lbg4j30fd03qwew.jpg" alt=""></p>
+<p>响应如下：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">ListBucketResult</span> <span class="attr">xmlns</span>=<span class="string">"http://s3.amazonaws.com/doc/2006-03-01/"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Name</span>&gt;</span>hdg2-gcp-bossweb<span class="tag">&lt;/<span class="name">Name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Prefix</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Marker</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">MaxKeys</span>&gt;</span>1000<span class="tag">&lt;/<span class="name">MaxKeys</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">IsTruncated</span>&gt;</span>true<span class="tag">&lt;/<span class="name">IsTruncated</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">EncodingType</span>&gt;</span>url<span class="tag">&lt;/<span class="name">EncodingType</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Contents</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Key</span>&gt;</span>bosswebfiles%2Fattachment%2F1495115517299a0165c74-4ca4-4c2f-9d66-2e89fbaeef8c.jpg<span class="tag">&lt;/<span class="name">Key</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">LastModified</span>&gt;</span>2017-05-18T13:51:57.000Z<span class="tag">&lt;/<span class="name">LastModified</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">ETag</span>&gt;</span>&amp;quot;50d0c18045f9b92ae52a66cf4d82701b&amp;quot;<span class="tag">&lt;/<span class="name">ETag</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Size</span>&gt;</span>402987<span class="tag">&lt;/<span class="name">Size</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">StorageClass</span>&gt;</span>STANDARD<span class="tag">&lt;/<span class="name">StorageClass</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Owner</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">ID</span>&gt;</span>p-gcp<span class="tag">&lt;/<span class="name">ID</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">DisplayName</span>&gt;</span>p-gcp<span class="tag">&lt;/<span class="name">DisplayName</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">Owner</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">Contents</span>&gt;</span></span><br><span class="line">...</span><br><span class="line">    <span class="tag">&lt;<span class="name">Contents</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Key</span>&gt;</span>bosswebfiles%2Fattachment%2F152828637501198245d2a-e1a4-46e6-9502-648959a7045a.jpg<span class="tag">&lt;/<span class="name">Key</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">LastModified</span>&gt;</span>2018-06-06T11:59:35.000Z<span class="tag">&lt;/<span class="name">LastModified</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">ETag</span>&gt;</span>&amp;quot;7cbcd767f1a282f48b6ed0f7ec2f4fa2&amp;quot;<span class="tag">&lt;/<span class="name">ETag</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Size</span>&gt;</span>160286<span class="tag">&lt;/<span class="name">Size</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">StorageClass</span>&gt;</span>STANDARD<span class="tag">&lt;/<span class="name">StorageClass</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Owner</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">ID</span>&gt;</span>p-gcp<span class="tag">&lt;/<span class="name">ID</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">DisplayName</span>&gt;</span>p-gcp<span class="tag">&lt;/<span class="name">DisplayName</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">Owner</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">Contents</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">ListBucketResult</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>总结：</strong></p>
+<ul>
+<li>没有指定delimiter表示直接按照object的key输出，不人为构建目录层级</li>
+<li>marker为空表示从第一个object开始</li>
+<li>Response的IsTruncated的值为True表示不是最后一页</li>
+<li>Response中却没有NextMarker这一属性，故而无法获取下一页的object</li>
+</ul>
+<h3 id="使用s3cmd尝试"><a href="#使用s3cmd尝试" class="headerlink" title="使用s3cmd尝试"></a>使用s3cmd尝试</h3><h4 id="访问顶级目录"><a href="#访问顶级目录" class="headerlink" title="访问顶级目录"></a>访问顶级目录</h4><p>请求如下<br><img src="https://ws4.sinaimg.cn/large/006tNbRwgy1fwx4o3w4wqj30fd03fq38.jpg" alt=""></p>
+<p>响应如下：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">ListBucketResult</span> <span class="attr">xmlns</span>=<span class="string">"http://s3.amazonaws.com/doc/2006-03-01/"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Name</span>&gt;</span>hdg2-gcp-bossweb<span class="tag">&lt;/<span class="name">Name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Prefix</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Marker</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">MaxKeys</span>&gt;</span>1000<span class="tag">&lt;/<span class="name">MaxKeys</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Delimiter</span>&gt;</span>/<span class="tag">&lt;/<span class="name">Delimiter</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">IsTruncated</span>&gt;</span>false<span class="tag">&lt;/<span class="name">IsTruncated</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CommonPrefixes</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Prefix</span>&gt;</span>bosswebfiles/<span class="tag">&lt;/<span class="name">Prefix</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">CommonPrefixes</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">ListBucketResult</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>总结：</strong></p>
+<ul>
+<li>s3cmd默认所有请求都指定delimiter为<code>/</code>，故会根据object的名字去切分来构建目录层级</li>
+<li>marker为空表示从第一个object开始</li>
+<li>Response的IsTruncated的值为false表示是最后一页</li>
+<li>Response中没有NextMarker这一属性，表示该页的所有object按照delimiter切分分级后没有文件，CommonPrefixes表示下一级目录</li>
+</ul>
+<h4 id="s3cmd访问子目录"><a href="#s3cmd访问子目录" class="headerlink" title="s3cmd访问子目录"></a>s3cmd访问子目录</h4><p>请求如下：<br><img src="https://ws2.sinaimg.cn/large/006tNbRwgy1fwx4ojhkz7j30eu03ngly.jpg" alt=""></p>
+<p>响应如下：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">ListBucketResult</span> <span class="attr">xmlns</span>=<span class="string">"http://s3.amazonaws.com/doc/2006-03-01/"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Name</span>&gt;</span>hdg2-gcp-bossweb<span class="tag">&lt;/<span class="name">Name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Prefix</span>&gt;</span>bosswebfiles/<span class="tag">&lt;/<span class="name">Prefix</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Marker</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">MaxKeys</span>&gt;</span>1000<span class="tag">&lt;/<span class="name">MaxKeys</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Delimiter</span>&gt;</span>/<span class="tag">&lt;/<span class="name">Delimiter</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">IsTruncated</span>&gt;</span>false<span class="tag">&lt;/<span class="name">IsTruncated</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CommonPrefixes</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Prefix</span>&gt;</span>bosswebfiles/attachment/<span class="tag">&lt;/<span class="name">Prefix</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">CommonPrefixes</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">ListBucketResult</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>总结：</strong></p>
+<ul>
+<li>s3cmd默认所有请求都指定delimiter为<code>/</code>，故会根据object的名字去切分来构建目录层级</li>
+<li>marker为空表示从第一个object开始</li>
+<li>Prefix为第一个请求返回的CommonPrefixes的值，也就是第一级目录的名字，即为获取该目录下的文件</li>
+<li>此时Response的IsTruncated的值为false表示是最后一页</li>
+<li>Response中也没有NextMarker这一属性，表示该页的所有object按照delimiter进一步切分分级后没有文件，CommonPrefixes表示下一级目录</li>
+</ul>
+<h4 id="s3cmd访问文件所在目录"><a href="#s3cmd访问文件所在目录" class="headerlink" title="s3cmd访问文件所在目录"></a>s3cmd访问文件所在目录</h4><p>请求如下：<br><img src="https://ws2.sinaimg.cn/large/006tNbRwgy1fwx4osdm9ej30g203s3yw.jpg" alt=""></p>
+<p>部分响应如下：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">ListBucketResult</span> <span class="attr">xmlns</span>=<span class="string">"http://s3.amazonaws.com/doc/2006-03-01/"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Name</span>&gt;</span>hdg2-gcp-bossweb<span class="tag">&lt;/<span class="name">Name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Prefix</span>&gt;</span>bosswebfiles/attachment/<span class="tag">&lt;/<span class="name">Prefix</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Marker</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">NextMarker</span>&gt;</span>bosswebfiles/attachment/152828637501198245d2a-e1a4-46e6-9502-648959a7045a.jpg<span class="tag">&lt;/<span class="name">NextMarker</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">MaxKeys</span>&gt;</span>1000<span class="tag">&lt;/<span class="name">MaxKeys</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Delimiter</span>&gt;</span>/<span class="tag">&lt;/<span class="name">Delimiter</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">IsTruncated</span>&gt;</span>true<span class="tag">&lt;/<span class="name">IsTruncated</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Contents</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Key</span>&gt;</span>bosswebfiles/attachment/1495115517299a0165c74-4ca4-4c2f-9d66-2e89fbaeef8c.jpg<span class="tag">&lt;/<span class="name">Key</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">LastModified</span>&gt;</span>2017-05-18T13:51:57.000Z<span class="tag">&lt;/<span class="name">LastModified</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">ETag</span>&gt;</span>&amp;quot;50d0c18045f9b92ae52a66cf4d82701b&amp;quot;<span class="tag">&lt;/<span class="name">ETag</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Size</span>&gt;</span>402987<span class="tag">&lt;/<span class="name">Size</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">StorageClass</span>&gt;</span>STANDARD<span class="tag">&lt;/<span class="name">StorageClass</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Owner</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">ID</span>&gt;</span>p-gcp<span class="tag">&lt;/<span class="name">ID</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">DisplayName</span>&gt;</span>p-gcp<span class="tag">&lt;/<span class="name">DisplayName</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">Owner</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">Contents</span>&gt;</span></span><br><span class="line">...</span><br><span class="line">    <span class="tag">&lt;<span class="name">Contents</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Key</span>&gt;</span>bosswebfiles/attachment/152828637501198245d2a-e1a4-46e6-9502-648959a7045a.jpg<span class="tag">&lt;/<span class="name">Key</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">LastModified</span>&gt;</span>2018-06-06T11:59:35.000Z<span class="tag">&lt;/<span class="name">LastModified</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">ETag</span>&gt;</span>&amp;quot;7cbcd767f1a282f48b6ed0f7ec2f4fa2&amp;quot;<span class="tag">&lt;/<span class="name">ETag</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Size</span>&gt;</span>160286<span class="tag">&lt;/<span class="name">Size</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">StorageClass</span>&gt;</span>STANDARD<span class="tag">&lt;/<span class="name">StorageClass</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Owner</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">ID</span>&gt;</span>p-gcp<span class="tag">&lt;/<span class="name">ID</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">DisplayName</span>&gt;</span>p-gcp<span class="tag">&lt;/<span class="name">DisplayName</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">Owner</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">Contents</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">ListBucketResult</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>总结：</strong></p>
+<ul>
+<li>s3cmd默认所有请求都指定delimiter为<code>/</code>，故会根据object的名字去切分来构建目录层级</li>
+<li>marker为空表示从第一个object开始</li>
+<li>Prefix为前面两次请求返回的CommonPrefixes拼起来的路径</li>
+<li>此时Response的IsTruncated的值为True表示不是最后一页</li>
+<li>此时Response终于有NextMarker属性值，表示下一页的第一个object</li>
+<li>Response中Content部分就是所有object的列表</li>
+<li>这里可以看到第一页1000个object的最后一个object名字是<code>bosswebfiles/attachment/152828637501198245d2a-e1a4-46e6-9502-648959a7045a.jpg</code>，与前面boto的返回结果一致。</li>
+</ul>
+<h4 id="s3cmd自动获取下一页object"><a href="#s3cmd自动获取下一页object" class="headerlink" title="s3cmd自动获取下一页object"></a>s3cmd自动获取下一页object</h4><p>请求如下：<br><img src="https://ws4.sinaimg.cn/large/006tNbRwgy1fwx4p21yerj30vm03hwf9.jpg" alt=""></p>
+<p>响应如下：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">ListBucketResult</span> <span class="attr">xmlns</span>=<span class="string">"http://s3.amazonaws.com/doc/2006-03-01/"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Name</span>&gt;</span>hdg2-gcp-bossweb<span class="tag">&lt;/<span class="name">Name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Prefix</span>&gt;</span>bosswebfiles/attachment/<span class="tag">&lt;/<span class="name">Prefix</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Marker</span>&gt;</span>bosswebfiles/attachment/152828637501198245d2a-e1a4-46e6-9502-648959a7045a.jpg<span class="tag">&lt;/<span class="name">Marker</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">MaxKeys</span>&gt;</span>1000<span class="tag">&lt;/<span class="name">MaxKeys</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Delimiter</span>&gt;</span>/<span class="tag">&lt;/<span class="name">Delimiter</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">IsTruncated</span>&gt;</span>false<span class="tag">&lt;/<span class="name">IsTruncated</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Contents</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Key</span>&gt;</span>bosswebfiles/attachment/15282863820674cab8349-5b34-46df-9f92-c03349080d3e.png<span class="tag">&lt;/<span class="name">Key</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">LastModified</span>&gt;</span>2018-06-06T11:59:42.000Z<span class="tag">&lt;/<span class="name">LastModified</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">ETag</span>&gt;</span>&amp;quot;fdf990d0c7e8abe0e4e251cce657d7bf&amp;quot;<span class="tag">&lt;/<span class="name">ETag</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Size</span>&gt;</span>1353613<span class="tag">&lt;/<span class="name">Size</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">StorageClass</span>&gt;</span>STANDARD<span class="tag">&lt;/<span class="name">StorageClass</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Owner</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">ID</span>&gt;</span>p-gcp<span class="tag">&lt;/<span class="name">ID</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">DisplayName</span>&gt;</span>p-gcp<span class="tag">&lt;/<span class="name">DisplayName</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">Owner</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">Contents</span>&gt;</span></span><br><span class="line">...</span><br><span class="line"><span class="tag">&lt;/<span class="name">ListBucketResult</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>总结：</strong></p>
+<ul>
+<li>s3cmd默认所有请求都指定delimiter为<code>/</code>，故会根据object的名字去切分来构建目录层级</li>
+<li>marker为<code>bosswebfiles/attachment/152828637501198245d2a-e1a4-46e6-9502-648959a7045a.jpg</code>是上一次请求的NextMarker的值，表示这一页的第一个object</li>
+<li>Prefix依然为最开始两次目录请求返回的CommonPrefixes拼起来的路径</li>
+<li>此时Response的IsTruncated的值为False表示是最后一页，且Response也没有NextMarker属性值，两者结果匹配</li>
+</ul>
+<h2 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h2><p>从上面两个的返回结果可以知道，对于object在逻辑上处于子目录下时，如果不使用<code>delimiter和prefix=dir</code>的话是只返回前面1000个文件，而且<code>IsTruncated=True</code>，但是<code>没有返回值NextMarker</code></p>
+<p><strong>在luminous版本测试发现已经没有这个问题了。</strong></p>
+<h2 id="delimiter作用示例"><a href="#delimiter作用示例" class="headerlink" title="delimiter作用示例"></a>delimiter作用示例</h2><p>在文件<code>ceph/src/rgw/rgw_rados.cc</code>的函数<code>RGWRados::Bucket::List::list_objects</code>的前面注释有如下说明：</p>
+<blockquote>
+<ul>
+<li>delim: do not include results that match this string.<ul>
+<li>Any skipped results will have the matching portion of their name</li>
+<li>inserted in common_prefixes with a “true” mark.</li>
+</ul>
+</li>
+</ul>
+</blockquote>
+<p>官方文档说明：（<a href="http://docs.ceph.com/docs/master/radosgw/s3/bucketops/）" target="_blank" rel="external">http://docs.ceph.com/docs/master/radosgw/s3/bucketops/）</a></p>
+<blockquote>
+<p>delimiter：The delimiter between the prefix and the rest of the object name.</p>
+</blockquote>
+<p><code>delimiter=“/”</code> 的实际表现就是：将object名字以<code>/</code>作为目录分隔符，去按照目录层级显示；因此如果将其设置为<code>-</code>，即表示按照短横线作为目录分隔符去层级显示，如下例：</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNbRwgy1fwx4pa5tghj30iv044aaj.jpg" alt=""></p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">ListBucketResult</span> <span class="attr">xmlns</span>=<span class="string">"http://s3.amazonaws.com/doc/2006-03-01/"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Name</span>&gt;</span>hdg2-gcp-bossweb<span class="tag">&lt;/<span class="name">Name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Prefix</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Marker</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">NextMarker</span>&gt;</span>bosswebfiles/attachment/152828637501198245d2a-<span class="tag">&lt;/<span class="name">NextMarker</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">MaxKeys</span>&gt;</span>1000<span class="tag">&lt;/<span class="name">MaxKeys</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Delimiter</span>&gt;</span>-<span class="tag">&lt;/<span class="name">Delimiter</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">IsTruncated</span>&gt;</span>true<span class="tag">&lt;/<span class="name">IsTruncated</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">EncodingType</span>&gt;</span>url<span class="tag">&lt;/<span class="name">EncodingType</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CommonPrefixes</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Prefix</span>&gt;</span>bosswebfiles/attachment/1495115517299a0165c74-<span class="tag">&lt;/<span class="name">Prefix</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">CommonPrefixes</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CommonPrefixes</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Prefix</span>&gt;</span>bosswebfiles/attachment/1495115925293a32229a9-<span class="tag">&lt;/<span class="name">Prefix</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">CommonPrefixes</span>&gt;</span></span><br><span class="line">...</span><br><span class="line"><span class="tag">&lt;/<span class="name">ListBucketResult</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>继续一级一级执行如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">python list_bucket.py bosswebfiles/attachment/<span class="number">152828637501198245</span>d2a-</span><br><span class="line">DIR bosswebfiles/attachment/<span class="number">152828637501198245</span>d2a-e1a4-</span><br><span class="line">python list_bucket.py bosswebfiles/attachment/<span class="number">152828637501198245</span>d2a-e1a4- </span><br><span class="line">DIR bosswebfiles/attachment/<span class="number">152828637501198245</span>d2a-e1a4<span class="number">-46e6</span>-</span><br><span class="line">python list_bucket.py bosswebfiles/attachment/<span class="number">152828637501198245</span>d2a-e1a4<span class="number">-46e6</span>- </span><br><span class="line">DIR bosswebfiles/attachment/<span class="number">152828637501198245</span>d2a-e1a4<span class="number">-46e6</span><span class="number">-9502</span>-</span><br><span class="line">python list_bucket.py bosswebfiles/attachment/<span class="number">152828637501198245</span>d2a-e1a4<span class="number">-46e6</span><span class="number">-9502</span>- </span><br><span class="line"><span class="number">2018</span><span class="number">-06</span><span class="number">-06</span> <span class="number">11</span>:<span class="number">59</span>:<span class="number">35</span>+<span class="number">00</span>:<span class="number">00</span>    bosswebfiles/attachment/<span class="number">152828637501198245</span>d2a-e1a4<span class="number">-46e6</span><span class="number">-9502</span><span class="number">-648959</span>a7045a.jpg    <span class="number">160286</span>    <span class="string">"7cbcd767f1a282f48b6ed0f7ec2f4fa2"</span></span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2018/11/05/ceph-rgw-delimiter-and-nextmarker/">ceph-rgw-delimiter-and-nextmarker</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">半天河(hnuzhoulin)</a></p>
+        <p><span>发布时间:</span>2018-11-05, 13:26:29</p>
+        <p><span>最后更新:</span>2018-11-05, 13:26:29</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2018/11/05/ceph-rgw-delimiter-and-nextmarker/" title="ceph-rgw-delimiter-and-nextmarker">http://www.itzhoulin.com/2018/11/05/ceph-rgw-delimiter-and-nextmarker/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://www.itzhoulin.com/2018/11/05/ceph-rgw-delimiter-and-nextmarker/　　作者: 半天河(hnuzhoulin)" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2018/10/21/pre-split-filestore-diir-when-create-pool/">
+                    pre-split-filestore-diir-when-create-pool
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">文章目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#rgw的list-bucket"><span class="toc-number">1.</span> <span class="toc-text">rgw的list-bucket</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#list-bucket的delimiter问题复现及解决"><span class="toc-number">2.</span> <span class="toc-text">list-bucket的delimiter问题复现及解决</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#使用boto执行list-bucket"><span class="toc-number">2.1.</span> <span class="toc-text">使用boto执行list-bucket</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#使用s3cmd尝试"><span class="toc-number">2.2.</span> <span class="toc-text">使用s3cmd尝试</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#访问顶级目录"><span class="toc-number">2.2.1.</span> <span class="toc-text">访问顶级目录</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#s3cmd访问子目录"><span class="toc-number">2.2.2.</span> <span class="toc-text">s3cmd访问子目录</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#s3cmd访问文件所在目录"><span class="toc-number">2.2.3.</span> <span class="toc-text">s3cmd访问文件所在目录</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#s3cmd自动获取下一页object"><span class="toc-number">2.2.4.</span> <span class="toc-text">s3cmd自动获取下一页object</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#问题分析"><span class="toc-number">3.</span> <span class="toc-text">问题分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#delimiter作用示例"><span class="toc-number">4.</span> <span class="toc-text">delimiter作用示例</span></a></li></ol>
+</div>
+<style>
+    .left-col .switch-btn {
+        display: none;
+    }
+    .left-col .switch-area {
+        display: none;
+    }
+</style>
+
+<input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+<script>
+    var valueHide = "隐藏目录";
+    var valueShow = "显示目录";
+
+    if ($(".left-col").is(":hidden")) {
+        $("#tocButton").attr("value", valueShow);
+    }
+
+    $("#tocButton").click(function() {
+        if ($("#toc").is(":hidden")) {
+            $("#tocButton").attr("value", valueHide);
+            $("#toc").slideDown(320);
+            $(".switch-btn, .switch-area").fadeOut(300);
+        }
+        else {
+            $("#tocButton").attr("value", valueShow);
+            $("#toc").slideUp(350);
+            $(".switch-btn, .switch-area").fadeIn(500);
+        }
+    })
+
+    if ($(".toc").length < 1) {
+        $("#toc, #tocButton").hide();
+        $(".switch-btn, .switch-area").show();
+    }
+</script>
+
+
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"ceph-rgw-delimiter-and-nextmarker　| 我的IT江湖之旅　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <section id="comments">
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'www-itzhoulin-com'; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</section>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2018/10/21/pre-split-filestore-diir-when-create-pool/" title="下一篇: pre-split-filestore-diir-when-create-pool">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/11/05/ceph-rgw-delimiter-and-nextmarker/">ceph-rgw-delimiter-and-nextmarker</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/10/21/pre-split-filestore-diir-when-create-pool/">pre-split-filestore-diir-when-create-pool</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/04/15/using-libvirt-create-vm-combine-rbd/">using-libvirt-create-vm-combine-rbd</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/03/14/ubuntu-latest-ceph-deploy-failed-install-hammer/">Ubuntu下最新版ceph-deploy安装Hammer失败</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/12/xiaomi-router-mini-install-transmission/">xiaomi-router-mini-install-transmission</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/12/28/migrate-redmine-with-gitlab/">Redmine与Gitlab深度集成</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/06/11/Ceph-krbd-discard/">Ceph-krbd-discard</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/06/04/ceph-deploy/">ceph-deploy</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/06/04/httpproxy-tinypeoxy/">httpproxy-tinypeoxy</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/05/28/migrate-ceph-cluster-from-one-distro-to-another/">将Ceph集群从Ubuntu迁移到RHEL</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/05/24/create-ubuntu-source-file-based-local-deb-files/">根据本地deb文件生成ubuntu本地安装源</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/24/blog-updates/">博客更新</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/ceph-journal-ssd-lifetime-expire/">记一次因为ceph日志分区所在SSD寿命到期导致的故障</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/deal_with_ceph_full/">ceph full或者nearfull的解决方法探究</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/20/object-unfound-when-wrong-steps-in-ceph-full/">记一次日志所在SSD故障导致的object unfound</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/18/kernel-rbd-hang-when-ceph-full/">因为ceph波动导致kernel rbd挂起</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/02/ceph-jewel-preview-rbd-mirroring/">Ceph Jewel版功能预览---RBD mirroring</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/04/01/fio-usage-example/">fio应用</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/04/cetune-performance-metric/">CeTune抓取性能数据的代码段分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/03/02/using-apache2-and-wsgi-to-run-django/">django项目利用apache2+mod_wsgi运行</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/03/get-ceph-rbd-watches/">ceph下查看使用rbd的客户端</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/02/01/mac-text-edit-shortcuts/">MAC文本编辑时跳转快捷键</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/31/calamari-monitor-page-do-not-show-cluster-and-pool-info/">calamari的监控页面没有集群和Pool信息</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/12/right-steps-delete-ceph-osd/">删除osd的正确姿势</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/01/06/right-steps-adjusting-ceph-pg-num/">调整pg数量的步骤</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/28/ceph-IO-pattern/">Ceph的IO模式分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/24/fio-man-guide/">fio使用指南</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/23/using-python-or-shell-create-file-tree/">文件目录树的python和shell生成方法</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/12/07/sqlalchemy-orm/">SQLAlchemy的ORM模型操作数据库</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-release-infernalis/">Ceph V9.2.0版本(代号INFERNALIS)已发布</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-infernalis-five-useful-new-features/">ceph的infernalis版本的五个很实用的新功能</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/24/ceph-manual-repair-object/">Ceph里手动修复Object</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/22/solve-405-error-when-using-php-sdk-access-ceph-rgw/">php-sdk访问ceph对象存储时405错误</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/11/21/recover-from-write-wrong-partition-tables-into-disk/">一次硬盘被重新分区并写入数据后的整体恢复</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2018 半天河(hnuzhoulin)
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.0">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" >本站到访数: 
+                            <span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>, </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit">本页阅读量: 
+                            <span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            var iPad = window.navigator.userAgent.indexOf('iPad');
+            if (iPad > -1 || $(".left-col").css("display") === "none") {
+                var bgColorList = ["#9db3f4", "#414141", "#e5a859", "#f5dfc6", "#c084a0", "#847e72", "#cd8390", "#996731"];
+                var bgColor = Math.ceil(Math.random() * (bgColorList.length - 1));
+                $("body").css({"background-color": bgColorList[bgColor], "background-size": "cover"});
+            }
+            else {
+                var backgroundnum = 5;
+                var backgroundimg = "url(/background/bg-x.jpg)".replace(/x/gi, Math.ceil(Math.random() * backgroundnum));
+                $("body").css({"background": backgroundimg, "background-attachment": "fixed", "background-size": "cover"});
+            }
+        })
+    </script>
+
+
+<!-- Google Analytics -->
+<script type="text/javascript">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-77418203-1', 'auto');
+ga('send', 'pageview');
+
+</script>
+<!-- End Google Analytics -->
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+  </div>
+</body>
+</html>
