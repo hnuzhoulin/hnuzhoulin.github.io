@@ -195,7 +195,7 @@
     
     <summary type="html">
     
-      &lt;h2 id=&quot;前情提要&quot;&gt;&lt;a href=&quot;#前情提要&quot; class=&quot;headerlink&quot; title=&quot;前情提要&quot;&gt;&lt;/a&gt;前情提要&lt;/h2&gt;&lt;p&gt;在一台没有桌面环境的远程服务器上需要新建虚拟机测试ceph，中间涉及桥接网络的配置、使用ISO镜像安装系统的xml文件、&lt;/
+      使用libvirt创建虚拟机，底层存储直接对接ceph，整个过程全流程介绍
     
     </summary>
     
