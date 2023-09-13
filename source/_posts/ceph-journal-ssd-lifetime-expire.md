@@ -7,6 +7,7 @@ tags: [排错,ssd,journal]
 description: 记一次因为ceph日志分区所在SSD寿命到期导致节点死机进而导致ceph故障的解决过程
 ---
 ## 1.环境
+
 - openstack加ceph，计算存储放在一起，管理节点独立。
 - 4个存储节点，每个节点12块3T的SATA硬盘，都做OSD
 - sda是120G的Intel S3500既做操作系统分区又分出6个10G做日志
@@ -17,6 +18,7 @@ description: 记一次因为ceph日志分区所在SSD寿命到期导致节点死
 - 3个mon分布在管理节点和2个存储节点
 
 ## 2.问题
+
 某一天管理节点网络无法连接，直连存储节点node-63正常。在机房管理员修复网络后，用户反映桌面无法卡顿，查看集群状态发现node-65节点有OSD状态是down，但是此时node-65已经无法通过ssh连接，处于输入用户名密码后挂起状态。
 
 ## 3.思考及处理流程
@@ -81,6 +83,10 @@ ceph osd primary-affinity 15 0.0
 使用下面的命令将OSD的reweight设为0：
 
 ```bash
+#先清除前面设置的禁止数据迁移的标记
+ceph osd unset nobackfill
+ceph osd unset norecover
+#crush权重设为0
 ceph osd crush reweight 3 0.0
 ceph osd crush reweight 15 0.0
 ceph osd crush reweight 9 0.0
@@ -107,7 +113,7 @@ smartctl -a /dev/sda
 
 根据CephNote的博客[intel-520-ssd-journal](http://cephnotes.ksperis.com/blog/2015/05/19/intel-520-ssd-journal/)知道这个值表示的是SSD的寿命，输出表示当前SSD可用寿命为1%。
 
-### 3.6.SSD寿命将近的表现
+### 3.6.SSD寿命将尽的表现
 对于smartctl的值还是有所怀疑，于是在sda上运行fio测试，结果如下：
 
 ```bash

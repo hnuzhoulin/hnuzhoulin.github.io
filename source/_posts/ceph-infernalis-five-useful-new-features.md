@@ -3,7 +3,7 @@ title: ceph的infernalis版本的五个很实用的新功能
 date: 2015/11/24 12:42:46
 updated: 2016/02/01 00:05:54
 categories: ceph
-tags: [infenalis,tool]
+tags: [翻译,infenalis,tool]
 description: ceph的infernalis版本的五个很实用的新功能：rbd指定容量单位，查看镜像实际占用空间，osd性能分析器，动态启用object-map，默认镜像格式变为2
 ---
 *本文由 Ceph中国社区-半天河翻译，Thomas校稿。*

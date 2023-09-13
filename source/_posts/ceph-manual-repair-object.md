@@ -3,6 +3,7 @@ title: Ceph里手动修复Object
 date: 2015/11/24 12:02:18
 updated: 2016/02/01 00:05:50
 categories: ceph
+tag: [翻译,troubleshoot,pg]
 description: 翻译Sébastien的博客，手动修复scrub errors
 ---
 *本文由 Ceph中国社区-半天河翻译，高华敏 校稿。*

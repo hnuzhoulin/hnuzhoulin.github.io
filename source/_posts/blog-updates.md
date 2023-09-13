@@ -2,13 +2,27 @@
 title: 博客更新
 date: 2016-04-24 16:53:35
 description: 记录博客的已完成和待完成的改进
-top: true
+#top: true
 ---
 
 ### TODO List
 1. Yelee主题学习：
 2. 实现CND加速
-3. 在VPS上做镜像站点
+
+### 20160604
+1. 修改 `hexo new` 默认模板，加入description、top、categories等标签
+2. 实现本地搜索，启动jQuery UI，安装hexo-generator-search
+
+### 20160507
+1. 主域名指向新的vps，[枫叶主机，香港CN2机房](http://www.fyzhuji.com/hk_vps.html)
+2. 部署hexo静态博客到该vps，使用apache2，关闭查看目录，设置 `ErrorDocument 404 /404.html` 
+3. 向百度和谷歌提交sitemap，感谢[hexo干货系列：（六）hexo提交搜索引擎（百度+谷歌）](http://www.jianshu.com/p/619dab2d3c08)
+4. hexo的404指向腾讯公益404
+5. 解决没有生成rss.xml和sitemap.xml的问题，`package.json` 中没有加入插件 `hexo-generator-sitemap`
+
+### 20160505
+1. 使用rsync这个deploy方法实现在vps上做镜像站点
+2. 尝试添加站内搜索，使用swiftype，但是默认css，js与当前主题有部分冲突，导致首页右边文章部分空白
 
 ### 20160502
 1. 实现置顶
