@@ -143,7 +143,7 @@ stylus:
 deploy:
 - type: git
   repository: git@github.com:hnuzhoulin/hnuzhoulin.github.io.git
-  branch: gh-pages
+  branch: master
 
 # - type: rsync
 #   host: 139.162.20.191
