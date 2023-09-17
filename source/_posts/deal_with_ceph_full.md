@@ -74,7 +74,7 @@ ceph tell osd.* injectargs '--osd-backfill-full-ratio 0.9'
 出现这种问题的原因可能是你手动修改过crushmap，将某些OSD划到了单独的组；或者是数据分布规则设定有误等。这种情况就只能自己到处crushmap分析一下了。不好举例，有问题的欢迎沟通。
 
 #### 3.1.2.pg数设置不合理
-这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 **file->object->pg->OSD->physics disk** 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 **pg_num** 和 **pgp_num** 。有关调整这部分的工作和注意事项等见我的另一篇博文：[调整pg数量的步骤](http://www.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num)
+这个是目前我遇到的最主要的一种坑。ceph的数据存储结构应该都很容易查到。就是 **file->object->pg->OSD->physics disk** 。因此，一旦这里的pg数设置过小，pg到OSD的映射不均匀就会造成OSD上分配到的数据不均匀。这种额解决方法就是重新调整 **pg_num** 和 **pgp_num** 。有关调整这部分的工作和注意事项等见我的另一篇博文：[调整pg数量的步骤](http://blog.itzhoulin.com/blog/post/hnuzhoulin/increase-pg-num)
 
 有一个python程序可以看各个pool在各个OSD上的pg分布，由此可以判断一下pg是否分布均匀。进而使用上面的方法调整该pool的pg_num和pgp_num。脚本点击[这里](https://gist.github.com/hnuzhoulin/fef193f5e26533fc08c86ad30209646d)
 
