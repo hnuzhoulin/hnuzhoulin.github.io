@@ -15,9 +15,9 @@ jobs:
       with:
         node-version: '12'
 
-    - name: Install Pandoc
-      run: |
-        sudo apt-get install pandoc
+#    - name: Install Pandoc
+#      run: |
+#        sudo apt-get install pandoc
         
     - name: Install and Build 🔧 
       run: |
