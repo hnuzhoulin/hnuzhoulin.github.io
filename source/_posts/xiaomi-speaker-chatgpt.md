@@ -14,6 +14,8 @@ description: 偶然看到有将小米音箱的小爱同学问答接入ChatGPT，
 
 # 实践过程
 
+事后来看哈，相对于直接参照项目的README，不如参照这个issue[不用 root 使用小爱同学和 ChatGPT 交互折腾记](https://github.com/yihong0618/gitblog/issues/258)更精准。
+
 ## 拉取代码安装依赖
 
 ```shell
